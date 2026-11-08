@@ -1115,8 +1115,9 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .shot-empty{ color:var(--text3); font-size:12.5px; line-height:1.7; }
 .wc-shot-row{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
 .word-shot{ width:56px; height:37px; object-fit:cover; border-radius:7px; border:1px solid var(--s4); background:var(--s2); flex:none; }
-.fb-shot{ display:flex; gap:6px; margin:8px 0 2px; flex-wrap:wrap; }
+.fb-shot{ display:flex; gap:6px; margin:8px 0 2px; flex-wrap:wrap; align-items:center; }
 .fb-shot .word-shot{ width:76px; height:50px; }
+.word-pic{ width:104px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--s4); background:var(--s2); flex:none; }
 #shotViewer{ position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.93); display:none; align-items:center; justify-content:center; }
 #shotViewer.show{ display:flex; }
 #shotViewer img{ max-width:94vw; max-height:86vh; border-radius:10px; }
@@ -2566,13 +2567,17 @@ function renderFlash(){
   const origEx=(w.examples||[]).find(x=>x.sense==='原文');
   const srcN=w.notes&&w.notes[0]?(state.notes.find(x=>x.id===w.notes[0].noteId)||null):null;
   const shots=(w?shotsGet(w.term):[]).slice(0,4);
+  /* 方案 A：复习卡背面只读配图缓存，绝不发起网络请求（不会卡顿、不会超时） */
+  const picRec=wmImgCached(w.term);
+  const picCand=(picRec&&Array.isArray(picRec.cands)&&picRec.cands.length)?picRec.cands[Math.min(picRec.idx||0,picRec.cands.length-1)]:null;
+  const picUrl=picCand?(picCand.thumb||picCand.src||''):'';
   const backFace=
     '<div class="flash-face flash-back">'+
       (w.phonetic?'<div class="fb-phon">'+esc(w.phonetic)+'</div>':'')+
       '<div class="fb-def">'+esc(w.definition||'（暂无释义）')+'</div>'+
       (w.collocations&&w.collocations.length?'<div class="fb-coll">'+w.collocations.map(c=>'<span class="coll-chip">'+esc(c)+'</span>').join('')+'</div>':'')+
       (origEx?'<div class="fb-orig">原句：'+esc(origEx.en)+'</div>':'')+
-      (shots.length?'<div class="fb-shot">'+shots.map((sh,i)=>'<img class="word-shot" src="'+sh.dataUrl+'" alt="截图" data-fbshot="'+i+'">').join('')+'</div>':'')+
+      (picUrl||shots.length?'<div class="fb-shot">'+(picUrl?'<img class="word-pic" src="'+esc(picUrl)+'" alt="配图" data-fbpic="1" loading="lazy" referrerpolicy="no-referrer">':'')+shots.map((sh,i)=>'<img class="word-shot" src="'+sh.dataUrl+'" alt="截图" data-fbshot="'+i+'">').join('')+'</div>':'')+
       (examples.length?'<div class="fb-ex">'+examples.map((o,i)=>{const x=o.x;return '<div class="fb-ex-item"><div class="fb-ex-row"><div class="e" data-fbcn="'+i+'">“'+qwHTML(x.en,w.term,w.term,o.oi)+'”</div>'+speakBtn(x.en)+'</div>'+(x.cn?'<div class="c hided"><span class="cn-real">'+esc(x.cn)+'</span><span class="cn-tip">点这一行看中文</span></div>':'')+'</div>';}).join('')+'</div>':(origEx?'<div class="fb-tagline">原文句已在上方</div>':'<div class="fb-tagline">这个词还没有例句</div>'))+
       '<div class="fb-tagline">第 '+s.box+' 箱 · '+(s.due<=Date.now()?'今天到期':srsNextLabel(w))+'</div>'+
       (srcN?'<div class="fb-src">来自笔记：'+esc(srcN.title||'')+'</div>':'')+
@@ -2615,6 +2620,11 @@ function renderFlash(){
   $$('#flashCard [data-fbshot]').forEach(b=>b.addEventListener('click',e=>{
     e.stopPropagation();
     openShotViewerFor(w.term,Number(b.dataset.fbshot));
+  }));
+  /* 点配图 → 打开词卡（那里能换一张、看大图、触发搜索） */
+  $$('#flashCard [data-fbpic]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    openWordModal(w.term,null,null,w);
   }));
   $$('#flashCard [data-fbcn]').forEach(el=>el.addEventListener('click',e=>{
     e.stopPropagation();            /* 别让卡片跟着翻回去 */
