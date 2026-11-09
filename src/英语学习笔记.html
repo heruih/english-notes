@@ -4494,6 +4494,7 @@ const WM_IMG_FAIL=5*6e4;          /* 图链全挂：5 分钟后可以再试（�
 let imgSeq=0;
 let imgState={term:'',cands:[],idx:0,src:''};
 let paintedTerm='';               /* 已经画出来的词：同一个词再打开直接沿用 */
+let wmOpenedAt=0;                 /* 词卡刚打开的时间：用于挡住"自动弹情景口语" */
 let paintedRec=null;
 function wmImgAll(){
   try{ const o=JSON.parse(localStorage.getItem(WM_IMG_KEY)||'{}'); return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }catch(_){ return {}; }
@@ -4555,6 +4556,25 @@ function wmIllusHide(){
   wmMemoHide();
   imgState={term:'',cands:[],idx:0,src:''};
 }
+/* 图链全挂时不要"静默消失"：留一行可点的重试提示，用户知道发生了什么 */
+function wmIllusFail(term,msg){
+  const box=$('#wmIllus'), img=$('#wmIllusImg'), skel=$('#wmIllusSkel'), cap=$('#wmIllusCap'), more=$('#wmIllusMore'), conf=$('#wmIllusConfirm');
+  if(!box){ wmIllusHide(); return; }
+  box.classList.remove('hidden');
+  if(skel) skel.classList.add('hidden');
+  if(img){ img.classList.remove('ok'); img.removeAttribute('src'); }
+  if(more) more.classList.add('hidden');
+  if(conf) conf.classList.add('hidden');
+  if(cap){
+    cap.textContent=msg||'图片加载失败 · 点这里重试';
+    cap.removeAttribute('href');
+    cap.onclick=function(e){
+      e.preventDefault(); e.stopPropagation();
+      try{ const all=wmImgAll(), k=wmImgKeyOf(term); if(all[k]){ delete all[k].imgFailAt; wmImgFlush(all); } }catch(_){ }
+      wmIllusLoad(term);
+    };
+  }
+}
 function wmMemoHide(){
   const el=$('#wmMemo');
   if(el) el.classList.add('hidden');
@@ -4574,7 +4594,8 @@ function wmIllusBroken(rec){
   if(!rec||!rec.cands||!rec.cands.length){ wmIllusHide(); return; }
   if(rec.idx+1>=rec.cands.length){
     paintedTerm=''; paintedRec=null;
-    wmIllusHide();
+    /* 不再静默收起：给一行可点重试的提示（多半是手机到 cdn.pixabay.com 不通） */
+    wmIllusFail(rec.term,'图片加载失败（网络）· 点这里重试');
     try{
       if(!rec.term) return;
       /* 站内插图缺失：7 天后再探一次；图库死链：5 分钟后再试（可能只是这一批链接挂了） */
@@ -4948,6 +4969,7 @@ function openWordModal(term,note,range,existing,prefill,restore){
   $('#wmLoading').classList.add('hidden');
   $('#wmBody').classList.remove('hidden');
   $('#wordModal').classList.add('show');
+  wmOpenedAt=Date.now();   /* 记下打开时刻：1.2 秒内的"情景口语自动打开"一律挡掉 */
   try{ wmIllusLoad(wmState.term); }catch(_){ }
   /* 从「标签聚合」建完类别回来：把刚才的草稿原样恢复（不重新调 AI） */
   if(restore){
@@ -5504,7 +5526,10 @@ function aiGuideHtml(msg){
     '<button class="btn" id="aiRetry">重试</button>'+
     '<button class="btn primary" id="aiGotoSettings">去设置</button></div></div>';
 }
-function openAiDialogue(){
+function openAiDialogue(ev){
+  /* 只认真人点击：无事件的调用（自动触发）在词卡刚打开 1.5 秒内一律忽略 */
+  if(ev&&ev.isTrusted===false) return;
+  if(!ev&&Date.now()-(wmOpenedAt||0)<1500) return;
   const term=wmState.term;
   const ex=state.words.find(x=>x.term.toLowerCase()===term.toLowerCase());
   const definition=($('#wmDefinition').value||'').trim()||(ex&&ex.definition)||'';
