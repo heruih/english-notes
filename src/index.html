@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>英语学习笔记</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2334c759'/%3E%3Crect x='8' y='9' width='16' height='2.5' rx='1.25' fill='white'/%3E%3Crect x='8' y='15' width='13' height='2.5' rx='1.25' fill='white'/%3E%3Crect x='8' y='21' width='10' height='2.5' rx='1.25' fill='white'/%3E%3C/svg%3E">
+<style>__EN_STYLE__</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ 侧边栏 ============ -->
+  <aside id="sidebar">
+    <div class="side-header">
+      <div class="app-title">
+        <span class="app-badge"><i></i><i></i><i></i></span>
+        <span>英语学习笔记</span>
+      </div>
+      <button class="icon-btn" id="btnNewFolder" title="新建文件夹" aria-label="新建文件夹">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+    <nav id="sideNav">
+      <button class="nav-item" data-nav="today">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>今日</span><span class="count" id="navTodayCount"></span>
+      </button>
+      <button class="nav-item" data-nav="all">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
+        <span>全部笔记</span><span class="count" id="navAllCount"></span>
+      </button>
+      <button class="nav-item" data-nav="words">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+        <span>表达库</span><span class="count" id="navWordCount"></span>
+      </button>
+      <button class="nav-item" data-nav="tags">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+        <span>标签聚合</span><span class="count" id="navTagCount"></span>
+      </button>
+      <button class="nav-item" data-nav="flash">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>今日复习</span><span class="nav-dot hidden" id="navFlashDot"></span><span class="count" id="navFlashCount"></span>
+      </button>
+      <button class="nav-item" data-nav="speak">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L4 21l1.2-3.7A8.4 8.4 0 1 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>
+        <span>口语记录</span><span class="count" id="navSpeakCount"></span>
+      </button>
+      <div class="nav-divider">文件夹</div>
+      <div id="folderList"></div>
+    </nav>
+    <div class="side-footer">
+      <span id="statWords">已收录 0 个单词</span>
+      <button class="icon-btn" id="btnSettings" title="设置（AI 配置）" aria-label="设置">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 2.6c.2-.9 1.5-.9 1.7 0l.3 1.3c.5.1.9.3 1.3.6l1.2-.6c.8-.4 1.6.5 1.2 1.3l-.6 1.2c.3.4.5.8.6 1.3l1.3.3c.9.2.9 1.5 0 1.7l-1.3.3c-.1.5-.3.9-.6 1.3l.6 1.2c.4.8-.5 1.6-1.3 1.2l-1.2-.6c-.4.3-.8.5-1.3.6l-.3 1.3c-.2.9-1.5.9-1.7 0l-.3-1.3c-.5-.1-.9-.3-1.3-.6l-1.2.6c-.8.4-1.6-.5-1.2-1.3l.6-1.2c-.3-.4-.5-.8-.6-1.3l-1.3-.3c-.9-.2-.9-1.5 0-1.7l1.3-.3c.1-.5.3-.9.6-1.3l-.6-1.2c-.4-.8.5-1.6 1.3-1.2l1.2.6c.4-.3.8-.5 1.3-.6l.3-1.3z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </aside>
+  <div id="scrim"></div>
+
+  <!-- ============ 内容区（列表 / 标签聚合 / 表达库 / 编辑） ============ -->
+  <section id="noteListPane">
+    <div class="pane-header">
+      <button class="icon-btn" id="btnMenu" title="打开菜单" aria-label="打开菜单">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h2 id="paneTitle">全部笔记</h2>
+      <button class="icon-btn" id="btnNewNote" title="新建笔记" aria-label="新建笔记">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+    <div class="global-search">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="globalSearch" type="search" placeholder="搜索单词或笔记内容…" autocomplete="off">
+      <button class="search-clear hidden" id="searchClear" aria-label="清除搜索">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="noteList"></div>
+  </section>
+
+  <main id="editorPane">
+    <div class="editor-header">
+      <button class="icon-btn" id="btnBack" title="返回列表" aria-label="返回列表">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span id="edBreadcrumb"></span>
+      <button class="kb-btn" id="btnKb" title="收起键盘" aria-label="收起键盘">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="10" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 13h12"/><path d="M9 19l3 2 3-2"/></svg>
+        <span>收起键盘</span>
+      </button>
+      <button class="icon-btn danger-color" id="btnDelNote" title="删除这篇笔记" aria-label="删除笔记">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>
+    <div id="editorWrap">
+      <div id="noteTitle" class="ce" contenteditable="true" data-ph="标题"></div>
+      <div id="edHint" class="ed-hint hidden">行首打 <b>#</b> 加空格 = 大标题；选中英文单词点 <b>empower</b> 存进表达库</div>
+      <div id="noteBody" class="ce" contenteditable="true" data-ph="写点什么…"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ 选词操作条（贴底大按钮，好按） ============ -->
+<div id="empowerPill" role="toolbar" aria-label="选中文字的操作">
+  <div class="pill-sel"><span class="pill-tag">已选</span><b id="pillWord"></b></div>
+  <button id="btnDict" aria-label="查询这个词的词典释义">
+    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>查词</span>
+  </button>
+  <button id="btnEmpower" aria-label="把这个词存入表达库">
+    <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg>
+    <span>empower</span>
+  </button>
+</div>
+
+<!-- ============ 收起键盘（弹窗里输入时浮出，贴在可见区右上角） ============ -->
+<button id="kbChip" type="button" aria-label="收起键盘">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="10" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 13h12"/><path d="M9 20l3 2 3-2"/></svg>
+</button>
+
+<!-- ============ 例句里点单词：快查小卡 ============ -->
+<div id="qdMask"></div>
+<div id="qdSheet" role="dialog" aria-label="快速查词">
+  <div class="qd-head">
+    <div class="qd-wordbox">
+      <div class="qd-word" id="qdWord"></div>
+      <div class="qd-phon" id="qdPhon"></div>
+    </div>
+    <button class="speak-btn" id="qdSpeak" aria-label="朗读">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    </button>
+    <button class="modal-close" id="qdClose" aria-label="关闭">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="qd-body" id="qdBody"></div>
+  <div class="qd-phrase" id="qdPhrase" hidden>
+    <button class="qd-ph-btn" id="qdPhBack" type="button" aria-label="退回一个词">−</button>
+    <div class="qd-ph-txt" id="qdPhraseTxt"></div>
+    <button class="qd-ph-btn on" id="qdPhNext" type="button">连下一个</button>
+  </div>
+  <div class="qd-acts">
+    <button class="btn qd-mark" id="qdMark" aria-pressed="false">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-4 4v4h4l4-4"/><path d="M14.5 4.5l5 5-6.5 6.5-5-5z"/><path d="M13 16l4 4"/></svg>
+      <span id="qdMarkTxt">标亮</span>
+    </button>
+    <button class="btn" id="qdFull">词典</button>
+    <button class="btn primary grow" id="qdSave">存进表达库</button>
+  </div>
+</div>
+
+<!-- ============ 词典页（欧路风格） ============ -->
+<div id="dictPage">
+  <div id="dictTop">
+    <button class="modal-close" id="dictClose" aria-label="关闭">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <input id="dictSearch" placeholder="查询其他单词…" autocapitalize="off" spellcheck="false">
+    <button class="mini-btn" id="dictGo">查询</button>
+  </div>
+  <div id="dictBody">
+    <div id="dictLoading" class="hidden">查询中…</div>
+    <div id="dictErr" class="hidden"></div>
+    <div id="dictContent"></div>
+  </div>
+  <div id="dictBottom">
+    <button class="btn primary" id="dictToEmpower">去 empower</button>
+  </div>
+</div>
+
+<!-- ============ 例句跟读页 ============ -->
+<div id="followPage">
+  <div id="followTop">
+    <button class="modal-close" id="followBack" aria-label="返回">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div id="followTitle">例句跟读</div>
+    <span id="followBest" class="fs-best hidden"></span>
+  </div>
+  <div id="followBody">
+    <div id="followSentence"></div>
+    <div id="followCn"></div>
+    <div id="followWave"></div>
+    <div id="followStatus">点击麦克风开始跟读录音</div>
+    <div id="followScore"></div>
+    <div class="follow-hint">听原音 → 点麦克风读完整句 → 自动评分 → 点「对比」连着听：原音 / 你的声音</div>
+  </div>
+  <div id="followBar">
+    <button class="follow-ctrl" id="followPlay" aria-label="播放原音">
+      <svg class="icon-lg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="follow-ctrl rec" id="followMic" aria-label="录音">
+      <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+    </button>
+    <button class="follow-ctrl small" id="followCmp" aria-label="对比">对比</button>
+    <button class="follow-ctrl" id="followOut" aria-label="外放录音">
+      <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-4"/><path d="M7 17V7"/><path d="M11 20V4"/><path d="M15 17V7"/><path d="M19 14v-4"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ============ 单词弹窗 ============ -->
+<div class="modal" id="wordModal">
+  <div class="modal-card">
+    <div class="wm-head">
+      <div class="wm-term-wrap">
+        <div class="wm-term-box">
+          <div id="wmTerm"></div>
+          <div id="wmPhonetic"></div>
+          <div id="wmFollowBest" class="wm-best hidden"></div>
+        </div>
+        <button class="speak-btn" id="wmSpeak" aria-label="朗读单词">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        </button>
+        <button class="speak-btn follow-btn" id="wmFollow" aria-label="跟读这个词">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+        </button>
+      </div>
+      <button class="modal-close" id="wmClose" aria-label="关闭">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="wm-loading" id="wmLoading">
+      <div class="spinner"></div>
+      <div id="wmLoadStatus">正在生成释义与例句…</div>
+    </div>
+    <div class="wm-body hidden" id="wmBody">
+      <div class="wm-draft hidden" id="wmDraftBar">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+        <span id="wmDraftTxt"></span>
+        <button class="wm-draft-drop" id="wmDraftDrop">丢弃</button>
+      </div>
+      <div class="wm-memo hidden" id="wmMemo">
+        <div class="memo-emoji" id="wmMemoEmoji"></div>
+        <div class="memo-scene" id="wmMemoScene"></div>
+      </div>
+      <div class="wm-illus hidden" id="wmIllus">
+        <div class="illus-box">
+          <div class="illus-skel" id="wmIllusSkel"></div>
+          <img id="wmIllusImg" alt="" decoding="async">
+        </div>
+        <div class="illus-cap">
+          <a id="wmIllusCap" target="_blank" rel="noopener"></a>
+          <button class="illus-more hidden" id="wmIllusMore">换一张</button>
+          <button class="illus-confirm hidden" id="wmIllusConfirm">确定</button>
+        </div>
+      </div>
+      <div class="wm-section">
+        <div class="wm-label">释义 <button class="mini-btn" id="wmUseAiDef">用 AI 释义</button><span style="flex:1"></span><button class="mini-btn" id="wmShotsBtn" aria-label="查看该词截图">截图 <span id="wmShotsN">0</span></button></div>
+        <textarea id="wmDefinition" placeholder="写你自己的中文释义（可含词性）；或点右上角「用 AI 释义」"></textarea>
+      </div>
+      <div class="wm-section a-fields">
+        <label for="aPurpose">什么时候用／表达功能</label><textarea id="aPurpose" placeholder="例如：委婉表达不感兴趣"></textarea>
+        <label for="aOwn">我自己的句子</label><textarea id="aOwn" placeholder="先自己写一句，再请 AI 帮忙"></textarea>
+        <details><summary>原始语境与来源</summary>
+        <label for="aOriginal">原句</label><textarea id="aOriginal"></textarea>
+        <label for="aSource">视频链接／来源</label><input id="aSource" type="text">
+        <label for="aTime">视频时间点</label><input id="aTime" placeholder="例如 02:35"></details>
+        <label class="a-check"><input id="aReady" type="checkbox">整理好了，加入学习</label>
+        <button class="mini-btn" id="aIllustrate" type="button">可选：记忆画面</button>
+      </div>
+      <div class="wm-section">
+        <div class="wm-label">核心搭配<button class="mini-btn" id="wmCollAdd">＋ 添加</button></div>
+        <div id="wmColls" class="coll-pick"></div>
+        <input id="wmCollInput" class="wm-coll-input" placeholder="如 pitch an idea（提方案），输完点添加或回车" autocomplete="off" enterkeyhint="done">
+      </div>
+      <div class="wm-section hidden" id="wmDictSec">
+        <div class="wm-label">词典补充 <span class="ex-head-tip">来自查词页</span></div>
+        <div id="wmDictExtra"></div>
+      </div>
+      <div class="wm-section">
+        <div class="wm-label">例句<span class="wm-tip">点句子里的单词就能查词</span><button class="mini-btn" id="wmCnAll">显示全部中文</button></div>
+        <div id="wmExamples"></div>
+      </div>
+      <div class="wm-section">
+        <div class="wm-label">标签<button class="mini-btn" id="wmTagNew">＋ 新建类别</button></div>
+        <div id="wmTags" class="tag-pick"></div>
+      </div>
+      <div class="wm-section wm-master-row">
+        <div class="wm-label">掌握状态</div>
+        <button class="master-pill" id="wmMaster">未掌握</button>
+      </div>
+      <div class="wm-section wm-ai-entry">
+        <div class="wm-label">口语练习</div>
+        <button class="btn primary" id="wmAi">AI 对话</button>
+      </div>
+      <div class="wm-section hidden" id="wmMoveRow">
+        <div class="wm-label">在正文里</div>
+        <button class="btn" id="wmMove">移动到某个大标题下</button>
+      </div>
+      <div class="wm-actions">
+        <button class="btn" id="wmRegen">换一批例句</button>
+        <button class="btn primary grow" id="wmSave">保存表达</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AI 对话（造句陪练）弹窗 ============ -->
+<div id="aiModal" class="ai-page">
+  <div class="modal-card ai-card">
+    <div class="wm-head">
+      <button class="modal-close" id="aiClose" aria-label="返回">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="wm-term-wrap">
+        <div class="wm-term-box">
+          <div id="aiTitle">情景口语</div>
+          <div id="aiSub" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+        </div>
+      </div>
+      <div class="ai-head-actions"><span class="ai-score-chip hidden" id="aiScoreChip"></span></div>
+    </div>
+    <div class="wm-loading" id="aiLoading">
+      <div class="spinner"></div>
+      <div id="aiLoadStatus">正在准备…</div>
+    </div>
+    <div class="wm-body hidden" id="aiBody">
+      <div class="ai-scene" id="aiScene"></div>
+      <div class="ai-chatbar hidden" id="aiChatbar">
+        <button class="mic-btn" id="aiMic" aria-label="语音输入"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><path d="M12 18v3"/></svg></button>
+        <input id="aiInput" placeholder="…" autocomplete="off" enterkeyhint="send">
+        <button class="btn primary" id="aiSend">提交答案</button>
+      </div>
+      <div class="ai-foot">
+        <div class="ai-actions">
+          <button class="btn" id="aiAgain">重置话题</button>
+          <button class="btn primary" id="aiClose2">完成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 写作练习（选词 → 出题 → 写作 → AI 批改 → 存成笔记） ============ -->
+<div id="writeModal">
+  <div class="modal-card ai-card">
+    <div class="wm-head">
+      <button class="modal-close" id="writeClose" aria-label="返回">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="wm-term-wrap">
+        <div class="wm-term-box">
+          <div id="writeTitle">写作练习</div>
+          <div id="writeSub" style="font-size:12px;color:var(--text3);margin-top:2px">选词 → 出题 → 写作 → AI 批改 → 存成笔记</div>
+        </div>
+      </div>
+    </div>
+    <div class="wm-loading" id="writeLoading">
+      <div class="spinner"></div>
+      <div id="writeLoadStatus">正在出题…</div>
+    </div>
+    <div class="wm-body hidden" id="writeBody">
+      <div id="writeContent"></div>
+      <div class="ai-foot">
+        <div class="ai-actions">
+          <button class="btn" id="writeBack">上一步</button>
+          <button class="btn primary" id="writeNext">出题 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 设置弹窗 ============ -->
+<div class="modal" id="settingsModal">
+  <div class="modal-card">
+    <div class="wm-head">
+      <div class="wm-term-wrap">
+        <div style="font-size:19px;font-weight:700">设置</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px">AI、配图、外观、数据、同步都在这里</div>
+      </div>
+      <button class="modal-close" id="stClose" aria-label="关闭">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="wm-body st-body">
+      <section class="st-group open" id="stgAi">
+        <button class="st-g-head" data-stg="stgAi" type="button"><span class="st-g-t">AI 接口</span><span class="st-g-s" id="stgSumAi">未配置</span><b class="st-chev">›</b></button>
+        <div class="st-g-body">
+      <div class="st-presets">
+        <span class="st-presets-label">快速选择：</span>
+        <button class="mini-btn" data-prov="deepseek">DeepSeek</button>
+        <button class="mini-btn" data-prov="openai">OpenAI</button>
+        <button class="mini-btn" data-prov="zhipu">智谱 GLM</button>
+      </div>
+      <div class="st-field">
+        <label for="stBase">接口地址（Base URL）</label>
+        <input id="stBase" placeholder="https://api.openai.com/v1" autocomplete="off">
+      </div>
+      <div class="st-field">
+        <label for="stKey">API Key</label>
+        <input id="stKey" type="password" placeholder="sk-…" autocomplete="off">
+      </div>
+      <div class="st-field">
+        <label for="stModel">模型名称</label>
+        <input id="stModel" placeholder="gpt-4o-mini / deepseek-flash / glm-4-flash" autocomplete="off">
+      </div>
+      <div class="st-field">
+        <label for="stTone">AI 对话语气</label>
+        <select id="stTone">
+          <option value="friend">外国朋友（自然地道）</option>
+          <option value="tutor">耐心私教（温和严谨）</option>
+          <option value="humor">轻松幽默（活泼有趣）</option>
+          <option value="strict">严格考官（直击要害）</option>
+        </select>
+      </div>
+        </div>
+      </section>
+      <section class="st-group" id="stgImg">
+        <button class="st-g-head" data-stg="stgImg" type="button"><span class="st-g-t">单词配图</span><span class="st-g-s" id="stgSumImg">未配置</span><b class="st-chev">›</b></button>
+        <div class="st-g-body">
+      <div class="st-field">
+        <label for="stPixabay">单词配图 · Pixabay Key（免费，推荐）</label>
+        <input id="stPixabay" type="password" placeholder="pixabay.com/api/docs 登录后可见；填了显示真实照片" autocomplete="off">
+      </div>
+      <div class="st-field">
+        <label for="stPexels">单词配图 · Pexels Key（他们暂停发新 Key 了）</label>
+        <input id="stPexels" type="password" placeholder="已有旧 Key 才填；新的申请不了" autocomplete="off">
+      </div>
+        </div>
+      </section>
+      <section class="st-group" id="stgLook">
+        <button class="st-g-head" data-stg="stgLook" type="button"><span class="st-g-t">外观</span><span class="st-g-s" id="stgSumLook">深色 · 中</span><b class="st-chev">›</b></button>
+        <div class="st-g-body">
+      <div class="st-field">
+        <label>主题与字号</label>
+        <div class="st-inline">
+          <div class="seg" id="stTheme">
+            <button data-theme-val="dark">深色</button>
+            <button data-theme-val="light">浅色</button>
+          </div>
+          <div class="seg" id="stFs">
+            <button data-fs-val="s">小</button>
+            <button data-fs-val="m">中</button>
+            <button data-fs-val="l">大</button>
+          </div>
+        </div>
+      </div>
+        </div>
+      </section>
+      <section class="st-group" id="stgData">
+        <button class="st-g-head" data-stg="stgData" type="button"><span class="st-g-t">数据备份</span><span class="st-g-s" id="stgSumData">还没有备份过</span><b class="st-chev">›</b></button>
+        <div class="st-g-body">
+      <div class="st-field">
+        <label>导出 / 导入 / Anki 卡片</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="stExport" style="flex:1;min-height:40px;font-size:14px">导出备份</button>
+          <button class="btn" id="stImport" style="flex:1;min-height:40px;font-size:14px">导入备份</button>
+          <input type="file" id="stImportFile" accept=".json,application/json" style="display:none">
+        </div>
+        <div class="bk-note" id="stBackupNote">还没有备份过</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="stAnki" style="flex:1;min-height:40px;font-size:14px">导出 Anki 卡片（CSV）</button>
+        </div>
+      </div>
+        </div>
+      </section>
+      <section class="st-group" id="stgSync">
+        <button class="st-g-head" data-stg="stgSync" type="button"><span class="st-g-t">云同步</span><span class="st-g-s" id="stgSumSync">未配置</span><b class="st-chev">›</b></button>
+        <div class="st-g-body">
+      <div class="st-field">
+        <label>用 GitHub Gist 或自建地址</label>
+        <div class="seg seg-wide" id="stSyncProv">
+          <button data-syncprov-val="gist">GitHub Gist</button>
+          <button data-syncprov-val="dav">WebDAV / 自建地址</button>
+        </div>
+        <div id="stSyncGist" class="st-sync-fields">
+          <input id="stGhToken" type="password" placeholder="GitHub Token（只需 gist 权限）" autocomplete="off">
+          <input id="stGhGist" placeholder="Gist ID（留空则自动新建一个私有 Gist）" autocomplete="off">
+          <div class="st-sync-tip">GitHub → Settings → Developer settings → Personal access tokens → 勾选 <b>gist</b> 生成 Token，粘贴到这里。数据会写进你自己的私有 Gist，不经过我们的服务器。</div>
+        </div>
+        <div id="stSyncDav" class="st-sync-fields hidden">
+          <input id="stDavUrl" placeholder="https://你的地址/english-notes.json" autocomplete="off">
+          <input id="stDavUser" placeholder="用户名（可留空）" autocomplete="off">
+          <input id="stDavPass" type="password" placeholder="密码 / 应用密码（可留空）" autocomplete="off">
+          <div class="st-sync-tip">填任意支持 GET / PUT 的地址即可（自建小接口、Cloudflare Worker 等）。WebDAV（如坚果云）需要服务端允许跨域访问，否则会被浏览器拦住。</div>
+        </div>
+        <div class="st-inline" style="margin-top:10px">
+          <button class="btn" id="stSyncNow" style="flex:1;min-height:40px;font-size:14px">立即同步</button>
+          <div class="seg" id="stSyncAuto">
+            <button data-syncauto-val="1">自动</button>
+            <button data-syncauto-val="0">手动</button>
+          </div>
+        </div>
+        <div class="bk-note" id="stSyncStatus">还没同步过</div>
+        <div class="st-field" style="margin-top:14px">
+          <label>没有 GitHub？用「随身同步码」跨设备搬一次</label>
+          <div class="st-inline">
+            <button class="btn" id="stCodeGen" style="flex:1;min-height:40px;font-size:14px">生成同步码</button>
+            <button class="btn" id="stCodeApply" style="flex:1;min-height:40px;font-size:14px">导入粘贴的码</button>
+          </div>
+          <textarea id="stCodeBox" class="st-code" rows="3" placeholder="点「生成」后这里出现一长串码；也可以把另一台设备的码粘到这里再点导入" autocomplete="off"></textarea>
+          <div class="st-inline">
+            <button class="btn" id="stCodeCopy" style="flex:1;min-height:36px;font-size:13px">复制</button>
+            <button class="btn" id="stCodeShare" style="flex:1;min-height:36px;font-size:13px">分享到…</button>
+          </div>
+          <div class="bk-note" id="stCodeNote">一段码 = 全部笔记和表达库；导入是合并，两台设备的内容都会留下。</div>
+        </div>
+      </div>
+      </section>
+      <div class="st-help">
+        <b>兼容说明：</b>支持任意 OpenAI 格式的接口。点上方按钮会自动填好地址和模型：DeepSeek（api.deepseek.com / deepseek-flash）、智谱（open.bigmodel.cn/api/paas/v4 / glm-4-flash，免费）、OpenAI（api.openai.com/v1 / gpt-4o-mini）。模型名以服务商控制台为准，下线了会报 HTTP 400。<br>
+        <b>隐私：</b>AI 密钥和同步凭据只存在本机浏览器（localStorage），只会直连你选的服务商 / 你自己的仓库，不经过我们的服务器。<br>
+        <b>云同步：</b>填 GitHub Token（或自建地址）后，手机和电脑共用一份数据；按条目合并、删除也会同步，改完约 5 秒自动上传。<br>
+        <b>AI 对话：</b>配置同一套接口后，单词弹窗里的「AI 对话」进入「情景口语」——选场景、开口翻译、AI 打分纠错、标准答案跟读。<br>
+        <b>朗读：</b>单词用词典真人女声；英文句子与中文提示自动选系统里最自然的女声（设备不同会略有差异）。<br>
+        <b>未配置时：</b>empower 会使用免费词典接口查询释义；网络不可用时可直接手动填写。
+      </div>
+    </div>
+    <div class="st-actions">
+      <button class="btn" id="stClear">清除配置</button>
+      <button class="btn" id="stTest">测试连接</button>
+      <button class="btn primary" id="stSave">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 确认弹窗 ============ -->
+<div class="modal" id="confirmModal">
+  <div class="modal-card">
+    <div class="cf-title" id="cfTitle">确认操作</div>
+    <div class="cf-msg" id="cfMsg"></div>
+    <div class="cf-actions">
+      <button class="btn" id="cfCancel">取消</button>
+      <button class="btn danger" id="cfOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 移动浮条（拿起 → 放下） ============ -->
+<div id="mvBar">
+  <span id="mvTxt"></span>
+  <button class="mv-btn ghost" id="mvPrev" aria-label="上一节">上一节</button>
+  <button class="mv-btn ghost" id="mvNext" aria-label="下一节">下一节</button>
+  <button class="mv-btn" id="mvEnd">放到文末</button>
+  <button class="mv-btn ghost" id="mvUndo">撤销</button>
+  <button class="mv-btn ghost" id="mvCancel">取消</button>
+</div>
+
+<!-- ============ 大标题的「⋯」菜单 ============ -->
+<div class="modal" id="mvMenu">
+  <div class="modal-card mv-menu-card">
+    <div class="mv-menu-t" id="mvMenuTitle"></div>
+    <button class="mv-item" data-act="lift">拿起整节</button>
+    <button class="mv-item" data-act="up">上移一节</button>
+    <button class="mv-item" data-act="down">下移一节</button>
+    <button class="mv-item mv-item-cancel" data-act="cancel">取消</button>
+  </div>
+</div>
+
+<!-- ============ 手机底部导航（编辑页自动隐藏） ============ -->
+<nav id="tabbar" aria-label="主导航">
+  <button class="tab-item" data-tab="today">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <span>今日</span>
+  </button>
+  <button class="tab-item" data-tab="list">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
+    <span>笔记</span>
+  </button>
+  <button class="tab-item" data-tab="words">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+    <span>表达库</span>
+  </button>
+  <button class="tab-item" data-tab="flash">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span>复习</span><i class="tab-dot hidden" id="tabFlashDot"></i>
+  </button>
+  <button class="tab-item" data-tab="more">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <span>更多</span>
+  </button>
+</nav>
+
+<!-- ============ 撤销浮条（删除后 8 秒内可救回） ============ -->
+<div id="undoBar">
+  <span id="undoTxt"></span>
+  <button class="mv-btn" id="undoBtn">撤销</button>
+</div>
+
+<!-- ============ 行菜单（文件夹 / 通用） ============ -->
+<div class="modal" id="rowMenu">
+  <div class="modal-card mv-menu-card">
+    <div class="mv-menu-t" id="rowMenuTitle"></div>
+    <div id="rowMenuBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 全局截图导入悬浮按钮：打开网页就能用 -->
+<button id="fabShot" aria-label="从相册选择截图" title="从相册选择截图">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+</button>
+
+<!-- OCR 识别单词面板：选图 → 图片上框出单词（像 iPhone 文字识别）→ 点选 → 自由编辑 → 挂载 -->
+<div class="modal" id="ocrSheet">
+  <div class="modal-card">
+    <div class="wm-head">
+      <div class="wm-term-wrap">
+        <div class="wm-term-box"><div style="font-size:20px;font-weight:700;line-height:1.2">截图导入单词</div></div>
+        <div style="font-size:12.5px;color:var(--text3);margin-top:4px">像 iPhone 文字识别：图片上的词自动框出，点一下选中（可多选）</div>
+      </div>
+      <button class="modal-close" data-ocr-close aria-label="关闭">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+    </div>
+    <div class="wm-body">
+      <div id="ocrImgWrap" class="hidden"><img id="ocrImg" alt="识别图"><div id="ocrBoxes"></div></div>
+      <div id="ocrStatus" class="ocr-tip"></div>
+      <div id="ocrSelected" class="hidden">
+        <div class="wm-label" style="margin-top:14px">已选 / 可自由编辑</div>
+        <textarea id="ocrEdit" placeholder="点上面的词框添加，也可直接改或输入整个短语，如 emergency event" rows="2"></textarea>
+      </div>
+      <div class="ocr-foot"><button class="btn" id="ocrMount">挂载到表达库</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 截图大图查看器：点任意位置返回 -->
+<div id="shotViewer" role="dialog" aria-modal="true">
+  <button class="sv-close" id="shotViewerClose" aria-label="关闭">✕</button>
+  <button class="sv-nav sv-prev" id="svPrev" aria-label="上一张">‹</button>
+  <img id="shotViewerImg" alt="截图">
+  <button class="sv-nav sv-next" id="svNext" aria-label="下一张">›</button>
+  <button class="sv-del" id="svDel" aria-label="删除这张截图">删除</button>
+  <div class="sv-count" id="svCount"></div>
+</div>
+
+
+<div class="modal" id="aGuide" role="dialog" aria-modal="true" aria-label="使用小手册">
+ <div class="modal-card a-guide-card"><div class="wm-head"><div><b>使用小手册</b><div class="a-note">每天做一小轮，慢慢把“看懂”变成“用得出”。</div></div><button class="modal-close" id="aGuideClose" aria-label="关闭使用小手册">×</button></div>
+ <div class="wm-body a-guide-body">
+  <div class="a-guide-step"><b>1. 看与收集</b><span>看喜欢的全英视频，点右下角相机按钮，从相册选字幕截图。</span></div>
+  <div class="a-guide-step"><b>2. 自己整理</b><span>写清中文功能、原句和自己的句子；确认后再加入学习。</span></div>
+  <div class="a-guide-step"><b>3. 回想</b><span>每天回想一小轮，最多 10 个。先自己说，再看答案。</span></div>
+  <div class="a-guide-step"><b>4. 开口</b><span>选 2—3 个表达说一段，记录自己是否独立用出来。</span></div>
+  <div class="a-guide-step"><b>5. 请 ChatGPT 帮忙</b><span>复制练习任务到 ChatGPT，完成对话后把最终 JSON 粘回来。</span></div>
+  <div class="a-guide-tip">切换设备前等右上角显示“已同步”。离线文件请定期导出完整备份。</div>
+ </div></div>
+</div>
+<div class="modal" id="aBridge" role="dialog" aria-modal="true" aria-label="ChatGPT 任务">
+ <div class="modal-card"><div class="wm-head"><div><b>用 ChatGPT 完成这一步</b><div class="a-note">复制任务 → 在 ChatGPT 完成练习 → 粘回结果。Plus 或免费账号均可，额度以账号为准。</div></div><button class="modal-close" id="aBridgeClose" aria-label="关闭 ChatGPT 任务">×</button></div>
+ <div class="wm-body a-stack"><label for="aPrompt">任务内容</label><textarea id="aPrompt" class="a-prompt" readonly></textarea>
+ <div class="a-actions"><button class="btn primary" id="aCopy">复制任务</button><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">打开 ChatGPT</a></div>
+ <label for="aResult">粘贴 ChatGPT 返回的 JSON</label><textarea id="aResult" placeholder="可以直接粘贴带代码框的 JSON"></textarea><div class="a-note" id="aBridgeError" role="status"></div><button class="btn primary" id="aApply">检查并使用结果</button></div></div>
+</div>
+<div class="modal" id="aRecall" role="dialog" aria-modal="true" aria-label="场景回想">
+ <div class="modal-card"><div class="wm-head"><b id="aRecallTitle">场景回想</b><button class="modal-close" id="aRecallClose" aria-label="关闭场景回想">×</button></div>
+ <div class="wm-body a-stack" id="aRecallBody"></div></div>
+</div>
+<div class="modal" id="aBackup" role="dialog" aria-modal="true" aria-label="完整备份与迁移">
+ <div class="modal-card"><div class="wm-head"><b>完整备份与迁移</b><button class="modal-close" id="aBackupClose" aria-label="关闭备份">×</button></div>
+ <div class="wm-body a-stack"><p class="a-note">先在手机原地址导出，再考虑换地址。完整备份包含表达、笔记、截图、写作、草稿与设置，可能含已保存的接口凭据，请自行保管。</p>
+ <button class="btn primary" id="aExport">下载完整备份</button><label for="aImport">导入完整备份／旧版备份</label><input id="aImport" type="file" accept=".json,application/json"><p class="a-note">导入只补充缺少的内容；同 ID 的本机表达保持不变。导入前可先下载当前完整备份。</p><div class="a-note" id="aBackupStatus" role="status"></div></div></div>
+</div>
+
+<div class="modal" id="bAudio" role="dialog" aria-modal="true" aria-label="原音与模仿" style="z-index:1500"><div class="modal-card"><div class="wm-head"><b>原音与模仿</b><button class="modal-close" id="bAudioClose" aria-label="关闭原音">×</button></div><div class="wm-body a-stack">
+<label for="bAudioWord">选择表达</label><select id="bAudioWord"></select><p class="a-note" id="bAudioHint"></p>
+<label for="bAudioUpload">上传原音短片段</label><input id="bAudioUpload" type="file" accept="audio/*,video/*"><audio id="bOriginalAudio" controls preload="metadata" style="width:100%"></audio>
+<div class="a-tools"><label for="bStart">开始秒数</label><input id="bStart" type="number" min="0" step="0.1" style="width:80px"><label for="bEnd">结束秒数</label><input id="bEnd" type="number" min="0" step="0.1" style="width:80px"><select id="bSpeed" aria-label="播放速度"><option value="1">正常速度</option><option value="0.75">0.75 倍速</option><option value="0.5">0.5 倍速</option></select><button class="btn" id="bSaveRange">保存循环范围</button></div>
+<button class="btn" id="bSystemFollow">使用现有朗读与跟读</button><button class="btn primary" id="bRecord">录下我的声音</button><audio id="bOwnAudio" controls preload="metadata" style="width:100%"></audio><label for="bOwnUpload">也可上传我的录音</label><input id="bOwnUpload" type="file" accept="audio/*">
+<p class="a-note">先听原音，再模仿，再脱稿重说。原音与录音可分别播放对照；文件随账号保存，不公开分享。</p></div></div></div>
+
+<script>__EN_SCRIPT__</script>
+</body>
+</html>
