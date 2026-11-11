@@ -1858,21 +1858,6 @@ let ui={sideOpen:false,mode:'today',folder:'all',note:null,tag:null,lastNote:nul
 
 function defaultState(){
   const t=Date.now();
-  const f={id:'f_welcome',name:'英语学习',createdAt:t};
-  const n={id:'n_welcome',folderId:'f_welcome',title:'欢迎使用英语学习笔记',
-    content:'<div>这是一篇示例笔记，你可以直接删除，或留着当使用说明。</div><div><br></div><div>怎么用？选中下面这句英文里的单词 <b>pitch</b> 试试：</div><div><br></div><div>I need to pitch my idea to the client tomorrow.</div><div><br></div><div>选中单词后，屏幕下方会弹出蓝色「empower」按钮：点它，AI 会自动挑 <b>2-3 句典型例句</b>（配中文翻译，覆盖不同义项），你不用手写；释义和标签按自己的习惯填，例句也能逐句发音、跟读。</div><div><br></div><div>左侧可以新建、删除文件夹；点「标签聚合」可以按标签查看所有生词；点「表达库」可以管理全部单词。</div><div><br></div><div>提示：先在左下角「设置」里填入任意 OpenAI 兼容的 API Key（DeepSeek / 智谱 / OpenAI 等，点一下服务商按钮就会自动填好地址和模型），例句才会自动生成；不配置也能用免费词典查询，断网时可直接手动填写。</div>',
-    createdAt:t,updatedAt:t};
-  const words=[
-    {id:'w_pitch',term:'pitch',phonetic:'/pɪtʃ/',definition:'v. 推销、陈述（想法）；n. 音高\n职场里常指「向客户或领导做提案陈述」。',
-     examples:[{en:'She pitched the new campaign to the board.',cn:'她向董事会陈述了新营销方案。'},{en:'The sales team gave their pitch in a ten-minute meeting.',cn:'销售团队在十分钟的会议里做了推销陈述。'}],
-     tags:['职场'],notes:[{noteId:'n_welcome',noteTitle:'欢迎使用英语学习笔记'}],source:'demo',createdAt:t,updatedAt:t},
-    {id:'w_deadline',term:'deadline',phonetic:'/ˈdedlaɪn/',definition:'n. 截止日期、最后期限',
-     examples:[{en:'We need to hit the deadline on Friday.',cn:'我们得在周五赶上截止日期。'}],
-     tags:['职场'],notes:[],source:'demo',createdAt:t,updatedAt:t},
-    {id:'w_grab',term:'grab',phonetic:'/ɡræb/',definition:'v. 抓取、迅速拿到（口语常用）',
-     examples:[{en:'Let me grab a coffee first.',cn:'我先去弄杯咖啡。'},{en:'I grabbed a seat by the window.',cn:'我抢到了靠窗的座位。'}],
-     tags:['日常'],notes:[],source:'demo',createdAt:t,updatedAt:t}
-  ];
   return {folders:[],notes:[],words:[],aiLog:[],grave:[],tagList:['职场','日常'],meta:{backupAt:null,sync:{provider:'gist',ghToken:'',ghGistId:'',url:'',user:'',pass:'',auto:true,lastAt:0,lastBy:''}},
     settings:{baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'dark',fs:'m'}};
 }
@@ -1986,8 +1971,21 @@ function pickVoice(voices,lang){
   const score=v=>voiceQuality(v)*10+(preferred.test(v.name)?2:0)+(v.default?1:0);
   return available.sort((a,b)=>score(b)-score(a))[0]||null;
 }
+const VOLC_TTS_KEY='en-tts-v1';
+const VOLC_TTS_DEFAULT={apiKey:'',speaker:'zh_female_vv_uranus_bigtts',resourceId:'seed-tts-2.0',speechRate:0,pitchRate:0};
+let volcAudio=null,cancelVolcSpeech=null,volcTtsPlayPending=0;
+function volcTtsConfig(){try{const raw=JSON.parse(localStorage.getItem(VOLC_TTS_KEY)||'{}');return Object.assign({},VOLC_TTS_DEFAULT,raw);}catch(_){return Object.assign({},VOLC_TTS_DEFAULT);}}
+function volcTtsSave(patch){const next=Object.assign(volcTtsConfig(),patch||{});try{localStorage.setItem(VOLC_TTS_KEY,JSON.stringify(next));}catch(_){}return next;}
+function volcTtsReady(){const cfg=volcTtsConfig();return !!(String(cfg.apiKey||'').trim()&&String(cfg.speaker||'').trim());}
+function volcTtsCacheKey(text,lang){const cfg=volcTtsConfig();return [cfg.resourceId,cfg.speaker,cfg.speechRate,cfg.pitchRate,lang||'en-US',String(text||'').trim()].join('|');}
+function volcTtsReadCache(key){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');return all&&typeof all==='object'&&all[key]?all[key].data||'':'';}catch(_){return '';}}
+function volcTtsWriteCache(key,data){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');all[key]={data,at:Date.now()};const keys=Object.keys(all);if(keys.length>80){keys.sort((a,b)=>(all[b].at||0)-(all[a].at||0));keys.slice(80).forEach(k=>delete all[k]);}localStorage.setItem(VOLC_TTS_KEY+'-cache',JSON.stringify(all));}catch(_){} }
+async function volcTtsRequest(text){const cfg=volcTtsConfig();const res=await fetch('https://openspeech.bytedance.com/api/v3/tts/unidirectional',{method:'POST',headers:{'Content-Type':'application/json','X-Api-Key':String(cfg.apiKey||'').trim(),'X-Api-Resource-Id':String(cfg.resourceId||'seed-tts-2.0')},body:JSON.stringify({req_params:{text:String(text||''),speaker:String(cfg.speaker||''),audio_params:{format:'mp3',sample_rate:24000,speech_rate:Number(cfg.speechRate)||0,pitch_rate:Number(cfg.pitchRate)||0}}})});if(!res.ok)throw new Error('豆包语音 HTTP '+res.status);const data=await res.json();if(data&&data.code&&Number(data.code)!==0)throw new Error('豆包语音 '+(data.message||data.code));const raw=String(data&&data.data||'').trim();if(!raw)throw new Error('豆包语音没有返回音频');return raw.indexOf('data:')===0?raw:'data:audio/mpeg;base64,'+raw;}
+function volcTtsPlay(src,onend){const audio=new Audio(src);volcAudio=audio;let done=false;const finish=()=>{if(done)return;done=true;if(volcAudio===audio)volcAudio=null;if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;onend&&onend();};const cancel=()=>{try{audio.pause();audio.currentTime=0;}catch(_){}if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;};cancelVolcSpeech=cancel;audio.addEventListener('ended',finish,{once:true});audio.addEventListener('error',finish,{once:true});const p=audio.play();if(p&&p.catch)p.catch(finish);}
+async function playVolcAudio(text,lang,onend){stopSpeech();const key=volcTtsCacheKey(text,lang),seq=Date.now()+Math.random();volcTtsPlayPending=seq;try{let src=volcTtsReadCache(key);if(!src){src=await volcTtsRequest(text);volcTtsWriteCache(key,src);}if(volcTtsPlayPending!==seq)return;volcTtsPlay(src,onend);}catch(_){if(volcTtsPlayPending===seq){const value=String(text||'').trim();if(lang==='en-US'&&!/\s/.test(value))playYoudaoAudio(value,lang,onend);else speakRaw(value,lang,onend);}}}
 let cancelDictionarySpeech=null;
 function stopSpeech(){
+  if(cancelVolcSpeech)cancelVolcSpeech();
   if(cancelDictionarySpeech)cancelDictionarySpeech();
   try{window.speechSynthesis?.cancel();}catch(_){}
 }
@@ -2028,6 +2026,7 @@ function playYoudaoAudio(text,lang,onend){
 function speak(text,lang,onend){
   const value=String(text||'').trim(),locale=lang||'en-US';
   if(!value)return;
+  if(locale.toLowerCase().startsWith('en')&&volcTtsReady()&&navigator.onLine!==false){playVolcAudio(value,locale,onend);return;}
   let voice;
   try{voice=pickVoice(window.speechSynthesis?.getVoices(),locale);}catch(_){}
   const usWord=locale.toLowerCase()==='en-us'&&!/\s/.test(value);
@@ -7888,6 +7887,24 @@ function aRefreshSettings(){
   ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&el.closest('.st-field'))el.closest('.st-field').hidden=aRoute()!=='api';});
   $$('#stgAi .st-presets').forEach(el=>el.hidden=true);
   const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':'OpenAI API';
+  ttsRefreshSettings();
+}
+function ttsRefreshSettings(){
+  const cfg=volcTtsConfig();
+  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch'),status=$('#stTtsStatus');
+  if(key&&document.activeElement!==key)key.value=cfg.apiKey||'';
+  if(speaker&&document.activeElement!==speaker)speaker.value=cfg.speaker||VOLC_TTS_DEFAULT.speaker;
+  if(rate&&document.activeElement!==rate)rate.value=String(cfg.speechRate||0);
+  if(pitch&&document.activeElement!==pitch)pitch.value=String(cfg.pitchRate||0);
+  if(status)status.textContent=volcTtsReady()?'已配置，首次朗读时生成并缓存':'还未配置';
+}
+async function ttsTest(){
+  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
+  const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim();
+  if(!apiKey||!voice){toast('先填写豆包 API Key 和音色 ID','warn');return;}
+  volcTtsSave({apiKey,speaker:voice,speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
+  try{await playVolcAudio('Could you say that again?','en-US');toast('试听已开始，后续会复用缓存','ok');ttsRefreshSettings();}
+  catch(_){toast('豆包试听失败，请检查 API Key、音色 ID 和免费额度','warn');}
 }
 const aOriginalSettings=openSettings;
 openSettings=function(){aOriginalSettings();aRefreshSettings();};
@@ -7928,6 +7945,10 @@ function aInit(){
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
   const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="chatgpt">ChatGPT（Plus／免费账号，复制往返）</option><option value="api">OpenAI API（自动，单独计费）</option></select><p class="a-note">Plus 是 ChatGPT 套餐，不是 API 模型。往返模式使用 ChatGPT 中你选择的可用模型；取消订阅后仍可按免费账号额度使用。自动模式需要独立 API 付费，与 Plus 是否订阅无关。旧服务商配置保留，但不会在往返模式调用。</p>';
   aiBody.prepend(route);$('#aRoute').onchange=e=>{aStore(A_PREF_KEY,e.target.value);if(e.target.value==='api'&&!/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test($('#stBase').value||'')){$('#stBase').value='https://api.openai.com/v1';$('#stKey').value='';$('#stModel').value='';}aRefreshSettings();};
+  const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="粘贴豆包 API Key" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">联网后首次点读音会调用豆包 TTS 2.0，音频缓存在当前浏览器。API Key 只保存在本机，不会进入备份或公开网页。</p>';
+  aiBody.append(tts);ttsRefreshSettings();
+  ['stTtsKey','stTtsSpeaker','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
+  $('#stTtsTest').addEventListener('click',ttsTest);
   const dataButton=document.createElement('button');dataButton.className='btn';dataButton.textContent='完整备份／安全迁移';dataButton.onclick=aOpenBackup;$('#settingsModal .st-body').prepend(dataButton);
   $$('#stgAi .st-presets').forEach(el=>el.style.display='none');
   const syncBody=$('#stgSync .st-g-body');if(syncBody){const note=document.createElement('p');note.className='a-note';note.textContent='A 版默认暂停旧同步的自动上传与启动合并，以保留本机内容。完整备份覆盖截图、写作和学习记录；旧同步码仅搬运部分主数据，不是完整备份。';syncBody.prepend(note);}
