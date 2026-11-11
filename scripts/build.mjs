@@ -38,7 +38,7 @@ function buildPagesScript(sourceScript) {
     throw new Error('Pages build could not isolate the local initialization data');
   }
   lines.splice(offlineLine - 1, 4, 'const OFFLINE_FILE_MODE=true;', 'if(OFFLINE_FILE_MODE){');
-  return lines.join('\n');
+  return lines.join('\n').replace(/  const f=\{id:'f_welcome'[\s\S]*?  return \{folders:/, '  return {folders:');
 }
 
 const appScript = publishPages ? buildPagesScript(script) : script;
