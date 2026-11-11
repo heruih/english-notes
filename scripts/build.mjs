@@ -38,7 +38,10 @@ function buildPagesScript(sourceScript) {
     throw new Error('Pages build could not isolate the local initialization data');
   }
   lines.splice(offlineLine - 1, 4, 'const OFFLINE_FILE_MODE=true;', 'if(OFFLINE_FILE_MODE){');
-  return lines.join('\n').replace(/  const f=\{id:'f_welcome'[\s\S]*?  return \{folders:/, '  return {folders:');
+  return lines.join('\n')
+    .replace(/  const f=\{id:'f_welcome'[\s\S]*?  return \{folders:/, '  return {folders:')
+    .replace("document.title='英语学习笔记 · 离线文件版'", "document.title='英语学习笔记 · 在线版'")
+    .replace('<b>离线文件：</b>表达、笔记、复习和编辑保存在当前手机浏览器。', '<b>在线版：</b>表达、笔记、复习和编辑保存在当前浏览器。');
 }
 
 const appScript = publishPages ? buildPagesScript(script) : script;
