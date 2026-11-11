@@ -33,7 +33,7 @@ HANDOFF.md             ← 交接单
 
 **没有第三方依赖。** 修改源码后运行 `node scripts/build.mjs`，再打开 `dist/英语学习笔记.html`。
 
-GitHub Pages 使用 `node scripts/build.mjs --pages` 生成的 `dist/pages/index.html`。该构建移除本机初始化数据，使用浏览器本地存储。发布到 `gh-pages` 根目录。
+GitHub Pages 使用 `node scripts/build.mjs --pages` 生成的 `dist/pages/index.html`。该构建移除本机初始化数据，使用浏览器本地存储。发布到 `gh-pages` 根目录。在线版支持在设置中配置豆包 TTS 2.0，首次朗读生成并缓存音频。
 
 ## 关键约定
 

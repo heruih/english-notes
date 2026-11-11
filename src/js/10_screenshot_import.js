@@ -460,6 +460,24 @@ function aRefreshSettings(){
   ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&el.closest('.st-field'))el.closest('.st-field').hidden=aRoute()!=='api';});
   $$('#stgAi .st-presets').forEach(el=>el.hidden=true);
   const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':'OpenAI API';
+  ttsRefreshSettings();
+}
+function ttsRefreshSettings(){
+  const cfg=volcTtsConfig();
+  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch'),status=$('#stTtsStatus');
+  if(key&&document.activeElement!==key)key.value=cfg.apiKey||'';
+  if(speaker&&document.activeElement!==speaker)speaker.value=cfg.speaker||VOLC_TTS_DEFAULT.speaker;
+  if(rate&&document.activeElement!==rate)rate.value=String(cfg.speechRate||0);
+  if(pitch&&document.activeElement!==pitch)pitch.value=String(cfg.pitchRate||0);
+  if(status)status.textContent=volcTtsReady()?'已配置，首次朗读时生成并缓存':'还未配置';
+}
+async function ttsTest(){
+  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
+  const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim();
+  if(!apiKey||!voice){toast('先填写豆包 API Key 和音色 ID','warn');return;}
+  volcTtsSave({apiKey,speaker:voice,speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
+  try{await playVolcAudio('Could you say that again?','en-US');toast('试听已开始，后续会复用缓存','ok');ttsRefreshSettings();}
+  catch(_){toast('豆包试听失败，请检查 API Key、音色 ID 和免费额度','warn');}
 }
 const aOriginalSettings=openSettings;
 openSettings=function(){aOriginalSettings();aRefreshSettings();};
@@ -500,6 +518,10 @@ function aInit(){
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
   const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="chatgpt">ChatGPT（Plus／免费账号，复制往返）</option><option value="api">OpenAI API（自动，单独计费）</option></select><p class="a-note">Plus 是 ChatGPT 套餐，不是 API 模型。往返模式使用 ChatGPT 中你选择的可用模型；取消订阅后仍可按免费账号额度使用。自动模式需要独立 API 付费，与 Plus 是否订阅无关。旧服务商配置保留，但不会在往返模式调用。</p>';
   aiBody.prepend(route);$('#aRoute').onchange=e=>{aStore(A_PREF_KEY,e.target.value);if(e.target.value==='api'&&!/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test($('#stBase').value||'')){$('#stBase').value='https://api.openai.com/v1';$('#stKey').value='';$('#stModel').value='';}aRefreshSettings();};
+  const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="粘贴豆包 API Key" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">联网后首次点读音会调用豆包 TTS 2.0，音频缓存在当前浏览器。API Key 只保存在本机，不会进入备份或公开网页。</p>';
+  aiBody.append(tts);ttsRefreshSettings();
+  ['stTtsKey','stTtsSpeaker','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
+  $('#stTtsTest').addEventListener('click',ttsTest);
   const dataButton=document.createElement('button');dataButton.className='btn';dataButton.textContent='完整备份／安全迁移';dataButton.onclick=aOpenBackup;$('#settingsModal .st-body').prepend(dataButton);
   $$('#stgAi .st-presets').forEach(el=>el.style.display='none');
   const syncBody=$('#stgSync .st-g-body');if(syncBody){const note=document.createElement('p');note.className='a-note';note.textContent='A 版默认暂停旧同步的自动上传与启动合并，以保留本机内容。完整备份覆盖截图、写作和学习记录；旧同步码仅搬运部分主数据，不是完整备份。';syncBody.prepend(note);}
