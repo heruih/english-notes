@@ -2,7 +2,7 @@
 
 单文件移动端 Web App：看电影/短视频截图学英语，把生词、例句、复习串成闭环。
 
-- **当前产物**：`dist/英语学习笔记.html`（648,014 字节 / 约 7,970 行）
+- **当前构建候选**：`dist/英语学习笔记.html`（649,031 字节，Sitecase 真机待验）
 - **源码**：`src/index.html`、`src/style.css`、`src/js/*.js`
 - **基线 tag**：`v2026.11.08`（提交 `34d2dad`）
 - **线上预览**：https://heruih.github.io/english-notes/ （需能访问 github.io；数据与本地文件不互通）
