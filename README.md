@@ -33,7 +33,7 @@ HANDOFF.md             ← 交接单
 
 **没有第三方依赖。** 修改源码后运行 `node scripts/build.mjs`，再打开 `dist/英语学习笔记.html`。
 
-线上那份是 `gh-pages` 分支的 `index.html`，内容与 `src/` 同文件。
+GitHub Pages 使用 `node scripts/build.mjs --pages` 生成的 `dist/pages/index.html`。该构建移除本机初始化数据，使用浏览器本地存储。发布到 `gh-pages` 根目录。
 
 ## 关键约定
 
