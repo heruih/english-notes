@@ -494,7 +494,19 @@ function aInit(){
   ['aPurpose','aOwn','aOriginal','aSource','aTime'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(wmState&&wmState.aMetaKey)aPut(wmState.aMetaKey,aFieldValues());}));
   const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='左滑查看截图';cap.append(note);}
   const confirm=$('#wmIllusConfirm');if(confirm){confirm.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(!wmState)return;const rec=aImageRecord(wmState.term),c=aImageCurrent(wmState.term);if(!c)return;rec.term=wmState.term;rec.confirmed=true;wmImgStore(wmState.term,rec);aImageSetConfirm(rec);toast('图片已确定，之后打开会保持这一张','ok');},{capture:true});}
-  const more=$('#wmIllusMore');if(more)more.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(!wmState||aImageGenerating)return;const term=wmState.term,rec=aImageRecord(term);if(rec.confirmed)return;aImageOpen(term,true);},{capture:true});
+  const more=$('#wmIllusMore');
+  if(more)more.addEventListener('click',()=>{
+    if(!wmState||aImageGenerating)return;
+    const term=wmState.term,rec=aImageRecord(term);
+    if(rec.confirmed)return;
+    if(rec.prov!=='ai'&&rec.src!=='ai'&&Array.isArray(rec.cands)&&rec.cands.length>1){
+      rec.idx=((rec.idx||0)+1)%rec.cands.length;
+      wmImgStore(term,rec);
+      aImageRenderAi(term);
+      return;
+    }
+    aImageOpen(term,true);
+  });
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
   const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="chatgpt">ChatGPT（Plus／免费账号，复制往返）</option><option value="api">OpenAI API（自动，单独计费）</option></select><p class="a-note">Plus 是 ChatGPT 套餐，不是 API 模型。往返模式使用 ChatGPT 中你选择的可用模型；取消订阅后仍可按免费账号额度使用。自动模式需要独立 API 付费，与 Plus 是否订阅无关。旧服务商配置保留，但不会在往返模式调用。</p>';
   aiBody.prepend(route);$('#aRoute').onchange=e=>{aStore(A_PREF_KEY,e.target.value);if(e.target.value==='api'&&!/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test($('#stBase').value||'')){$('#stBase').value='https://api.openai.com/v1';$('#stKey').value='';$('#stModel').value='';}aRefreshSettings();};

@@ -9,10 +9,30 @@ function reviewQueue(mode){
   });
   return list;
 }
-function buildReview(mode){
-  const q=reviewQueue(mode||'due').filter(w=>!aPending(w)).slice(0,10);
-  ui.flash={mode:mode||'due',ids:q.map(w=>w.id),idx:0,flipped:false,graded:0,total:q.length};
+const REVIEW_ROUND_KEY='english-notes:review-round-v1';
+function setReview(mode,round,idx=0){
+  ui.flash={mode,round,ids:round.map(card=>card.id),idx,flipped:false,graded:idx,total:round.length};
   return ui.flash;
+}
+function nextReviewIndex(round,start=0){
+  const idx=round.findIndex((card,i)=>i>=start&&state.words.some(w=>w.id===card.id&&!aPending(w)&&(w.srs?.reps||0)<=card.reps));
+  return idx<0?round.length:idx;
+}
+function buildReview(mode='due'){
+  const round=reviewQueue(mode).filter(w=>!aPending(w)).slice(0,10).map(w=>({id:w.id,reps:w.srs?.reps||0}));
+  if(mode==='due') aStore(REVIEW_ROUND_KEY,JSON.stringify(round));
+  return setReview(mode,round);
+}
+function resumeReview(){
+  const stored=aRead(REVIEW_ROUND_KEY,null);
+  if(Array.isArray(stored)&&stored.length<=10){
+    const activeIds=new Set(state.words.filter(w=>!aPending(w)).map(w=>w.id));
+    const round=stored.filter(card=>card&&activeIds.has(card.id)&&Number.isInteger(card.reps)&&card.reps>=0);
+    // Reconstruct the cursor from the same saved rating that increments reps.
+    const idx=nextReviewIndex(round);
+    if(idx<round.length) return setReview('due',round,idx);
+  }
+  return buildReview('due');
 }
 function flipFlash(){
   if(!ui.flash||!ui.flash.ids.length) return;
@@ -33,10 +53,12 @@ function gradeCurrent(g){
   if(!f||!f.ids.length) return;
   const w=state.words.find(x=>x.id===f.ids[f.idx]);
   if(!w) return;
+  const before={srs:w.srs&&{...w.srs},mastered:w.mastered,updatedAt:w.updatedAt};
   const s=srsGrade(w,g);
-  save();
+  try{ save(); }
+  catch(_){ Object.assign(w,before); return; }
   const tip={0:'已记为「忘了」，10 分钟后再练',1:'记为「有点难」',2:'记为「记住了」'}[g]+' · '+SRS_LABEL[s.box];
-  f.idx++; f.flipped=false; f.graded++;
+  f.idx=nextReviewIndex(f.round,f.idx+1); f.flipped=false; f.graded++;
   renderFlash();
   toast(tip);
 }
@@ -51,7 +73,7 @@ function renderFlash(){
     return;
   }
   const sum=srsSummary();
-  if(!ui.flash) buildReview('due');
+  if(!ui.flash) resumeReview();
   const f=ui.flash;
   const stats='<div class="rv-stats">'+
     '<div class="rv-stat hot"><div class="n">'+sum.due+'</div><div class="l">今日到期</div></div>'+
@@ -82,9 +104,10 @@ function renderFlash(){
   const pos=f.idx+1;
   const pct=Math.round((f.idx/total)*100);
   /* 保留原始序号：标亮的存储键是（词, 例句序号, 原文快照），过滤后序号会错位就查不到 */
-  const examples=(w.examples||[]).map((x,oi)=>({x:x,oi:oi})).filter(o=>o.x.sense!=='原文').slice(0,2);
+  const indexedExamples=(w.examples||[]).map((x,oi)=>({x,oi}));
+  const examples=indexedExamples.filter(o=>o.x.sense!=='原文');
   const s=w.srs||{box:1,due:0};
-  const origEx=(w.examples||[]).find(x=>x.sense==='原文');
+  const origEx=indexedExamples.find(o=>o.x.sense==='原文');
   const srcN=w.notes&&w.notes[0]?(state.notes.find(x=>x.id===w.notes[0].noteId)||null):null;
   const shots=(w?shotsGet(w.term):[]).slice(0,4);
   /* 方案 A：复习卡背面只读配图缓存，绝不发起网络请求（不会卡顿、不会超时） */
@@ -96,7 +119,7 @@ function renderFlash(){
       (w.phonetic?'<div class="fb-phon">'+esc(w.phonetic)+'</div>':'')+
       '<div class="fb-def">'+esc(w.definition||'（暂无释义）')+'</div>'+
       (w.collocations&&w.collocations.length?'<div class="fb-coll">'+w.collocations.map(c=>'<span class="coll-chip">'+esc(c)+'</span>').join('')+'</div>':'')+
-      (origEx?'<div class="fb-orig">原句：'+esc(origEx.en)+'</div>':'')+
+      (origEx?'<div class="fb-orig">原句：'+qwHTML(origEx.x.en,w.term,w.term,origEx.oi)+'</div>':'')+
       (picUrl||shots.length?'<div class="fb-shot">'+(picUrl?'<img class="word-pic" src="'+esc(picUrl)+'" alt="配图" data-fbpic="1" loading="lazy" referrerpolicy="no-referrer">':'')+shots.map((sh,i)=>'<img class="word-shot" src="'+sh.dataUrl+'" alt="截图" data-fbshot="'+i+'">').join('')+'</div>':'')+
       (examples.length?'<div class="fb-ex">'+examples.map((o,i)=>{const x=o.x;return '<div class="fb-ex-item"><div class="fb-ex-row"><div class="e" data-fbcn="'+i+'">“'+qwHTML(x.en,w.term,w.term,o.oi)+'”</div>'+speakBtn(x.en)+'</div>'+(x.cn?'<div class="c hided"><span class="cn-real">'+esc(x.cn)+'</span><span class="cn-tip">点这一行看中文</span></div>':'')+'</div>';}).join('')+'</div>':(origEx?'<div class="fb-tagline">原文句已在上方</div>':'<div class="fb-tagline">这个词还没有例句</div>'))+
       '<div class="fb-tagline">第 '+s.box+' 箱 · '+(s.due<=Date.now()?'今天到期':srsNextLabel(w))+'</div>'+
@@ -161,7 +184,7 @@ function renderFlash(){
   const pv=$('#flashPrev'), nx=$('#flashNext'), ex=$('#flashExit');
   if(pv) pv.addEventListener('click',()=>stepFlash(-1));
   if(nx) nx.addEventListener('click',()=>stepFlash(1));
-  if(ex) ex.addEventListener('click',()=>{ buildReview('due'); renderFlash(); });
+  if(ex) ex.addEventListener('click',()=>{ resumeReview(); renderFlash(); });
 }
 
 /* ============ 编辑器 ============ */

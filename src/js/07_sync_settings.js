@@ -1203,13 +1203,6 @@ function bindEvents(){
   $('#wmSave').addEventListener('click',saveWord);
   $('#wmRegen').addEventListener('click',()=>wmGenExamples());
   $('#wmDefinition').addEventListener('input',()=>scheduleWmDraft(700));
-  $('#wmIllusMore').addEventListener('click',()=>{
-    if(!imgState||!imgState.cands||imgState.cands.length<2) return;
-    const rec={term:imgState.term,cands:imgState.cands,idx:(imgState.idx+1)%imgState.cands.length,src:'pexels'};
-    wmIllusPaint(rec);
-    const all=wmImgAll(), k=wmImgKeyOf(imgState.term);
-    if(all[k]){ all[k].idx=rec.idx; wmImgFlush(all); }
-  });
   $('#wmDraftDrop').addEventListener('click',()=>{
     if(!wmState) return;
     const term=wmState.term, note=wmState.note, range=wmState.range, existing=wmState.existing;
