@@ -2,7 +2,6 @@
 let ocrSel=[];
 let ocrDataUrl='';
 let tesseractReady=false;
-let ocrFileInput=null;
 let ocrWords=[];
 function loadTesseract(){
   return new Promise((resolve,reject)=>{
@@ -25,65 +24,56 @@ function ocrImgSize(dataUrl){
     im.src=dataUrl;
   });
 }
-function ocrPickFlow(){
-  if(!$('#ocrSheet')) return;
-  if(!ocrFileInput){
-    ocrFileInput=document.createElement('input');
-    ocrFileInput.type='file'; ocrFileInput.accept='image/*'; ocrFileInput.removeAttribute('capture'); ocrFileInput.setAttribute('aria-label','从相册选择截图');
-    ocrFileInput.style.display='none';
-    document.body.appendChild(ocrFileInput);
-  }
-  ocrFileInput.onchange=async()=>{
-    const f=ocrFileInput.files&&ocrFileInput.files[0];
-    ocrFileInput.value='';
-    if(!f) return;
-    ocrSel=[]; ocrDataUrl=''; ocrWords=[];
-    $('#ocrBoxes').innerHTML='';
-    $('#ocrImg').src='';
-    $('#ocrImgWrap').classList.add('hidden');
-    $('#ocrSelected').classList.add('hidden');
-    const ed=$('#ocrEdit'); if(ed) ed.value='';
-    const st=$('#ocrStatus'); if(st) st.textContent='正在识别图中单词…首次会加载识别组件（约 2MB）';
-    $('#ocrSheet').classList.add('show');
-    try{
-      const dataUrl=await shotCompress(f);
-      ocrDataUrl=dataUrl;
-      $('#ocrImg').src=dataUrl;
-      $('#ocrImgWrap').classList.remove('hidden');
-      $('#ocrSelected').classList.remove('hidden');
-      await loadTesseract();
-      const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}});
-      const data=(res&&res.data)||{};
-      const dim=await ocrImgSize(dataUrl);
-      const iw=(data.width||(dim&&dim.w)||640);
-      const ih=(data.height||(dim&&dim.h)||Math.round(iw*0.75));
-      const stop=new Set(); // Keep function words: phrases are learned as a whole.
-      const items=(data.words||[]).filter(w=>w&&w.text&&w.bbox&&Number(w.confidence||0)>=45);
-      const valid=items.map(w=>{
-        const t=String(w.text).replace(/[^A-Za-z']/g,'').replace(/^[']+|[']+$/g,'');
-        return {text:t,bbox:w.bbox};
-      }).filter(o=>o.text.length>=1&&!stop.has(o.text.toLowerCase()));
-      if(!valid.length){
-        if(st) st.textContent='没有识别到清楚的文字，可直接在下方输入完整表达并保存截图。';
-        return;
-      }
-      $('#ocrImg').src=dataUrl;
-      $('#ocrImgWrap').classList.remove('hidden');
-      ocrWords=valid.map(o=>o.text);
-      $('#ocrBoxes').innerHTML=valid.map((o,i)=>{
-        const b=o.bbox;
-        const x=Math.max(0,(b.x0||0))/iw*100, y=Math.max(0,(b.y0||0))/ih*100;
-        const ww=Math.min(100-x,((b.x1||iw)-(b.x0||0))/iw*100);
-        const hh=Math.min(100-y,((b.y1||ih)-(b.y0||0))/ih*100);
-        return '<button class="ocr-box" data-wi="'+i+'" style="left:'+x.toFixed(2)+'%;top:'+y.toFixed(2)+'%;width:'+Math.max(2,ww.toFixed(2))+'%;height:'+Math.max(2,hh.toFixed(2))+'%"></button>';
-      }).join('');
-      if(st) st.textContent='识别到 '+valid.length+' 个词：点词框选中（可多选），再点一下取消；点完可在下方编辑框自由改';
-      $('#ocrSelected').classList.remove('hidden');
-    }catch(e){
-      if(st) st.textContent='识别暂不可用，仍可在下方手动输入完整表达并保存截图。';
+async function ocrImportImage(event){
+  const input=event.currentTarget;
+  const f=input.files?.[0];
+  input.value='';
+  if(!f) return;
+  ocrSel=[]; ocrDataUrl=''; ocrWords=[];
+  $('#ocrBoxes').innerHTML='';
+  $('#ocrImg').src='';
+  $('#ocrImgWrap').classList.add('hidden');
+  $('#ocrSelected').classList.add('hidden');
+  const ed=$('#ocrEdit'); if(ed) ed.value='';
+  const st=$('#ocrStatus'); if(st) st.textContent='正在识别图中单词…首次会加载识别组件（约 2MB）';
+  $('#ocrSheet').classList.add('show');
+  try{
+    const dataUrl=await shotCompress(f);
+    ocrDataUrl=dataUrl;
+    $('#ocrImg').src=dataUrl;
+    $('#ocrImgWrap').classList.remove('hidden');
+    $('#ocrSelected').classList.remove('hidden');
+    await loadTesseract();
+    const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}});
+    const data=(res&&res.data)||{};
+    const dim=await ocrImgSize(dataUrl);
+    const iw=(data.width||(dim&&dim.w)||640);
+    const ih=(data.height||(dim&&dim.h)||Math.round(iw*0.75));
+    const stop=new Set(); // Keep function words: phrases are learned as a whole.
+    const items=(data.words||[]).filter(w=>w&&w.text&&w.bbox&&Number(w.confidence||0)>=45);
+    const valid=items.map(w=>{
+      const t=String(w.text).replace(/[^A-Za-z']/g,'').replace(/^[']+|[']+$/g,'');
+      return {text:t,bbox:w.bbox};
+    }).filter(o=>o.text.length>=1&&!stop.has(o.text.toLowerCase()));
+    if(!valid.length){
+      if(st) st.textContent='没有识别到清楚的文字，可直接在下方输入完整表达并保存截图。';
+      return;
     }
-  };
-  ocrFileInput.click();
+    $('#ocrImg').src=dataUrl;
+    $('#ocrImgWrap').classList.remove('hidden');
+    ocrWords=valid.map(o=>o.text);
+    $('#ocrBoxes').innerHTML=valid.map((o,i)=>{
+      const b=o.bbox;
+      const x=Math.max(0,(b.x0||0))/iw*100, y=Math.max(0,(b.y0||0))/ih*100;
+      const ww=Math.min(100-x,((b.x1||iw)-(b.x0||0))/iw*100);
+      const hh=Math.min(100-y,((b.y1||ih)-(b.y0||0))/ih*100);
+      return '<button class="ocr-box" data-wi="'+i+'" style="left:'+x.toFixed(2)+'%;top:'+y.toFixed(2)+'%;width:'+Math.max(2,ww.toFixed(2))+'%;height:'+Math.max(2,hh.toFixed(2))+'%"></button>';
+    }).join('');
+    if(st) st.textContent='识别到 '+valid.length+' 个词：点词框选中（可多选），再点一下取消；点完可在下方编辑框自由改';
+    $('#ocrSelected').classList.remove('hidden');
+  }catch(e){
+    if(st) st.textContent='识别暂不可用，仍可在下方手动输入完整表达并保存截图。';
+  }
 }
 function ocrMount(){
   const ed=$('#ocrEdit');
@@ -598,12 +588,41 @@ async function bUploadAudio(file,kind){
   $('#bAudioHint').textContent='正在保存片段…';
   try{const r=await bFetch('/api/media',{method:'POST',headers:{'Content-Type':file.type},body:file});if(!r.ok)throw Error('上传失败');const v=await r.json(),all=aRead('english-notes-audio-v2',{});all[wordId]={...(all[wordId]||{}),[kind]:v.url,updatedAt:Date.now()};aStore('english-notes-audio-v2',JSON.stringify(all));if($('#bAudioWord').value===wordId)bLoadAudio();await bSync();}catch(e){$('#bAudioHint').textContent=e.message+'。本次片段尚未保存，请重试。';}
 }
-let bRecorder=null,bStream=null,bChunks=[],bRecordingWord='';
+let bRecorder=null,bRecordingRequest=null;
 async function bToggleRecord(){
-  if(bRecorder&&bRecorder.state==='recording'){bRecorder.stop();return;}
-  if(!$('#bAudioWord').value){toast('先添加或选择一个表达');return;}
-  if(!navigator.mediaDevices||!window.MediaRecorder){toast('这个浏览器不支持录音，可以上传录音文件');return;}
-  try{bRecordingWord=$('#bAudioWord').value;bStream=await navigator.mediaDevices.getUserMedia({audio:true});bChunks=[];bRecorder=new MediaRecorder(bStream);bRecorder.ondataavailable=e=>{if(e.data.size)bChunks.push(e.data);};bRecorder.onstop=()=>{bStream.getTracks().forEach(t=>t.stop());$('#bRecord').textContent='录下我的声音';$('#bAudioWord').disabled=false;const blob=new Blob(bChunks,{type:bRecorder.mimeType||'audio/webm'});bUploadAudio(blob,'own');};bRecorder.start();$('#bAudioWord').disabled=true;$('#bRecord').textContent='停止并保存录音';}catch(_){toast('录音未开启，可检查麦克风权限或上传录音文件');}
+  if(bRecorder?.state==='recording'){bRecorder.stop();return;}
+  if(bRecorder||bRecordingRequest)return;
+  const word=$('#bAudioWord'),button=$('#bRecord');
+  if(!word.value){toast('先添加或选择一个表达');return;}
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){toast('这个浏览器不支持录音，可以上传录音文件');return;}
+  const request={};
+  bRecordingRequest=request;
+  word.disabled=true;
+  let stream;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    if(bRecordingRequest!==request){stream.getTracks().forEach(track=>track.stop());return;}
+    const recorder=new MediaRecorder(stream),chunks=[];
+    recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    recorder.onstop=()=>{
+      stream.getTracks().forEach(track=>track.stop());
+      bRecorder=null;
+      button.textContent='录下我的声音';
+      word.disabled=false;
+      if(chunks.length)bUploadAudio(new Blob(chunks,{type:recorder.mimeType||chunks[0].type}),'own');
+    };
+    recorder.start();
+    bRecorder=recorder;
+    button.textContent='停止并保存录音';
+  }catch(_){
+    stream?.getTracks().forEach(track=>track.stop());
+    if(bRecordingRequest===request)toast('录音未开启，可检查 Sitecase 的麦克风权限或上传录音文件','warn');
+  }finally{
+    if(bRecordingRequest===request){
+      bRecordingRequest=null;
+      if(!bRecorder)word.disabled=false;
+    }
+  }
 }
 const bCommitImport=aCommitImport;
 aCommitImport=function(prepared){bCommitImport(prepared);bQueue();};
@@ -611,11 +630,11 @@ function bInit(){
   bBase=aRead(B_BASE,{});
   $('#settingsModal .st-help').innerHTML='<b>保存：</b>表达、笔记、截图、写作和学习记录会保存到本应用私有云端；离线编辑先存本机，联网后合并。首页右上角可查看状态或重试。<br><b>跨设备：</b>打开同一个链接，使用同一 ChatGPT 账号登录。接口密钥只保存在当前设备，云端不保存。<br><b>原音：</b>可上传短音频／视频片段，循环播放并录音对照；每段最多 12 MB。<br><b>备份：</b>仍可导出完整备份，原始备份请保留。';
   const status=document.createElement('button');status.id='bCloudStatus';status.className='btn';status.style.cssText='position:fixed;top:10px;right:12px;z-index:95;font-size:12px;max-width:65vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px';status.textContent=bStatus;status.onclick=()=>bSync();document.body.append(status);
-  $('#bAudioClose').onclick=()=>{if(bRecorder&&bRecorder.state==='recording'){toast('请先停止并保存录音');return;}$('#bOriginalAudio').pause();$('#bOwnAudio').pause();$('#bAudio').classList.remove('show');};$('#bAudioWord').onchange=bLoadAudio;$('#bAudioUpload').onchange=e=>{bUploadAudio(e.target.files[0],'original');e.target.value='';};$('#bOwnUpload').onchange=e=>{bUploadAudio(e.target.files[0],'own');e.target.value='';};$('#bRecord').onclick=bToggleRecord;
+  $('#bAudioClose').onclick=()=>{if(bRecorder){toast('请先停止并保存录音');return;}bRecordingRequest=null;$('#bAudioWord').disabled=false;$('#bOriginalAudio').pause();$('#bOwnAudio').pause();$('#bAudio').classList.remove('show');};$('#bAudioWord').onchange=bLoadAudio;$('#bAudioUpload').onchange=e=>{bUploadAudio(e.target.files[0],'original');e.target.value='';};$('#bOwnUpload').onchange=e=>{bUploadAudio(e.target.files[0],'own');e.target.value='';};$('#bRecord').onclick=bToggleRecord;
   $('#bSpeed').onchange=e=>$('#bOriginalAudio').playbackRate=Number(e.target.value);
   $('#bOriginalAudio').ontimeupdate=()=>{const a=$('#bOriginalAudio'),start=Number($('#bStart').value)||0,end=Number($('#bEnd').value);if(end>start&&a.currentTime>=end)a.currentTime=start;};
   $('#bSaveRange').onclick=()=>{const id=$('#bAudioWord').value,start=Number($('#bStart').value)||0,end=Number($('#bEnd').value)||0;if(!id||start<0||(end&&end<=start)){toast('结束时间需要大于开始时间');return;}const all=aRead('english-notes-audio-v2',{});all[id]={...(all[id]||{}),start,end,updatedAt:Date.now()};aStore('english-notes-audio-v2',JSON.stringify(all));toast('循环范围已保存');};
-  $('#bSystemFollow').onclick=()=>{if(bRecorder&&bRecorder.state==='recording'){toast('请先停止录音');return;}const w=state.words.find(w=>w.id===$('#bAudioWord').value);if(w){$('#bOriginalAudio').pause();$('#bAudio').classList.remove('show');openFollow(aMeta(w).original||w.examples?.[0]?.en||w.term,w.term,'');}};
+  $('#bSystemFollow').onclick=()=>{if(bRecorder){toast('请先停止录音');return;}bRecordingRequest=null;$('#bAudioWord').disabled=false;const w=state.words.find(w=>w.id===$('#bAudioWord').value);if(w){$('#bOriginalAudio').pause();$('#bAudio').classList.remove('show');openFollow(aMeta(w).original||w.examples?.[0]?.en||w.term,w.term,'');}};
   const button=document.createElement('button');button.className='btn';button.textContent='听原音／录音对照';button.onclick=()=>bOpenAudio(state.words.find(w=>w.term===wmState.term));$('#wmBody').append(button);
   window.addEventListener('online',()=>bSync());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')bSync();});
   setInterval(()=>{if(document.visibilityState==='visible')bSync();},60000);

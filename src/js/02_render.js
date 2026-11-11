@@ -1,52 +1,75 @@
 /* ===== 02_render.js · 朗读与单词操作 / 视图渲染 / 标签 / 表达库 / 搜索 ===== */
 /* ============ 单词操作 ============ */
+function voiceQuality(voice){
+  const name=voice.name+' '+(voice.voiceURI||'');
+  if(/\bpremium\b/i.test(name)) return 3;
+  if(/\b(natural|neural|enhanced)\b/i.test(name)) return 2;
+  return 0;
+}
 function pickVoice(voices,lang){
-  if(!voices||!voices.length) return null;
-  const base=(lang||'en-US').split('-')[0].toLowerCase();
-  const cands=voices.filter(v=>v.lang&&String(v.lang).toLowerCase().indexOf(base)===0);
-  if(!cands.length) return null;
-  const EN_F=['google us english','google english','samantha','karen','moira','zira','aria','allison','ava','joanna','salli','kimberly','ivy','emma','serena','olivia','susan','female'];
-  const ZH_F=['xiaoxiao','xiaoyi','huihui','yaoyao','meijia','tingting','xiaochen','xiaomo','xiaoxuan','xiaohan','xiaoshuang','xiaoqiu','xiaolin','xiaoni','xiaoyou','xiaoxue','sinji','sinchi','zhiyu','female'];
-  const fset=base==='zh'?ZH_F:EN_F;
-  for(const kw of fset){ const v=cands.find(x=>new RegExp('\\b'+kw.replace(/ /g,'\\s*')+'\\b','i').test(x.name)); if(v) return v; }
-  const generic=['natural','neural','enhanced','online','premium','google','xiaoxiao','yunxi','tingting'];
-  for(const kw of generic){ const v=cands.find(x=>new RegExp(kw,'i').test(x.name)); if(v) return v; }
-  return cands.find(v=>String(v.lang).toLowerCase()===String(lang||'en-US').toLowerCase())||cands[0];
+  const locale=(lang||'en-US').toLowerCase();
+  const base=locale.split('-')[0];
+  const candidates=(voices||[]).filter(v=>v.lang?.toLowerCase().split('-')[0]===base);
+  const exact=candidates.filter(v=>v.lang.toLowerCase()===locale);
+  const matching=exact.length?exact:candidates;
+  const local=matching.filter(v=>v.localService);
+  const available=local.length?local:matching;
+  const preferred=base==='zh'?/xiaoxiao|tingting|meijia|sinji|female/i:/ava|allison|samantha|karen|moira|zira|aria|joanna|female/i;
+  const score=v=>voiceQuality(v)*10+(preferred.test(v.name)?2:0)+(v.default?1:0);
+  return available.sort((a,b)=>score(b)-score(a))[0]||null;
 }
-/* 系统女声 TTS（英文句子、中文提示、点评，以及音源失败时的回退）
-   音色：温柔女声偏好 + 正常语速（回退到最初有道版本：单词=有道真人女声，句子/中文=系统自然女声） */
-function speakRaw(text,lang,onend){
+let cancelDictionarySpeech=null;
+function stopSpeech(){
+  if(cancelDictionarySpeech)cancelDictionarySpeech();
+  try{window.speechSynthesis?.cancel();}catch(_){}
+}
+function speakRaw(text,lang,onend,voice){
   if(!text) return;
-  if(!('speechSynthesis' in window)){ toast('当前浏览器不支持语音朗读','warn'); onend&&onend(); return; }
-  try{ speechSynthesis.cancel(); }catch(e){}
-  const u=new SpeechSynthesisUtterance(String(text));
-  u.lang=lang||'en-US'; u.rate=0.95; u.pitch=1;
-  try{ const v=pickVoice(speechSynthesis.getVoices(),u.lang); if(v) u.voice=v; }catch(e){}
-  if(onend){ u.onend=()=>{ try{ onend(); }catch(_){} }; u.onerror=()=>{ try{ onend(); }catch(_){} }; }
-  speechSynthesis.speak(u);
+  stopSpeech();
+  if(!window.speechSynthesis){toast('当前浏览器不支持语音朗读','warn');onend?.();return;}
+  const utterance=new SpeechSynthesisUtterance(text);
+  utterance.lang=lang;
+  utterance.rate=lang.toLowerCase().startsWith('en')?0.96:0.95;
+  try{utterance.voice=voice||pickVoice(speechSynthesis.getVoices(),lang);}catch(_){}
+  if(onend){
+    utterance.onend=onend;
+    utterance.onerror=e=>{if(e.error!=='canceled'&&e.error!=='interrupted')onend();};
+  }
+  speechSynthesis.speak(utterance);
 }
-/* 词典真人女声音源（单词专用，与金山词霸同类型），失败/超时回退系统女声 TTS */
-function playYoudaoAudio(text,onend){
-  const a=new Audio('https://dict.youdao.com/dictvoice?audio='+encodeURIComponent(text)+'&type=2');
+function playYoudaoAudio(text,lang,onend){
+  stopSpeech();
+  const audio=new Audio('https://dict.youdao.com/dictvoice?audio='+encodeURIComponent(text)+'&type=2');
   let done=false;
-  const fb=()=>{ if(done) return; done=true; clearTimeout(to); speakRaw(text,'en-US',onend); };
-  const to=setTimeout(fb,3000);
-  a.addEventListener('error',fb);
-  a.addEventListener('ended',()=>{ if(done) return; done=true; clearTimeout(to); onend&&onend(); });
-  a.play().catch(fb);
+  const finish=()=>{
+    if(done)return false;
+    done=true;
+    clearTimeout(timer);
+    cancelDictionarySpeech=null;
+    return true;
+  };
+  const cancel=()=>{if(finish())audio.pause();};
+  const fallback=()=>{if(finish()){audio.pause();speakRaw(text,lang,onend);}};
+  const timer=setTimeout(fallback,3000);
+  cancelDictionarySpeech=cancel;
+  audio.addEventListener('playing',()=>clearTimeout(timer),{once:true});
+  audio.addEventListener('error',fallback,{once:true});
+  audio.addEventListener('ended',()=>{if(finish())onend?.();},{once:true});
+  audio.play().catch(fallback);
 }
 function speak(text,lang,onend){
-  if(!text) return;
-  const l=lang||'en-US';
-  if(String(l).toLowerCase().indexOf('en')===0 && !/\s/.test(String(text))){ playYoudaoAudio(text,onend); return; }
-  speakRaw(text,l,onend);
+  const value=String(text||'').trim(),locale=lang||'en-US';
+  if(!value)return;
+  let voice;
+  try{voice=pickVoice(window.speechSynthesis?.getVoices(),locale);}catch(_){}
+  const usWord=locale.toLowerCase()==='en-us'&&!/\s/.test(value);
+  if(usWord&&(!voice||voiceQuality(voice)===0)&&navigator.onLine!==false){
+    playYoudaoAudio(value,locale,onend);
+    return;
+  }
+  speakRaw(value,locale,onend,voice);
 }
-/* 单词朗读：词典真人女声，失败回退系统女声 TTS */
-function speakWord(term){
-  if(!term) return;
-  try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
-  playYoudaoAudio(term);
-}
+function speakWord(term){speak(term,'en-US');}
 if('speechSynthesis' in window){
   const warm=()=>{ try{ speechSynthesis.getVoices(); }catch(e){} };
   try{ speechSynthesis.addEventListener('voiceschanged',warm); }catch(e){}

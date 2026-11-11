@@ -1267,7 +1267,7 @@ function bindEvents(){
   });
 
   /* 截图：全局悬浮导入 / 释义区查看按钮 / 大图查看器（点任意处返回） */
-  $('#fabShot').addEventListener('click',ocrPickFlow);
+  $('#ocrFileInput').addEventListener('change',ocrImportImage);
   $('#wmShotsBtn').addEventListener('click',()=>{
     const t=wmState&&wmState.term; if(!t) return;
     const list=shotsGet(t);

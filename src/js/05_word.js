@@ -727,7 +727,7 @@ function openFollow(text,term,cn){
   const sc=$('#followScore'); if(sc){ sc.innerHTML=''; sc.classList.remove('show'); }
   initWave();
   $('#followPage').classList.add('show');
-  setFollowStatus(asrSupported()?'点麦克风开始跟读，读完自动评分':'点麦克风开始跟读（此浏览器不支持语音识别，只按节奏和音量评分）');
+  setFollowStatus(followUsesRecognition()?'点麦克风开始跟读，读完自动评分':'点麦克风开始跟读，录完可回听并查看节奏和音量');
 }
 function closeFollow(){
   try{ if(followState.rec&&followState.rec.state!=='inactive') followState.rec.stop(); }catch(_){}
@@ -739,6 +739,7 @@ function closeFollow(){
   stopWave();
   stopFollowAudio();
   if(followState.url){ URL.revokeObjectURL(followState.url); followState.url=null; }
+  $('#followMic').classList.remove('recording');
   $('#followPage').classList.remove('show');
 }
 function setFollowStatus(s){ const el=$('#followStatus'); if(el) el.textContent=s; }
@@ -811,10 +812,15 @@ function compareFollow(){
     },450);
   });
 }
-function asrSupported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+function followUsesRecognition(){
+  const appleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  // iOS recording uses a single capture. Starting Web Speech here opens a second one.
+  return !appleMobile&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+}
 function toggleFollowRec(){
-  const mic=$('#followMic');
-  if(followState.recording){ stopFollowRec(); return; }
+  const mic=$('#followMic'),session=followState;
+  if(session.recording){ stopFollowRec(); return; }
+  if(session.requesting) return;
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){
     setFollowStatus('当前浏览器不支持录音，可以点左边的播放键跟读'); return;
   }
@@ -822,7 +828,14 @@ function toggleFollowRec(){
   followState.heard=''; followState.asrErr=''; followState.asrDone=false; followState.score=null;
   const sc=$('#followScore'); if(sc){ sc.innerHTML=''; sc.classList.remove('show'); }
   $('#followOut').classList.remove('hasrec');
+  stopSpeech();
+  stopFollowAudio();
+  session.requesting=true;
   navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(stream=>{
+    if(session!==followState||!$('#followPage').classList.contains('show')){
+      stream.getTracks().forEach(track=>track.stop());
+      return;
+    }
     followState.tracks=stream.getTracks();
     const mime=recMime();
     let rec=null;
@@ -835,16 +848,18 @@ function toggleFollowRec(){
       return;
     }
     followState.chunks=[];
-    rec.ondataavailable=e=>{ if(e.data&&e.data.size) followState.chunks.push(e.data); };
-    rec.onerror=e=>{ setFollowStatus('录音出错：'+((e&&e.error)||'未知')); };
+    rec.ondataavailable=e=>{ if(e.data&&e.data.size) session.chunks.push(e.data); };
+    rec.onerror=e=>{ if(session===followState) setFollowStatus('录音出错：'+((e&&e.error)||'未知')); };
     rec.onstop=()=>{
+      session.tracks.forEach(track=>track.stop());
+      session.tracks=[];
+      if(session!==followState||!$('#followPage').classList.contains('show')) return;
+      followState.rec=null;
       followState.recording=false;
       stopWave();
       mic.classList.remove('recording');
       const dur=(Date.now()-followState.startAt)/1000;
       followState.dur=Math.max(0,dur);
-      followState.tracks.forEach(t=>{ try{ t.stop(); }catch(_){} });
-      followState.tracks=[];
       const type=rec.mimeType||mime||'audio/webm';
       const blob=new Blob(followState.chunks,{type:type});
       followState.mime=type;
@@ -862,14 +877,17 @@ function toggleFollowRec(){
     followState.rec=rec; followState.recording=true; followState.startAt=Date.now();
     mic.classList.add('recording');
     startWave(stream);
-    if(asrSupported()) startAsr();
+    if(followUsesRecognition()) startAsr();
     setFollowStatus('录音中…读完再点一次麦克风');
   }).catch(err=>{
+    session.tracks.forEach(track=>track.stop());
+    session.tracks=[];
+    if(session!==followState||!$('#followPage').classList.contains('show')) return;
     const n=(err&&err.name)||'';
-    if(n==='NotAllowedError'||n==='SecurityError') setFollowStatus('麦克风被拦住了：点地址栏左侧的图标允许麦克风后重试');
+    if(n==='NotAllowedError'||n==='SecurityError') setFollowStatus('麦克风被拦住了，请检查 Sitecase 或当前浏览器的麦克风权限');
     else if(n==='NotFoundError'||n==='DevicesNotFoundError') setFollowStatus('没找到麦克风设备');
     else setFollowStatus('麦克风不可用'+(n?'（'+n+'）':'')+'，可以先点播放键跟读');
-  });
+  }).finally(()=>{ session.requesting=false; });
 }
 function stopFollowRec(){
   try{ if(followState.rec&&followState.rec.state!=='inactive') followState.rec.stop(); }catch(_){}
@@ -979,7 +997,7 @@ function scoreFollow(){
       const miss=tgt.filter((t,i)=>!matched[i]).map(t=>t.raw.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g,''));
       if(miss.length) tips.push('漏读 / 没听清：'+miss.slice(0,6).join('、')+(miss.length>6?' 等 '+miss.length+' 个词':''));
       else tips.push('每个词都读到了，很清楚');
-    }else if(asrSupported()){
+    }else if(followUsesRecognition()){
       tips.push('这次没识别到英文（'+(followState.asrErr||'可能太小声或网络不通')+'），已只按节奏和音量打分');
     }else{
       tips.push('当前浏览器不支持语音识别，只按节奏和音量打分；用 Chrome / Edge 可看逐词对错');

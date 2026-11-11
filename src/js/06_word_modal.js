@@ -882,6 +882,7 @@ function aiRenderReview(d,attempt){
   $('#aiScene').scrollTop=$('#aiScene').scrollHeight;
 }
 function aiGotoScenes(){
+  stopAiDictation();
   aiState.phase='scenes';
   aiShowBody();
   aiSetChatbar('scenes');
@@ -915,6 +916,7 @@ async function submitAttempt(){
   const input=$('#aiInput');
   const text=input.value.trim();
   if(!text){ toast('先把你的翻译说出来或写下来','warn'); return; }
+  stopAiDictation();
   aiState.busy=true;
   const youLine=aiState.lines.find(l=>l.who==='YOU');
   aiState.attempt=text;
@@ -1017,24 +1019,49 @@ function aiAgainAction(){
   if(aiState.phase==='practice'){ aiGotoScenes(); return; }
   if(aiState.phase==='review'){ startScene(aiState.scene); }
 }
+let aiDictation=null;
+let aiDictationBlocked=false;
+function stopAiDictation(){
+  const rec=aiDictation;
+  aiDictation=null;
+  $('#aiMic').classList.remove('on');
+  if(rec){try{rec.abort();}catch(_){}}
+}
 function aiMicDictate(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ toast('当前浏览器不支持语音输入，可直接打字','warn'); return; }
-  if(aiState.busy) return;
+  if(aiState.busy||aiDictation)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition,input=$('#aiInput');
+  const keyboard=()=>{
+    input.focus();
+    toast('可用键盘上的麦克风听写，或直接输入','warn');
+  };
+  if(!SR||aiDictationBlocked){keyboard();return;}
   try{
     const rec=new SR();
+    aiDictation=rec;
     rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
     rec.onresult=e=>{
+      if(aiDictation!==rec)return;
       const t=(e.results[0][0].transcript||'').trim();
-      const input=$('#aiInput');
-      if(t){ input.value=(input.value?input.value+' ':'')+t; input.focus(); }
+      if(t){input.value=(input.value?input.value+' ':'')+t;input.focus();}
     };
-    rec.onerror=()=>{ toast('没听清，再试一次？','warn'); };
-    rec.onend=()=>{ $('#aiMic').classList.remove('on'); };
+    rec.onerror=e=>{
+      if(aiDictation!==rec)return;
+      stopAiDictation();
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+        aiDictationBlocked=true;
+        keyboard();
+      }else toast('没听清，可以再试一次','warn');
+    };
+    rec.onend=()=>{
+      if(aiDictation!==rec)return;
+      aiDictation=null;
+      $('#aiMic').classList.remove('on');
+    };
+    stopSpeech();
     rec.start();
     $('#aiMic').classList.add('on');
     toast('请说出你的英文翻译…');
-  }catch(err){ toast('语音输入启动失败，可直接打字','warn'); }
+  }catch(_){stopAiDictation();keyboard();}
 }
 function aiGuideHtml(msg){
   return '<div class="empty-state">'+esc(msg)+
@@ -1084,5 +1111,5 @@ function openAiDialogue(ev){
     const r=$('#aiRetry'); if(r) r.addEventListener('click',openAiDialogue);
   });
 }
-function closeAiModal(){ $('#aiModal').classList.remove('show'); aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 

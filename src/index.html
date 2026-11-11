@@ -595,9 +595,10 @@
 <div id="toast"></div>
 
 <!-- 全局截图导入悬浮按钮：打开网页就能用 -->
-<button id="fabShot" aria-label="从相册选择截图" title="从相册选择截图">
+<label id="fabShot" title="从相册选择截图">
+  <input id="ocrFileInput" type="file" accept="image/*" aria-label="从相册选择截图">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-</button>
+</label>
 
 <!-- OCR 识别单词面板：选图 → 图片上框出单词（像 iPhone 文字识别）→ 点选 → 自由编辑 → 挂载 -->
 <div class="modal" id="ocrSheet">
