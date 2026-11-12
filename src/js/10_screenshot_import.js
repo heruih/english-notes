@@ -115,6 +115,11 @@ function ocrMount(){
 const A_KEY='english-notes-learning-a-v1';
 const A_PREF_KEY='english-notes-ai-route-a-v1';
 const A_TASK_KEY='english-notes-chatgpt-task-a-v1';
+const AI_PROVIDERS_KEY='en-ai-providers-v1';
+const AI_PROVIDER_DEFAULTS={
+  deepseek:{label:'DeepSeek',baseUrl:'https://api.deepseek.com',apiKey:'',model:'deepseek-flash'},
+  openai:{label:'OpenAI GPT',baseUrl:'https://api.openai.com/v1',apiKey:'',model:'gpt-4o-mini'}
+};
 let aData={words:{},attempts:[]};
 let aBridgeJob=null;
 let aRecallState=null;
@@ -128,8 +133,38 @@ function aMeta(w){return aData.words[w.id]||{};}
 function aPending(w){return aMeta(w).stage==='pending';}
 function aPut(id,patch){const old=aData.words[id];aData.words[id]=Object.assign({},old||{},patch,{updatedAt:Date.now()});try{aFlush();}catch(e){if(old)aData.words[id]=old;else delete aData.words[id];throw e;}}
 function aDate(t){const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function aRoute(){return localStorage.getItem(A_PREF_KEY)==='api'?'api':'chatgpt';}
-function aAiReady(){return aRoute()==='chatgpt'||!!(state.settings.apiKey&&String(state.settings.model||'').trim()&&/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test(state.settings.baseUrl||'https://api.openai.com/v1'));}
+function aiProviderState(){
+  let raw={};
+  try{raw=JSON.parse(localStorage.getItem(AI_PROVIDERS_KEY)||'{}')||{};}catch(_){ }
+  const providers={};
+  Object.keys(AI_PROVIDER_DEFAULTS).forEach(name=>{
+    const legacy=name==='openai'&&state&&state.settings?{baseUrl:state.settings.baseUrl||'',apiKey:state.settings.apiKey||'',model:state.settings.model||''}:{};
+    providers[name]=Object.assign({},AI_PROVIDER_DEFAULTS[name],legacy,raw.providers&&raw.providers[name]||{});
+  });
+  return {selected:raw.selected==='openai'?'openai':'deepseek',providers};
+}
+function aiProviderCfg(){const p=aiProviderState();return Object.assign({name:p.selected},p.providers[p.selected]);}
+function aiProviderSave(patch){
+  const p=aiProviderState(),name=patch&&patch.name==='openai'?'openai':(patch&&patch.name)||p.selected;
+  if(patch&&patch.name)delete patch.name;
+  p.selected=name;p.providers[name]=Object.assign({},p.providers[name],patch||{});
+  try{localStorage.setItem(AI_PROVIDERS_KEY,JSON.stringify(p));}catch(_){ }
+  return p;
+}
+function aiProviderSaveFields(){
+  const name=$('#aProvider')&&$('#aProvider').value==='openai'?'openai':'deepseek';
+  aiProviderSave({name,baseUrl:$('#stBase').value.trim(),apiKey:$('#stKey').value.trim(),model:$('#stModel').value.trim()});
+}
+function aiProviderRefreshFields(){
+  const p=aiProviderState(),name=p.selected,cfg=p.providers[name];
+  const select=$('#aProvider');if(select)select.value=name;
+  ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&document.activeElement!==el)el.value=cfg[id==='stBase'?'baseUrl':id==='stKey'?'apiKey':'model']||'';});
+  const base=$('#stBase');if(base)base.placeholder=cfg.baseUrl;
+  const model=$('#stModel');if(model)model.placeholder=cfg.model;
+}
+function aRoute(){return localStorage.getItem(A_PREF_KEY)==='chatgpt'?'chatgpt':'api';}
+function aiApiConfig(){return aiProviderCfg();}
+function aAiReady(){const cfg=aiProviderCfg();return aRoute()==='chatgpt'||!!(String(cfg.apiKey||'').trim()&&String(cfg.model||'').trim()&&String(cfg.baseUrl||'').trim());}
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
 function aBackupObject(){return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length},storage:aBackupKeys()};}
 function aDownloadBackup(){
@@ -457,9 +492,10 @@ function aSetStudyMode(study){
 function aApplyStudyMode(){aMountStudyCard();aSetStudyMode(true);}
 function aRefreshSettings(){
   const route=$('#aRoute');if(route)route.value=aRoute();
+  aiProviderRefreshFields();
   ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&el.closest('.st-field'))el.closest('.st-field').hidden=aRoute()!=='api';});
   $$('#stgAi .st-presets').forEach(el=>el.hidden=true);
-  const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':'OpenAI API';
+  const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':aiProviderCfg().label;
   ttsRefreshSettings();
 }
 function ttsRefreshSettings(){
@@ -469,15 +505,16 @@ function ttsRefreshSettings(){
   if(speaker&&document.activeElement!==speaker)speaker.value=cfg.speaker||VOLC_TTS_DEFAULT.speaker;
   if(rate&&document.activeElement!==rate)rate.value=String(cfg.speechRate||0);
   if(pitch&&document.activeElement!==pitch)pitch.value=String(cfg.pitchRate||0);
-  if(status)status.textContent=volcTtsReady()?'已配置，首次朗读时生成并缓存':'还未配置';
+  if(status)status.textContent=volcTtsLastError?'豆包失败，已回退：'+volcTtsLastError:(volcTtsReady()?'已配置，首次朗读时生成并缓存':'还未配置');
 }
 async function ttsTest(){
   const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
   const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim();
   if(!apiKey||!voice){toast('先填写豆包 API Key 和音色 ID','warn');return;}
   volcTtsSave({apiKey,speaker:voice,speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
-  try{await playVolcAudio('Could you say that again?','en-US');toast('试听已开始，后续会复用缓存','ok');ttsRefreshSettings();}
-  catch(_){toast('豆包试听失败，请检查 API Key、音色 ID 和免费额度','warn');}
+  const ok=await playVolcAudio('Could you say that again?','en-US');
+  toast(ok?'豆包试听已开始，后续会复用缓存':'豆包请求失败，已回退原朗读：'+(volcTtsLastError||'请检查配置'),'warn');
+  ttsRefreshSettings();
 }
 const aOriginalSettings=openSettings;
 openSettings=function(){aOriginalSettings();aRefreshSettings();};
@@ -516,8 +553,11 @@ function aInit(){
     aImageOpen(term,true);
   });
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
-  const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="chatgpt">ChatGPT（Plus／免费账号，复制往返）</option><option value="api">OpenAI API（自动，单独计费）</option></select><p class="a-note">Plus 是 ChatGPT 套餐，不是 API 模型。往返模式使用 ChatGPT 中你选择的可用模型；取消订阅后仍可按免费账号额度使用。自动模式需要独立 API 付费，与 Plus 是否订阅无关。旧服务商配置保留，但不会在往返模式调用。</p>';
-  aiBody.prepend(route);$('#aRoute').onchange=e=>{aStore(A_PREF_KEY,e.target.value);if(e.target.value==='api'&&!/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test($('#stBase').value||'')){$('#stBase').value='https://api.openai.com/v1';$('#stKey').value='';$('#stModel').value='';}aRefreshSettings();};
+  const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="api">API 自动（DeepSeek 默认）</option><option value="chatgpt">ChatGPT 往返（Plus 额度）</option></select><label for="aProvider" style="margin-top:10px">API 提供商</label><select id="aProvider"><option value="deepseek">DeepSeek（默认）</option><option value="openai">OpenAI GPT（备用）</option></select><p class="a-note">DeepSeek 默认使用 deepseek-flash。GPT 需要自己的 OpenAI API Key。ChatGPT Plus 只在复制往返模式里使用。</p>';
+  aiBody.prepend(route);$('#aRoute').onchange=()=>{aStore(A_PREF_KEY,$('#aRoute').value);aRefreshSettings();};
+  $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
+  ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
+  $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
   const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="粘贴豆包 API Key" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">联网后首次点读音会调用豆包 TTS 2.0，音频缓存在当前浏览器。API Key 只保存在本机，不会进入备份或公开网页。</p>';
   aiBody.append(tts);ttsRefreshSettings();
   ['stTtsKey','stTtsSpeaker','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));

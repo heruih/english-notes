@@ -774,16 +774,16 @@ const TONE_SYSTEM={
 };
 function toneSystem(){ return (TONE_SYSTEM[state.settings.tone]||TONE_SYSTEM.friend); }
 async function aiCall(messages,opts){
-  const st=state.settings;
-  const base=(st.baseUrl||'https://api.openai.com/v1').replace(/\/+$/,'');
-  if(!st.apiKey) throw new Error('未配置模型 API，请先在设置中填写');
-  const canJson=String(base).toLowerCase().indexOf('deepseek')>=0;
+  const st=aiApiConfig();
+  const base=(st.baseUrl||'').replace(/\/+$/,'');
+  if(!st.apiKey) throw new Error('未配置 '+(st.label||'模型')+' API Key，请先在设置中填写');
+  const canJson=st.name==='deepseek'||String(base).toLowerCase().indexOf('deepseek')>=0;
   const once=async(useJson)=>{
     const ctrl=new AbortController();
     const to=opts&&opts.timeout||30000;
     const timer=setTimeout(()=>ctrl.abort(),to);
     try{
-      const body={model:st.model||'gpt-4o-mini',temperature:0.85,messages};
+      const body={model:st.model,temperature:0.85,messages};
       if(opts&&opts.maxTokens) body.max_tokens=opts.maxTokens;
       if(useJson) body.response_format={type:'json_object'};
       const res=await fetch(base+'/chat/completions',{
@@ -831,7 +831,7 @@ async function aiBuildDialogue(){
   const useTxt=multi?('自然使用这些单词（尽量都用到）：'+aiState.terms.join('、')):'自然使用该单词至少一次';
   const youTxt=multi?'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到至少一个目标词）':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
   return aiCall([{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。创作一段 4-5 句的中英对照小对话，'+useTxt+'；'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","promptCn":"…"}]}'}]);
+    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。创作一段 4-5 句、包含 1-2 个来回的自然口语对话，'+useTxt+'；'+youTxt+'；目标词必须放在 YOU 这一句最自然的位置；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","promptCn":"…"}]}'}]);
 }
 async function aiJudge(attempt){
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
