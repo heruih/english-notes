@@ -596,7 +596,7 @@
 
 <!-- 全局截图导入悬浮按钮：打开网页就能用 -->
 <label id="fabShot" title="从相册选择截图">
-  <input id="ocrFileInput" type="file" accept="image/*" aria-label="从相册选择截图">
+  <input id="ocrFileInput" type="file" accept="image/*" multiple aria-label="从相册选择截图（可多选）">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
 </label>
 
@@ -608,6 +608,7 @@
         <div class="wm-term-box"><div style="font-size:20px;font-weight:700;line-height:1.2">截图导入单词</div></div>
         <div style="font-size:12.5px;color:var(--text3);margin-top:4px">像 iPhone 文字识别：图片上的词自动框出，点一下选中（可多选）</div>
       </div>
+      <button class="mini-btn" id="ocrInboxOpen" type="button">批量收件箱</button>
       <button class="modal-close" data-ocr-close aria-label="关闭">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
       </button>
@@ -618,6 +619,10 @@
       <div id="ocrSelected" class="hidden">
         <div class="wm-label" style="margin-top:14px">已选 / 可自由编辑</div>
         <textarea id="ocrEdit" placeholder="点上面的词框添加，也可直接改或输入整个短语，如 emergency event" rows="2"></textarea>
+      </div>
+      <div id="ocrBatch" class="hidden">
+        <div class="wm-label" style="margin-top:14px">待匹配截图</div>
+        <div id="ocrBatchList"></div>
       </div>
       <div class="ocr-foot"><button class="btn" id="ocrMount">挂载到表达库</button></div>
     </div>

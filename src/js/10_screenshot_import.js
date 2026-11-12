@@ -3,6 +3,73 @@ let ocrSel=[];
 let ocrDataUrl='';
 let tesseractReady=false;
 let ocrWords=[];
+const SHOT_INBOX_KEY='en-shot-inbox-v1';
+function ocrInboxRead(){try{const v=JSON.parse(localStorage.getItem(SHOT_INBOX_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
+function ocrInboxFlush(list){return aStore(SHOT_INBOX_KEY,JSON.stringify(list));}
+function ocrNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
+function ocrCandidates(text){
+  const hay=ocrNorm(text);if(!hay)return [];
+  return (state.words||[]).map(w=>{
+    const term=String(w.term||'').trim(),needle=ocrNorm(term);if(!needle)return null;
+    let score=0;
+    if(hay.includes(needle))score=100+needle.length;
+    else{
+      const parts=needle.split(' ').filter(Boolean),hits=parts.filter(p=>hay.split(' ').includes(p)).length;
+      if(hits===parts.length&&parts.length>1)score=70+parts.length;
+      else if(hits>0)score=hits/parts.length*45;
+    }
+    (w.examples||[]).some(x=>{const ex=ocrNorm(x&&x.en);if(ex&&hay.includes(ex))score=Math.max(score,55);return false;});
+    return score?{id:w.id,term,score:Math.round(score)}:null;
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
+}
+function ocrInboxRender(){
+  const box=$('#ocrBatchList');if(!box)return;
+  const list=ocrInboxRead();
+  box.innerHTML=list.length?list.map(item=>{
+    const opts=(item.candidates||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.term)+'（'+c.score+'%）</option>').join('');
+    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><div class="ocr-inbox-text">'+esc(item.text||'未识别到英文词')+'</div><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn" data-inbox-skip>跳过</button></div></div></div>';
+  }).join(''):'<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';
+}
+function ocrInboxShow(){
+  $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
+  const st=$('#ocrStatus');if(st)st.textContent='批量收件箱：确认候选词后，截图会挂到对应词条。';ocrInboxRender();
+}
+function ocrAttachShot(w,dataUrl){
+  const all=shotsAll(),k=shotsKeyOf(w.term),list=Array.isArray(all[k])?all[k]:[];
+  if(list.length>=SHOT_MAX_PER_WORD||shotsTotal(all)>=SHOT_MAX_TOTAL)return false;
+  list.push({id:uid(),dataUrl,at:Date.now()});all[k]=list;return shotsFlush(all);
+}
+function ocrInboxConfirm(id){
+  const list=ocrInboxRead(),item=list.find(x=>x.id===id);if(!item)return;
+  const row=Array.from(document.querySelectorAll('[data-inbox-id]')).find(el=>el.dataset.inboxId===id);
+  const choice=row&&row.querySelector('[data-inbox-choice]')?.value||'';
+  const manual=row&&row.querySelector('[data-inbox-term]')?.value.trim()||'';
+  const picked=(item.candidates||[]).find(x=>x.id===choice);
+  const term=manual||(picked&&picked.term)||'';if(!term){toast('先选候选词，或输入一个词／短语','warn');return;}
+  let w=state.words.find(x=>x.id===choice)||state.words.find(x=>ocrNorm(x.term)===ocrNorm(term));
+  let created=false;if(!w){w=upsertWord({term,definition:'',examples:[],collocations:[],tags:[],source:'shot',notes:[],mastered:false});created=true;}
+  if(!ocrAttachShot(w,item.dataUrl)){toast('截图空间已满，当前项保留在收件箱','warn');return;}
+  const next=list.filter(x=>x.id!==id);if(!ocrInboxFlush(next)){toast('收件箱更新失败，当前项保留','warn');return;}
+  if(created)aPut(w.id,{stage:'pending'});save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();toast('已匹配「'+term+'」并保存截图','ok');
+}
+function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();}
+async function ocrImportBatch(files){
+  $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
+  const st=$('#ocrStatus');if(st)st.textContent='正在处理 '+files.length+' 张截图…';
+  let list=ocrInboxRead();
+  try{await loadTesseract();}catch(e){if(st)st.textContent=e.message;ocrInboxRender();return;}
+  for(let i=0;i<files.length;i++){
+    let dataUrl='';
+    try{
+      dataUrl=await shotCompress(files[i]);
+      const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}}),data=(res&&res.data)||{},text=String(data.text||'').replace(/\s+/g,' ').trim();
+      list.push({id:uid(),dataUrl,text,candidates:ocrCandidates(text),at:Date.now(),status:'pending'});
+    }catch(_){list.push({id:uid(),dataUrl,text:'识别失败，请手动输入',candidates:[],at:Date.now(),status:'pending'});}
+    if(st)st.textContent='已处理 '+(i+1)+' / '+files.length+' 张截图';
+  }
+  const saved=ocrInboxFlush(list);if(!saved&&st)st.textContent='本批次识别完成，但本机空间不足，未能完整保存收件箱。';
+  ocrInboxRender();
+}
 function loadTesseract(){
   return new Promise((resolve,reject)=>{
     if(window.Tesseract){ tesseractReady=true; resolve(); return; }
@@ -26,9 +93,11 @@ function ocrImgSize(dataUrl){
 }
 async function ocrImportImage(event){
   const input=event.currentTarget;
-  const f=input.files?.[0];
+  const files=Array.from(input.files||[]);
   input.value='';
-  if(!f) return;
+  if(!files.length) return;
+  if(files.length>1){await ocrImportBatch(files);return;}
+  const f=files[0];
   ocrSel=[]; ocrDataUrl=''; ocrWords=[];
   $('#ocrBoxes').innerHTML='';
   $('#ocrImg').src='';
@@ -463,6 +532,7 @@ wmIllusLoad=async function(term){await aImageOpen(term,false);};
 const aLegacyWmIllusPaint=wmIllusPaint;
 wmIllusPaint=function(rec){aLegacyWmIllusPaint(rec);aImageSetConfirm(rec);aImageBindSwipe();};
 let aStudyMode=true;
+let aStudyExamplesExpanded=false;
 function aMountStudyCard(){
   const body=$('#wmBody');if(!body)return;
   const def=$('#wmDefinition')&&$('#wmDefinition').closest('.wm-section');
@@ -478,15 +548,23 @@ function aMountStudyCard(){
   if(master)master.classList.add('a-study-master');
   if(move)move.classList.add('a-study-move');
   if(!$('#aStudyBar')){
-    const bar=document.createElement('div');bar.id='aStudyBar';bar.className='a-study-bar';bar.innerHTML='<div class="a-study-bar-copy"><div class="a-study-bar-title">学习卡片</div><div class="a-study-bar-note" id="aStudyModeNote">先看图、释义和例句，再决定是否整理</div></div><button class="a-study-edit" id="aStudyEdit" type="button">编辑整理</button>';
+    const bar=document.createElement('div');bar.id='aStudyBar';bar.className='a-study-bar';bar.innerHTML='<div class="a-study-bar-copy"><div class="a-study-bar-title">学习卡片</div><div class="a-study-bar-note" id="aStudyModeNote">先看图、释义和例句，再决定是否整理</div></div><button class="a-study-more" id="aStudyMore" type="button">更多例句</button><button class="a-study-edit" id="aStudyEdit" type="button">编辑整理</button>';
     body.insertBefore(bar,body.firstChild);
     $('#aStudyEdit').onclick=()=>aSetStudyMode(!aStudyMode);
+    $('#aStudyMore').onclick=()=>aSetStudyExamplesExpanded(!aStudyExamplesExpanded);
   }
+}
+function aSetStudyExamplesExpanded(show){
+  aStudyExamplesExpanded=!!show;
+  const modal=$('#wordModal'),button=$('#aStudyMore');
+  if(modal)modal.classList.toggle('a-study-show-all',aStudyExamplesExpanded);
+  if(button)button.textContent=aStudyExamplesExpanded?'收起例句':'更多例句';
 }
 function aSetStudyMode(study){
   aStudyMode=!!study;const modal=$('#wordModal'),button=$('#aStudyEdit'),note=$('#aStudyModeNote');
   if(modal)modal.classList.toggle('a-study-mode',aStudyMode);
   if(button)button.textContent=aStudyMode?'编辑整理':'收起整理';
+  if(aStudyMode)aSetStudyExamplesExpanded(false);else aSetStudyExamplesExpanded(true);
   if(note)note.textContent=aStudyMode?'先看图、释义和例句，再决定是否整理':'正在编辑完整词条，保存后可回到学习卡片';
 }
 function aApplyStudyMode(){aMountStudyCard();aSetStudyMode(true);}

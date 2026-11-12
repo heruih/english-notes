@@ -1268,6 +1268,7 @@ function bindEvents(){
 
   /* 截图：全局悬浮导入 / 释义区查看按钮 / 大图查看器（点任意处返回） */
   $('#ocrFileInput').addEventListener('change',ocrImportImage);
+  $('#ocrInboxOpen').addEventListener('click',ocrInboxShow);
   $('#wmShotsBtn').addEventListener('click',()=>{
     const t=wmState&&wmState.term; if(!t) return;
     const list=shotsGet(t);
@@ -1289,7 +1290,14 @@ function bindEvents(){
       const ed=$('#ocrEdit'); if(ed) ed.value='';
       $('#ocrBoxes').innerHTML=''; $('#ocrImg').src='';
       $('#ocrImgWrap').classList.add('hidden'); $('#ocrSelected').classList.add('hidden');
+      $('#ocrBatch').classList.add('hidden');
     }
+  });
+  $('#ocrBatchList').addEventListener('click',e=>{
+    const row=e.target.closest('[data-inbox-id]');if(!row)return;
+    const id=row.dataset.inboxId;
+    if(e.target.closest('[data-inbox-confirm]'))ocrInboxConfirm(id);
+    if(e.target.closest('[data-inbox-skip]'))ocrInboxSkip(id);
   });
   $('#ocrBoxes').addEventListener('click',e=>{
     const b=e.target.closest('.ocr-box'); if(!b) return;
