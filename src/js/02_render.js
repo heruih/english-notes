@@ -73,7 +73,7 @@ function playYoudaoAudio(text,lang,onend){
 function speak(text,lang,onend){
   const value=String(text||'').trim(),locale=lang||'en-US';
   if(!value)return;
-  if(locale.toLowerCase().startsWith('en')&&volcTtsReady()&&navigator.onLine!==false){playVolcAudio(value,locale,onend);return;}
+  if(locale.toLowerCase().startsWith('en')&&volcTtsReady()){playVolcAudio(value,locale,onend);return;}
   let voice;
   try{voice=pickVoice(window.speechSynthesis?.getVoices(),locale);}catch(_){}
   const usWord=locale.toLowerCase()==='en-us'&&!/\s/.test(value);

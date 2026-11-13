@@ -583,7 +583,7 @@ function ttsRefreshSettings(){
   if(speaker&&document.activeElement!==speaker)speaker.value=cfg.speaker||VOLC_TTS_DEFAULT.speaker;
   if(rate&&document.activeElement!==rate)rate.value=String(cfg.speechRate||0);
   if(pitch&&document.activeElement!==pitch)pitch.value=String(cfg.pitchRate||0);
-  if(status)status.textContent=volcTtsLastError?'豆包失败，已回退：'+volcTtsLastError:(volcTtsReady()?'已配置，首次朗读时生成并缓存':'还未配置');
+  if(status)status.textContent=volcTtsLastError?'豆包失败，已回退：'+volcTtsLastError:(volcTtsReady()?'已配置，英文朗读时会生成并缓存':'还未配置');
 }
 async function ttsTest(){
   const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
