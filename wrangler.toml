@@ -1,0 +1,7 @@
+name = "english-notes-tts"
+main = "relay/doubao-tts-worker.js"
+compatibility_date = "2026-11-10"
+
+[vars]
+ALLOWED_ORIGIN = "https://heruih.github.io"
+DOUBAO_RESOURCE_ID = "seed-tts-2.0"

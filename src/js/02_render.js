@@ -39,7 +39,9 @@ async function volcTtsRequest(text){
     if(!chunks.length)throw new Error('豆包语音返回格式无法解析');
     data={code:chunks.find(x=>x.code!==undefined)?.code||0,message:chunks.find(x=>x.message)?.message||'',data:chunks.map(x=>String(x.data||'')).join('')};
   }
-  if(data&&data.code&&Number(data.code)!==0)throw new Error('豆包语音 '+(data.message||data.code));
+  const apiCode=data&&data.code!==undefined?data.code:data&&data.header&&data.header.code;
+  const apiMessage=data&&data.message||data&&data.header&&data.header.message;
+  if(apiCode&&Number(apiCode)!==0)throw new Error('豆包语音 '+(apiMessage||apiCode));
   const raw=String(data&&data.data||'').trim();if(!raw)throw new Error('豆包语音没有返回音频');return raw.indexOf('data:')===0?raw:'data:audio/mpeg;base64,'+raw;
 }
 function volcTtsPlay(src,onend){const audio=new Audio(src);volcAudio=audio;let done=false;const finish=()=>{if(done)return;done=true;if(volcAudio===audio)volcAudio=null;if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;onend&&onend();};const cancel=()=>{try{audio.pause();audio.currentTime=0;}catch(_){}if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;};cancelVolcSpeech=cancel;audio.addEventListener('ended',finish,{once:true});audio.addEventListener('error',finish,{once:true});const p=audio.play();if(p&&p.catch)p.catch(finish);}

@@ -61,7 +61,7 @@
 1. **30 天自用验证**（到 2026-12-09）：功能继续冻结，只记录「哪些功能没用过 / 哪步最烦」
 2. 源码模块化已完成，后续只改 `src/`，改完运行 `node scripts/build.mjs`
 3. 复习页「方案 B：进卡自动拉图」只在用户明确要求时做
-4. 当前源码包含中转客户端和 Worker 草稿，线上已回退到 `2d659ef`。部署 Worker 并配置 Secret 后，再填入中转地址发布下一版
+4. TTS Worker 已部署到 `https://english-notes-tts.english-notes.workers.dev`，Secret 名称已存在。短文本测试返回豆包 HTTP 403 `requested resource not granted`，需要在豆包控制台开通或授权 `seed-tts-2.0` 后再发布下一版
 
 ## 7. 验收标准（改完怎么算对）
 
