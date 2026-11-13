@@ -17,7 +17,7 @@
 - **能跑**：能。iPhone 真机已验：配图出图、复习页例句标亮、复习卡背面配图、情景口语不会自动弹。
 - **本地测试候选**：`dist/英语学习笔记.html`（650,887 字节）。已构建同内容的 `英语学习笔记-Sitecase-20261111-语音相册测试.html`，包含 `1079c39` 的复习与配图修复。
 - **手机现用文件**：`英语学习笔记-20261108-c.html`（648,014 字节），通过 Sitecase 打开，基线 tag `v2026.11.08`。
-- **线上版**：https://heruih.github.io/english-notes/ 。当前验收版为 gh-pages `34c44f6`，默认使用已验通的 TTS Worker。此前回退提交 `2d659ef` 和验收版 `6abf22d` 保留在历史中。浏览器学习数据独立于 Sitecase。
+- **线上版**：https://heruih.github.io/english-notes/ 。当前验收版为 gh-pages `34c44f6`，默认使用已验通的 TTS Worker。用户已确认线上版和 Sitecase 中转版的单词、例句豆包声音成功。此前回退提交 `2d659ef` 和验收版 `6abf22d` 保留在历史中。浏览器学习数据独立于 Sitecase。
 - **本地下一阶段**：已接入 DeepSeek 默认、OpenAI GPT 备用和豆包 TTS 错误显示。当前源码增加可选 TTS 中转地址和 `relay/doubao-tts-worker.js`，Worker 尚未部署。
 - **当前未发布源码**：词卡已默认进入紧凑学习视图；相册多选截图会进入本机 `en-shot-inbox-v1`，确认候选词后才挂到既有截图。收件箱不进入云同步和完整备份。
 
@@ -61,7 +61,7 @@
 1. **30 天自用验证**（到 2026-12-09）：功能继续冻结，只记录「哪些功能没用过 / 哪步最烦」
 2. 源码模块化已完成，后续只改 `src/`，改完运行 `node scripts/build.mjs`
 3. 复习页「方案 B：进卡自动拉图」只在用户明确要求时做
-4. TTS Worker 已部署到 `https://english-notes-tts.english-notes.workers.dev`，Secret 名称已存在。使用 `volc.seedtts.default` 测试返回 HTTP 200 音频数据，当前线上等待用户真实试听
+4. TTS Worker 已部署到 `https://english-notes-tts.english-notes.workers.dev`，Secret 名称已存在。使用 `volc.seedtts.default` 测试返回 HTTP 200 音频数据，用户已完成线上和 Sitecase 真实试听验收
 
 ## 7. 验收标准（改完怎么算对）
 
