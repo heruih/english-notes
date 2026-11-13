@@ -5,7 +5,7 @@
 部署时设置三个变量：
 
 - `DOUBAO_API_KEY`，豆包 API Key，使用 `wrangler secret put DOUBAO_API_KEY`
-- `DOUBAO_RESOURCE_ID`，默认 `seed-tts-2.0`
+- `DOUBAO_RESOURCE_ID`，当前默认资源为 `volc.seedtts.default`。如果接口返回资源未授权，再以控制台“API 接入”页面显示的资源 ID 为准。
 - `ALLOWED_ORIGIN`，默认 `https://heruih.github.io`
 
 部署命令示例：

@@ -588,8 +588,8 @@ function ttsRefreshSettings(){
 }
 async function ttsTest(){
   const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),relay=$('#stTtsRelay'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
-  const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim();
-  if(!apiKey||!voice){toast('先填写豆包 API Key 和音色 ID','warn');return;}
+  const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim(),relayUrl=String(relay&&relay.value||'').trim();
+  if(!voice||(!apiKey&&!relayUrl)){toast('先填写豆包 API Key 或服务端中转地址，并填写音色 ID','warn');return;}
   volcTtsSave({apiKey,speaker:voice,relayUrl:String(relay&&relay.value||'').trim(),speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
   const ok=await playVolcAudio('Could you say that again?','en-US');
   toast(ok?'豆包试听已开始，后续会复用缓存':'豆包请求失败，已回退原朗读：'+(volcTtsLastError||'请检查配置'),'warn');

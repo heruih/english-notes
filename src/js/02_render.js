@@ -19,12 +19,12 @@ function pickVoice(voices,lang){
   return available.sort((a,b)=>score(b)-score(a))[0]||null;
 }
 const VOLC_TTS_KEY='en-tts-v1';
-const VOLC_TTS_DEFAULT={apiKey:'',speaker:'zh_female_vv_uranus_bigtts',resourceId:'seed-tts-2.0',speechRate:0,pitchRate:0,relayUrl:''};
+const VOLC_TTS_DEFAULT={apiKey:'',speaker:'zh_female_vv_uranus_bigtts',resourceId:'seed-tts-2.0',speechRate:0,pitchRate:0,relayUrl:'https://english-notes-tts.english-notes.workers.dev'};
 let volcAudio=null,cancelVolcSpeech=null,volcTtsPlayPending=0,volcTtsLastError='';
 function volcTtsConfig(){try{const raw=JSON.parse(localStorage.getItem(VOLC_TTS_KEY)||'{}');return Object.assign({},VOLC_TTS_DEFAULT,raw);}catch(_){return Object.assign({},VOLC_TTS_DEFAULT);}}
 function volcTtsSave(patch){const next=Object.assign(volcTtsConfig(),patch||{});try{localStorage.setItem(VOLC_TTS_KEY,JSON.stringify(next));}catch(_){}return next;}
-function volcTtsReady(){const cfg=volcTtsConfig();return !!(String(cfg.apiKey||'').trim()&&String(cfg.speaker||'').trim());}
-function volcTtsCacheKey(text,lang){const cfg=volcTtsConfig();return [cfg.resourceId,cfg.speaker,cfg.speechRate,cfg.pitchRate,lang||'en-US',String(text||'').trim()].join('|');}
+function volcTtsReady(){const cfg=volcTtsConfig();return !!(String(cfg.speaker||'').trim()&&(String(cfg.apiKey||'').trim()||String(cfg.relayUrl||'').trim()));}
+function volcTtsCacheKey(text,lang){const cfg=volcTtsConfig();return [cfg.relayUrl||'direct',cfg.resourceId,cfg.speaker,cfg.speechRate,cfg.pitchRate,lang||'en-US',String(text||'').trim()].join('|');}
 function volcTtsReadCache(key){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');return all&&typeof all==='object'&&all[key]?all[key].data||'':'';}catch(_){return '';}}
 function volcTtsWriteCache(key,data){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');all[key]={data,at:Date.now()};const keys=Object.keys(all);if(keys.length>80){keys.sort((a,b)=>(all[b].at||0)-(all[a].at||0));keys.slice(80).forEach(k=>delete all[k]);}localStorage.setItem(VOLC_TTS_KEY+'-cache',JSON.stringify(all));}catch(_){} }
 async function volcTtsRequest(text){
