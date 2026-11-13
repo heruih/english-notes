@@ -666,6 +666,7 @@ body.side-open #scrim{display:block}
 .ex-card .ex-en-text .t{font-size:16px}
 .st-field .btn{white-space:nowrap}
 .wc-ex-more{font-size:11.5px;color:var(--text3);margin-top:3px}
+.ocr-inbox-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--sep)}.ocr-inbox-item img{width:82px;height:62px;object-fit:cover;border-radius:8px;background:var(--s3);flex:none}.ocr-inbox-main{min-width:0;flex:1}.ocr-inbox-text{font-size:13px;color:var(--text2);line-height:1.4;margin-bottom:6px;word-break:break-word}.ocr-inbox-main select,.ocr-inbox-main input{width:100%;min-height:34px;margin-bottom:6px}.ocr-inbox-actions{display:flex;gap:8px}.ocr-inbox-actions .mini-btn{padding:6px 11px}
 
 /* 桌面端：表达库 / 标签 / 闪卡 占满内容区（原来被挤在 330px 里） */
 @media (min-width:768px){
@@ -1158,7 +1159,7 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .a-fields input:not([type=checkbox]),.a-fields textarea,.a-stack textarea,.a-stack input,.a-stack select{width:100%;font-size:16px;padding:12px;border:1px solid var(--s4);border-radius:10px;background:var(--s2);color:var(--text);box-sizing:border-box}
 .a-fields textarea{min-height:66px}.a-fields summary{cursor:pointer;margin-top:14px;color:var(--text2)}
 .illus-cap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.illus-confirm{border:0;border-radius:999px;padding:7px 13px;background:var(--accent,#2388ff);color:#fff;font:inherit;cursor:pointer}.illus-confirm.hidden{display:none}.illus-swipe-note{font-size:12px;color:var(--text3);width:100%;margin-top:2px}
-.a-study-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 0 8px;border:1px solid var(--sep);border-radius:14px;background:var(--s1)}.a-study-bar-copy{flex:1;min-width:0}.a-study-bar-title{font-weight:700;color:var(--text)}.a-study-bar-note{font-size:12px;color:var(--text3);margin-top:3px}.a-study-edit{flex:none;border:1px solid var(--sep);border-radius:999px;padding:7px 12px;color:var(--accent-fg);font-size:13px}.a-study-mode .a-study-advanced,.a-study-mode .a-study-tags,.a-study-mode .a-study-master,.a-study-mode .a-study-move{display:none}.a-study-mode .a-fields>label[for="aPurpose"],.a-study-mode .a-fields>#aPurpose,.a-study-mode .a-fields details,.a-study-mode .a-fields .a-check,.a-study-mode .a-fields #aIllustrate{display:none}.a-study-mode .a-fields>label[for="aOwn"],.a-study-mode .a-fields>#aOwn{display:block}.a-study-mode .a-fields{padding-top:4px}.a-study-mode .a-study-bar-note{color:var(--text2)}
+.a-study-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;margin:0 0 8px;border:1px solid var(--sep);border-radius:14px;background:var(--s1)}.a-study-bar-copy{flex:1;min-width:0}.a-study-bar-title{font-weight:700;color:var(--text)}.a-study-bar-note{font-size:12px;color:var(--text3);margin-top:3px}.a-study-edit,.a-study-more{flex:none;border:1px solid var(--sep);border-radius:999px;padding:7px 10px;color:var(--accent-fg);font-size:13px;background:var(--s2)}.a-study-mode .a-study-advanced,.a-study-mode .a-study-tags,.a-study-mode .a-study-master,.a-study-mode .a-study-move{display:none}.a-study-mode .a-fields>label[for="aPurpose"],.a-study-mode .a-fields>#aPurpose,.a-study-mode .a-fields details,.a-study-mode .a-fields .a-check,.a-study-mode .a-fields #aIllustrate{display:none}.a-study-mode .a-fields>label[for="aOwn"],.a-study-mode .a-fields>#aOwn{display:block}.a-study-mode .a-fields{padding-top:4px}.a-study-mode .a-study-bar-note{color:var(--text2)}.a-study-mode:not(.a-study-show-all) .a-study-examples .ex-card:nth-child(n+2){display:none}.a-study-mode:not(.a-study-show-all) .a-study-examples:has(.ex-card:nth-child(-n+2)){}
 .a-check{display:flex!important;align-items:center;gap:8px}.a-check input{width:20px;height:20px}
 .a-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}.a-tools input,.a-tools select{font-size:16px;background:var(--s2);color:var(--text);border:1px solid var(--s4);border-radius:8px;padding:9px;max-width:100%}
 .a-tools button{min-height:38px}.a-note{font-size:13px;color:var(--text2);line-height:1.7;margin:12px 0}.a-callout{padding:16px;border:1px solid var(--accent);border-radius:14px;background:var(--accent-soft);margin:12px 0}
@@ -1758,7 +1759,7 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 
 <!-- 全局截图导入悬浮按钮：打开网页就能用 -->
 <label id="fabShot" title="从相册选择截图">
-  <input id="ocrFileInput" type="file" accept="image/*" aria-label="从相册选择截图">
+  <input id="ocrFileInput" type="file" accept="image/*" multiple aria-label="从相册选择截图（可多选）">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
 </label>
 
@@ -1770,6 +1771,7 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
         <div class="wm-term-box"><div style="font-size:20px;font-weight:700;line-height:1.2">截图导入单词</div></div>
         <div style="font-size:12.5px;color:var(--text3);margin-top:4px">像 iPhone 文字识别：图片上的词自动框出，点一下选中（可多选）</div>
       </div>
+      <button class="mini-btn" id="ocrInboxOpen" type="button">批量收件箱</button>
       <button class="modal-close" data-ocr-close aria-label="关闭">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>
       </button>
@@ -1780,6 +1782,10 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
       <div id="ocrSelected" class="hidden">
         <div class="wm-label" style="margin-top:14px">已选 / 可自由编辑</div>
         <textarea id="ocrEdit" placeholder="点上面的词框添加，也可直接改或输入整个短语，如 emergency event" rows="2"></textarea>
+      </div>
+      <div id="ocrBatch" class="hidden">
+        <div class="wm-label" style="margin-top:14px">待匹配截图</div>
+        <div id="ocrBatchList"></div>
       </div>
       <div class="ocr-foot"><button class="btn" id="ocrMount">挂载到表达库</button></div>
     </div>
@@ -1973,7 +1979,7 @@ function pickVoice(voices,lang){
 }
 const VOLC_TTS_KEY='en-tts-v1';
 const VOLC_TTS_DEFAULT={apiKey:'',speaker:'zh_female_vv_uranus_bigtts',resourceId:'seed-tts-2.0',speechRate:0,pitchRate:0};
-let volcAudio=null,cancelVolcSpeech=null,volcTtsPlayPending=0;
+let volcAudio=null,cancelVolcSpeech=null,volcTtsPlayPending=0,volcTtsLastError='';
 function volcTtsConfig(){try{const raw=JSON.parse(localStorage.getItem(VOLC_TTS_KEY)||'{}');return Object.assign({},VOLC_TTS_DEFAULT,raw);}catch(_){return Object.assign({},VOLC_TTS_DEFAULT);}}
 function volcTtsSave(patch){const next=Object.assign(volcTtsConfig(),patch||{});try{localStorage.setItem(VOLC_TTS_KEY,JSON.stringify(next));}catch(_){}return next;}
 function volcTtsReady(){const cfg=volcTtsConfig();return !!(String(cfg.apiKey||'').trim()&&String(cfg.speaker||'').trim());}
@@ -1982,7 +1988,7 @@ function volcTtsReadCache(key){try{const all=JSON.parse(localStorage.getItem(VOL
 function volcTtsWriteCache(key,data){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');all[key]={data,at:Date.now()};const keys=Object.keys(all);if(keys.length>80){keys.sort((a,b)=>(all[b].at||0)-(all[a].at||0));keys.slice(80).forEach(k=>delete all[k]);}localStorage.setItem(VOLC_TTS_KEY+'-cache',JSON.stringify(all));}catch(_){} }
 async function volcTtsRequest(text){const cfg=volcTtsConfig();const res=await fetch('https://openspeech.bytedance.com/api/v3/tts/unidirectional',{method:'POST',headers:{'Content-Type':'application/json','X-Api-Key':String(cfg.apiKey||'').trim(),'X-Api-Resource-Id':String(cfg.resourceId||'seed-tts-2.0')},body:JSON.stringify({req_params:{text:String(text||''),speaker:String(cfg.speaker||''),audio_params:{format:'mp3',sample_rate:24000,speech_rate:Number(cfg.speechRate)||0,pitch_rate:Number(cfg.pitchRate)||0}}})});if(!res.ok)throw new Error('豆包语音 HTTP '+res.status);const data=await res.json();if(data&&data.code&&Number(data.code)!==0)throw new Error('豆包语音 '+(data.message||data.code));const raw=String(data&&data.data||'').trim();if(!raw)throw new Error('豆包语音没有返回音频');return raw.indexOf('data:')===0?raw:'data:audio/mpeg;base64,'+raw;}
 function volcTtsPlay(src,onend){const audio=new Audio(src);volcAudio=audio;let done=false;const finish=()=>{if(done)return;done=true;if(volcAudio===audio)volcAudio=null;if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;onend&&onend();};const cancel=()=>{try{audio.pause();audio.currentTime=0;}catch(_){}if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;};cancelVolcSpeech=cancel;audio.addEventListener('ended',finish,{once:true});audio.addEventListener('error',finish,{once:true});const p=audio.play();if(p&&p.catch)p.catch(finish);}
-async function playVolcAudio(text,lang,onend){stopSpeech();const key=volcTtsCacheKey(text,lang),seq=Date.now()+Math.random();volcTtsPlayPending=seq;try{let src=volcTtsReadCache(key);if(!src){src=await volcTtsRequest(text);volcTtsWriteCache(key,src);}if(volcTtsPlayPending!==seq)return;volcTtsPlay(src,onend);}catch(_){if(volcTtsPlayPending===seq){const value=String(text||'').trim();if(lang==='en-US'&&!/\s/.test(value))playYoudaoAudio(value,lang,onend);else speakRaw(value,lang,onend);}}}
+async function playVolcAudio(text,lang,onend){stopSpeech();const key=volcTtsCacheKey(text,lang),seq=Date.now()+Math.random();volcTtsPlayPending=seq;try{let src=volcTtsReadCache(key);if(!src){src=await volcTtsRequest(text);volcTtsWriteCache(key,src);}if(volcTtsPlayPending!==seq)return false;volcTtsLastError='';volcTtsPlay(src,onend);return true;}catch(e){volcTtsLastError=(e&&e.message)||'豆包语音请求失败';if(volcTtsPlayPending===seq){const value=String(text||'').trim();if(lang==='en-US'&&!/\s/.test(value))playYoudaoAudio(value,lang,onend);else speakRaw(value,lang,onend);}return false;}}
 let cancelDictionarySpeech=null;
 function stopSpeech(){
   if(cancelVolcSpeech)cancelVolcSpeech();
@@ -2026,7 +2032,7 @@ function playYoudaoAudio(text,lang,onend){
 function speak(text,lang,onend){
   const value=String(text||'').trim(),locale=lang||'en-US';
   if(!value)return;
-  if(locale.toLowerCase().startsWith('en')&&volcTtsReady()&&navigator.onLine!==false){playVolcAudio(value,locale,onend);return;}
+  if(locale.toLowerCase().startsWith('en')&&volcTtsReady()){playVolcAudio(value,locale,onend);return;}
   let voice;
   try{voice=pickVoice(window.speechSynthesis?.getVoices(),locale);}catch(_){}
   const usWord=locale.toLowerCase()==='en-us'&&!/\s/.test(value);
@@ -5323,16 +5329,16 @@ const TONE_SYSTEM={
 };
 function toneSystem(){ return (TONE_SYSTEM[state.settings.tone]||TONE_SYSTEM.friend); }
 async function aiCall(messages,opts){
-  const st=state.settings;
-  const base=(st.baseUrl||'https://api.openai.com/v1').replace(/\/+$/,'');
-  if(!st.apiKey) throw new Error('未配置模型 API，请先在设置中填写');
-  const canJson=String(base).toLowerCase().indexOf('deepseek')>=0;
+  const st=aiApiConfig();
+  const base=(st.baseUrl||'').replace(/\/+$/,'');
+  if(!st.apiKey) throw new Error('未配置 '+(st.label||'模型')+' API Key，请先在设置中填写');
+  const canJson=st.name==='deepseek'||String(base).toLowerCase().indexOf('deepseek')>=0;
   const once=async(useJson)=>{
     const ctrl=new AbortController();
     const to=opts&&opts.timeout||30000;
     const timer=setTimeout(()=>ctrl.abort(),to);
     try{
-      const body={model:st.model||'gpt-4o-mini',temperature:0.85,messages};
+      const body={model:st.model,temperature:0.85,messages};
       if(opts&&opts.maxTokens) body.max_tokens=opts.maxTokens;
       if(useJson) body.response_format={type:'json_object'};
       const res=await fetch(base+'/chat/completions',{
@@ -5380,7 +5386,7 @@ async function aiBuildDialogue(){
   const useTxt=multi?('自然使用这些单词（尽量都用到）：'+aiState.terms.join('、')):'自然使用该单词至少一次';
   const youTxt=multi?'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到至少一个目标词）':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
   return aiCall([{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。创作一段 4-5 句的中英对照小对话，'+useTxt+'；'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","promptCn":"…"}]}'}]);
+    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。创作一段 4-5 句、包含 1-2 个来回的自然口语对话，'+useTxt+'；'+youTxt+'；目标词必须放在 YOU 这一句最自然的位置；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","promptCn":"…"}]}'}]);
 }
 async function aiJudge(attempt){
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
@@ -6932,6 +6938,7 @@ function bindEvents(){
 
   /* 截图：全局悬浮导入 / 释义区查看按钮 / 大图查看器（点任意处返回） */
   $('#ocrFileInput').addEventListener('change',ocrImportImage);
+  $('#ocrInboxOpen').addEventListener('click',ocrInboxShow);
   $('#wmShotsBtn').addEventListener('click',()=>{
     const t=wmState&&wmState.term; if(!t) return;
     const list=shotsGet(t);
@@ -6953,7 +6960,14 @@ function bindEvents(){
       const ed=$('#ocrEdit'); if(ed) ed.value='';
       $('#ocrBoxes').innerHTML=''; $('#ocrImg').src='';
       $('#ocrImgWrap').classList.add('hidden'); $('#ocrSelected').classList.add('hidden');
+      $('#ocrBatch').classList.add('hidden');
     }
+  });
+  $('#ocrBatchList').addEventListener('click',e=>{
+    const row=e.target.closest('[data-inbox-id]');if(!row)return;
+    const id=row.dataset.inboxId;
+    if(e.target.closest('[data-inbox-confirm]'))ocrInboxConfirm(id);
+    if(e.target.closest('[data-inbox-skip]'))ocrInboxSkip(id);
   });
   $('#ocrBoxes').addEventListener('click',e=>{
     const b=e.target.closest('.ocr-box'); if(!b) return;
@@ -7430,6 +7444,73 @@ let ocrSel=[];
 let ocrDataUrl='';
 let tesseractReady=false;
 let ocrWords=[];
+const SHOT_INBOX_KEY='en-shot-inbox-v1';
+function ocrInboxRead(){try{const v=JSON.parse(localStorage.getItem(SHOT_INBOX_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
+function ocrInboxFlush(list){return aStore(SHOT_INBOX_KEY,JSON.stringify(list));}
+function ocrNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
+function ocrCandidates(text){
+  const hay=ocrNorm(text);if(!hay)return [];
+  return (state.words||[]).map(w=>{
+    const term=String(w.term||'').trim(),needle=ocrNorm(term);if(!needle)return null;
+    let score=0;
+    if(hay.includes(needle))score=100+needle.length;
+    else{
+      const parts=needle.split(' ').filter(Boolean),hits=parts.filter(p=>hay.split(' ').includes(p)).length;
+      if(hits===parts.length&&parts.length>1)score=70+parts.length;
+      else if(hits>0)score=hits/parts.length*45;
+    }
+    (w.examples||[]).some(x=>{const ex=ocrNorm(x&&x.en);if(ex&&hay.includes(ex))score=Math.max(score,55);return false;});
+    return score?{id:w.id,term,score:Math.round(score)}:null;
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
+}
+function ocrInboxRender(){
+  const box=$('#ocrBatchList');if(!box)return;
+  const list=ocrInboxRead();
+  box.innerHTML=list.length?list.map(item=>{
+    const opts=(item.candidates||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.term)+'（'+c.score+'%）</option>').join('');
+    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><div class="ocr-inbox-text">'+esc(item.text||'未识别到英文词')+'</div><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn" data-inbox-skip>跳过</button></div></div></div>';
+  }).join(''):'<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';
+}
+function ocrInboxShow(){
+  $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
+  const st=$('#ocrStatus');if(st)st.textContent='批量收件箱：确认候选词后，截图会挂到对应词条。';ocrInboxRender();
+}
+function ocrAttachShot(w,dataUrl){
+  const all=shotsAll(),k=shotsKeyOf(w.term),list=Array.isArray(all[k])?all[k]:[];
+  if(list.length>=SHOT_MAX_PER_WORD||shotsTotal(all)>=SHOT_MAX_TOTAL)return false;
+  list.push({id:uid(),dataUrl,at:Date.now()});all[k]=list;return shotsFlush(all);
+}
+function ocrInboxConfirm(id){
+  const list=ocrInboxRead(),item=list.find(x=>x.id===id);if(!item)return;
+  const row=Array.from(document.querySelectorAll('[data-inbox-id]')).find(el=>el.dataset.inboxId===id);
+  const choice=row&&row.querySelector('[data-inbox-choice]')?.value||'';
+  const manual=row&&row.querySelector('[data-inbox-term]')?.value.trim()||'';
+  const picked=(item.candidates||[]).find(x=>x.id===choice);
+  const term=manual||(picked&&picked.term)||'';if(!term){toast('先选候选词，或输入一个词／短语','warn');return;}
+  let w=state.words.find(x=>x.id===choice)||state.words.find(x=>ocrNorm(x.term)===ocrNorm(term));
+  let created=false;if(!w){w=upsertWord({term,definition:'',examples:[],collocations:[],tags:[],source:'shot',notes:[],mastered:false});created=true;}
+  if(!ocrAttachShot(w,item.dataUrl)){toast('截图空间已满，当前项保留在收件箱','warn');return;}
+  const next=list.filter(x=>x.id!==id);if(!ocrInboxFlush(next)){toast('收件箱更新失败，当前项保留','warn');return;}
+  if(created)aPut(w.id,{stage:'pending'});save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();toast('已匹配「'+term+'」并保存截图','ok');
+}
+function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();}
+async function ocrImportBatch(files){
+  $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
+  const st=$('#ocrStatus');if(st)st.textContent='正在处理 '+files.length+' 张截图…';
+  let list=ocrInboxRead();
+  try{await loadTesseract();}catch(e){if(st)st.textContent=e.message;ocrInboxRender();return;}
+  for(let i=0;i<files.length;i++){
+    let dataUrl='';
+    try{
+      dataUrl=await shotCompress(files[i]);
+      const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}}),data=(res&&res.data)||{},text=String(data.text||'').replace(/\s+/g,' ').trim();
+      list.push({id:uid(),dataUrl,text,candidates:ocrCandidates(text),at:Date.now(),status:'pending'});
+    }catch(_){list.push({id:uid(),dataUrl,text:'识别失败，请手动输入',candidates:[],at:Date.now(),status:'pending'});}
+    if(st)st.textContent='已处理 '+(i+1)+' / '+files.length+' 张截图';
+  }
+  const saved=ocrInboxFlush(list);if(!saved&&st)st.textContent='本批次识别完成，但本机空间不足，未能完整保存收件箱。';
+  ocrInboxRender();
+}
 function loadTesseract(){
   return new Promise((resolve,reject)=>{
     if(window.Tesseract){ tesseractReady=true; resolve(); return; }
@@ -7453,9 +7534,11 @@ function ocrImgSize(dataUrl){
 }
 async function ocrImportImage(event){
   const input=event.currentTarget;
-  const f=input.files?.[0];
+  const files=Array.from(input.files||[]);
   input.value='';
-  if(!f) return;
+  if(!files.length) return;
+  if(files.length>1){await ocrImportBatch(files);return;}
+  const f=files[0];
   ocrSel=[]; ocrDataUrl=''; ocrWords=[];
   $('#ocrBoxes').innerHTML='';
   $('#ocrImg').src='';
@@ -7542,6 +7625,11 @@ function ocrMount(){
 const A_KEY='english-notes-learning-a-v1';
 const A_PREF_KEY='english-notes-ai-route-a-v1';
 const A_TASK_KEY='english-notes-chatgpt-task-a-v1';
+const AI_PROVIDERS_KEY='en-ai-providers-v1';
+const AI_PROVIDER_DEFAULTS={
+  deepseek:{label:'DeepSeek',baseUrl:'https://api.deepseek.com',apiKey:'',model:'deepseek-flash'},
+  openai:{label:'OpenAI GPT',baseUrl:'https://api.openai.com/v1',apiKey:'',model:'gpt-4o-mini'}
+};
 let aData={words:{},attempts:[]};
 let aBridgeJob=null;
 let aRecallState=null;
@@ -7555,8 +7643,38 @@ function aMeta(w){return aData.words[w.id]||{};}
 function aPending(w){return aMeta(w).stage==='pending';}
 function aPut(id,patch){const old=aData.words[id];aData.words[id]=Object.assign({},old||{},patch,{updatedAt:Date.now()});try{aFlush();}catch(e){if(old)aData.words[id]=old;else delete aData.words[id];throw e;}}
 function aDate(t){const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function aRoute(){return localStorage.getItem(A_PREF_KEY)==='api'?'api':'chatgpt';}
-function aAiReady(){return aRoute()==='chatgpt'||!!(state.settings.apiKey&&String(state.settings.model||'').trim()&&/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test(state.settings.baseUrl||'https://api.openai.com/v1'));}
+function aiProviderState(){
+  let raw={};
+  try{raw=JSON.parse(localStorage.getItem(AI_PROVIDERS_KEY)||'{}')||{};}catch(_){ }
+  const providers={};
+  Object.keys(AI_PROVIDER_DEFAULTS).forEach(name=>{
+    const legacy=name==='openai'&&state&&state.settings?{baseUrl:state.settings.baseUrl||'',apiKey:state.settings.apiKey||'',model:state.settings.model||''}:{};
+    providers[name]=Object.assign({},AI_PROVIDER_DEFAULTS[name],legacy,raw.providers&&raw.providers[name]||{});
+  });
+  return {selected:raw.selected==='openai'?'openai':'deepseek',providers};
+}
+function aiProviderCfg(){const p=aiProviderState();return Object.assign({name:p.selected},p.providers[p.selected]);}
+function aiProviderSave(patch){
+  const p=aiProviderState(),name=patch&&patch.name==='openai'?'openai':(patch&&patch.name)||p.selected;
+  if(patch&&patch.name)delete patch.name;
+  p.selected=name;p.providers[name]=Object.assign({},p.providers[name],patch||{});
+  try{localStorage.setItem(AI_PROVIDERS_KEY,JSON.stringify(p));}catch(_){ }
+  return p;
+}
+function aiProviderSaveFields(){
+  const name=$('#aProvider')&&$('#aProvider').value==='openai'?'openai':'deepseek';
+  aiProviderSave({name,baseUrl:$('#stBase').value.trim(),apiKey:$('#stKey').value.trim(),model:$('#stModel').value.trim()});
+}
+function aiProviderRefreshFields(){
+  const p=aiProviderState(),name=p.selected,cfg=p.providers[name];
+  const select=$('#aProvider');if(select)select.value=name;
+  ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&document.activeElement!==el)el.value=cfg[id==='stBase'?'baseUrl':id==='stKey'?'apiKey':'model']||'';});
+  const base=$('#stBase');if(base)base.placeholder=cfg.baseUrl;
+  const model=$('#stModel');if(model)model.placeholder=cfg.model;
+}
+function aRoute(){return localStorage.getItem(A_PREF_KEY)==='chatgpt'?'chatgpt':'api';}
+function aiApiConfig(){return aiProviderCfg();}
+function aAiReady(){const cfg=aiProviderCfg();return aRoute()==='chatgpt'||!!(String(cfg.apiKey||'').trim()&&String(cfg.model||'').trim()&&String(cfg.baseUrl||'').trim());}
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
 function aBackupObject(){return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length},storage:aBackupKeys()};}
 function aDownloadBackup(){
@@ -7855,6 +7973,7 @@ wmIllusLoad=async function(term){await aImageOpen(term,false);};
 const aLegacyWmIllusPaint=wmIllusPaint;
 wmIllusPaint=function(rec){aLegacyWmIllusPaint(rec);aImageSetConfirm(rec);aImageBindSwipe();};
 let aStudyMode=true;
+let aStudyExamplesExpanded=false;
 function aMountStudyCard(){
   const body=$('#wmBody');if(!body)return;
   const def=$('#wmDefinition')&&$('#wmDefinition').closest('.wm-section');
@@ -7870,23 +7989,32 @@ function aMountStudyCard(){
   if(master)master.classList.add('a-study-master');
   if(move)move.classList.add('a-study-move');
   if(!$('#aStudyBar')){
-    const bar=document.createElement('div');bar.id='aStudyBar';bar.className='a-study-bar';bar.innerHTML='<div class="a-study-bar-copy"><div class="a-study-bar-title">学习卡片</div><div class="a-study-bar-note" id="aStudyModeNote">先看图、释义和例句，再决定是否整理</div></div><button class="a-study-edit" id="aStudyEdit" type="button">编辑整理</button>';
+    const bar=document.createElement('div');bar.id='aStudyBar';bar.className='a-study-bar';bar.innerHTML='<div class="a-study-bar-copy"><div class="a-study-bar-title">学习卡片</div><div class="a-study-bar-note" id="aStudyModeNote">先看图、释义和例句，再决定是否整理</div></div><button class="a-study-more" id="aStudyMore" type="button">更多例句</button><button class="a-study-edit" id="aStudyEdit" type="button">编辑整理</button>';
     body.insertBefore(bar,body.firstChild);
     $('#aStudyEdit').onclick=()=>aSetStudyMode(!aStudyMode);
+    $('#aStudyMore').onclick=()=>aSetStudyExamplesExpanded(!aStudyExamplesExpanded);
   }
+}
+function aSetStudyExamplesExpanded(show){
+  aStudyExamplesExpanded=!!show;
+  const modal=$('#wordModal'),button=$('#aStudyMore');
+  if(modal)modal.classList.toggle('a-study-show-all',aStudyExamplesExpanded);
+  if(button)button.textContent=aStudyExamplesExpanded?'收起例句':'更多例句';
 }
 function aSetStudyMode(study){
   aStudyMode=!!study;const modal=$('#wordModal'),button=$('#aStudyEdit'),note=$('#aStudyModeNote');
   if(modal)modal.classList.toggle('a-study-mode',aStudyMode);
   if(button)button.textContent=aStudyMode?'编辑整理':'收起整理';
+  if(aStudyMode)aSetStudyExamplesExpanded(false);else aSetStudyExamplesExpanded(true);
   if(note)note.textContent=aStudyMode?'先看图、释义和例句，再决定是否整理':'正在编辑完整词条，保存后可回到学习卡片';
 }
 function aApplyStudyMode(){aMountStudyCard();aSetStudyMode(true);}
 function aRefreshSettings(){
   const route=$('#aRoute');if(route)route.value=aRoute();
+  aiProviderRefreshFields();
   ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&el.closest('.st-field'))el.closest('.st-field').hidden=aRoute()!=='api';});
   $$('#stgAi .st-presets').forEach(el=>el.hidden=true);
-  const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':'OpenAI API';
+  const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':aiProviderCfg().label;
   ttsRefreshSettings();
 }
 function ttsRefreshSettings(){
@@ -7896,15 +8024,16 @@ function ttsRefreshSettings(){
   if(speaker&&document.activeElement!==speaker)speaker.value=cfg.speaker||VOLC_TTS_DEFAULT.speaker;
   if(rate&&document.activeElement!==rate)rate.value=String(cfg.speechRate||0);
   if(pitch&&document.activeElement!==pitch)pitch.value=String(cfg.pitchRate||0);
-  if(status)status.textContent=volcTtsReady()?'已配置，首次朗读时生成并缓存':'还未配置';
+  if(status)status.textContent=volcTtsLastError?'豆包失败，已回退：'+volcTtsLastError:(volcTtsReady()?'已配置，英文朗读时会生成并缓存':'还未配置');
 }
 async function ttsTest(){
   const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
   const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim();
   if(!apiKey||!voice){toast('先填写豆包 API Key 和音色 ID','warn');return;}
   volcTtsSave({apiKey,speaker:voice,speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
-  try{await playVolcAudio('Could you say that again?','en-US');toast('试听已开始，后续会复用缓存','ok');ttsRefreshSettings();}
-  catch(_){toast('豆包试听失败，请检查 API Key、音色 ID 和免费额度','warn');}
+  const ok=await playVolcAudio('Could you say that again?','en-US');
+  toast(ok?'豆包试听已开始，后续会复用缓存':'豆包请求失败，已回退原朗读：'+(volcTtsLastError||'请检查配置'),'warn');
+  ttsRefreshSettings();
 }
 const aOriginalSettings=openSettings;
 openSettings=function(){aOriginalSettings();aRefreshSettings();};
@@ -7943,8 +8072,11 @@ function aInit(){
     aImageOpen(term,true);
   });
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
-  const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="chatgpt">ChatGPT（Plus／免费账号，复制往返）</option><option value="api">OpenAI API（自动，单独计费）</option></select><p class="a-note">Plus 是 ChatGPT 套餐，不是 API 模型。往返模式使用 ChatGPT 中你选择的可用模型；取消订阅后仍可按免费账号额度使用。自动模式需要独立 API 付费，与 Plus 是否订阅无关。旧服务商配置保留，但不会在往返模式调用。</p>';
-  aiBody.prepend(route);$('#aRoute').onchange=e=>{aStore(A_PREF_KEY,e.target.value);if(e.target.value==='api'&&!/^https:\/\/api\.openai\.com(?:\/v1)?\/?$/i.test($('#stBase').value||'')){$('#stBase').value='https://api.openai.com/v1';$('#stKey').value='';$('#stModel').value='';}aRefreshSettings();};
+  const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="api">API 自动（DeepSeek 默认）</option><option value="chatgpt">ChatGPT 往返（Plus 额度）</option></select><label for="aProvider" style="margin-top:10px">API 提供商</label><select id="aProvider"><option value="deepseek">DeepSeek（默认）</option><option value="openai">OpenAI GPT（备用）</option></select><p class="a-note">DeepSeek 默认使用 deepseek-flash。GPT 需要自己的 OpenAI API Key。ChatGPT Plus 只在复制往返模式里使用。</p>';
+  aiBody.prepend(route);$('#aRoute').onchange=()=>{aStore(A_PREF_KEY,$('#aRoute').value);aRefreshSettings();};
+  $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
+  ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
+  $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
   const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="粘贴豆包 API Key" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">联网后首次点读音会调用豆包 TTS 2.0，音频缓存在当前浏览器。API Key 只保存在本机，不会进入备份或公开网页。</p>';
   aiBody.append(tts);ttsRefreshSettings();
   ['stTtsKey','stTtsSpeaker','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
