@@ -578,18 +578,19 @@ function aRefreshSettings(){
 }
 function ttsRefreshSettings(){
   const cfg=volcTtsConfig();
-  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch'),status=$('#stTtsStatus');
+  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),relay=$('#stTtsRelay'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch'),status=$('#stTtsStatus');
   if(key&&document.activeElement!==key)key.value=cfg.apiKey||'';
   if(speaker&&document.activeElement!==speaker)speaker.value=cfg.speaker||VOLC_TTS_DEFAULT.speaker;
+  if(relay&&document.activeElement!==relay)relay.value=cfg.relayUrl||'';
   if(rate&&document.activeElement!==rate)rate.value=String(cfg.speechRate||0);
   if(pitch&&document.activeElement!==pitch)pitch.value=String(cfg.pitchRate||0);
   if(status)status.textContent=volcTtsLastError?'豆包失败，已回退：'+volcTtsLastError:(volcTtsReady()?'已配置，英文朗读时会生成并缓存':'还未配置');
 }
 async function ttsTest(){
-  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
+  const key=$('#stTtsKey'),speaker=$('#stTtsSpeaker'),relay=$('#stTtsRelay'),rate=$('#stTtsRate'),pitch=$('#stTtsPitch');
   const apiKey=String(key&&key.value||'').trim(),voice=String(speaker&&speaker.value||'').trim();
   if(!apiKey||!voice){toast('先填写豆包 API Key 和音色 ID','warn');return;}
-  volcTtsSave({apiKey,speaker:voice,speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
+  volcTtsSave({apiKey,speaker:voice,relayUrl:String(relay&&relay.value||'').trim(),speechRate:Number(rate&&rate.value)||0,pitchRate:Number(pitch&&pitch.value)||0});
   const ok=await playVolcAudio('Could you say that again?','en-US');
   toast(ok?'豆包试听已开始，后续会复用缓存':'豆包请求失败，已回退原朗读：'+(volcTtsLastError||'请检查配置'),'warn');
   ttsRefreshSettings();
@@ -636,9 +637,9 @@ function aInit(){
   $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
   ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
   $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
-  const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="粘贴豆包 API Key" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">联网后首次点读音会调用豆包 TTS 2.0，音频缓存在当前浏览器。API Key 只保存在本机，不会进入备份或公开网页。</p>';
+  const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="直连时粘贴豆包 API Key，中转模式可留空" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><input id="stTtsRelay" placeholder="可选：服务端中转地址，例如 https://你的域名/tts" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">填写中转地址后，网页只请求中转服务，豆包 API Key 保存在服务端。未填写中转地址时继续直连豆包。</p>';
   aiBody.append(tts);ttsRefreshSettings();
-  ['stTtsKey','stTtsSpeaker','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
+  ['stTtsKey','stTtsSpeaker','stTtsRelay','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),relayUrl:$('#stTtsRelay').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
   $('#stTtsTest').addEventListener('click',ttsTest);
   const dataButton=document.createElement('button');dataButton.className='btn';dataButton.textContent='完整备份／安全迁移';dataButton.onclick=aOpenBackup;$('#settingsModal .st-body').prepend(dataButton);
   $$('#stgAi .st-presets').forEach(el=>el.style.display='none');

@@ -19,7 +19,7 @@ function pickVoice(voices,lang){
   return available.sort((a,b)=>score(b)-score(a))[0]||null;
 }
 const VOLC_TTS_KEY='en-tts-v1';
-const VOLC_TTS_DEFAULT={apiKey:'',speaker:'zh_female_vv_uranus_bigtts',resourceId:'seed-tts-2.0',speechRate:0,pitchRate:0};
+const VOLC_TTS_DEFAULT={apiKey:'',speaker:'zh_female_vv_uranus_bigtts',resourceId:'seed-tts-2.0',speechRate:0,pitchRate:0,relayUrl:''};
 let volcAudio=null,cancelVolcSpeech=null,volcTtsPlayPending=0,volcTtsLastError='';
 function volcTtsConfig(){try{const raw=JSON.parse(localStorage.getItem(VOLC_TTS_KEY)||'{}');return Object.assign({},VOLC_TTS_DEFAULT,raw);}catch(_){return Object.assign({},VOLC_TTS_DEFAULT);}}
 function volcTtsSave(patch){const next=Object.assign(volcTtsConfig(),patch||{});try{localStorage.setItem(VOLC_TTS_KEY,JSON.stringify(next));}catch(_){}return next;}
@@ -27,7 +27,21 @@ function volcTtsReady(){const cfg=volcTtsConfig();return !!(String(cfg.apiKey||'
 function volcTtsCacheKey(text,lang){const cfg=volcTtsConfig();return [cfg.resourceId,cfg.speaker,cfg.speechRate,cfg.pitchRate,lang||'en-US',String(text||'').trim()].join('|');}
 function volcTtsReadCache(key){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');return all&&typeof all==='object'&&all[key]?all[key].data||'':'';}catch(_){return '';}}
 function volcTtsWriteCache(key,data){try{const all=JSON.parse(localStorage.getItem(VOLC_TTS_KEY+'-cache')||'{}');all[key]={data,at:Date.now()};const keys=Object.keys(all);if(keys.length>80){keys.sort((a,b)=>(all[b].at||0)-(all[a].at||0));keys.slice(80).forEach(k=>delete all[k]);}localStorage.setItem(VOLC_TTS_KEY+'-cache',JSON.stringify(all));}catch(_){} }
-async function volcTtsRequest(text){const cfg=volcTtsConfig();const res=await fetch('https://openspeech.bytedance.com/api/v3/tts/unidirectional',{method:'POST',headers:{'Content-Type':'application/json','X-Api-Key':String(cfg.apiKey||'').trim(),'X-Api-Resource-Id':String(cfg.resourceId||'seed-tts-2.0')},body:JSON.stringify({req_params:{text:String(text||''),speaker:String(cfg.speaker||''),audio_params:{format:'mp3',sample_rate:24000,speech_rate:Number(cfg.speechRate)||0,pitch_rate:Number(cfg.pitchRate)||0}}})});if(!res.ok)throw new Error('豆包语音 HTTP '+res.status);const data=await res.json();if(data&&data.code&&Number(data.code)!==0)throw new Error('豆包语音 '+(data.message||data.code));const raw=String(data&&data.data||'').trim();if(!raw)throw new Error('豆包语音没有返回音频');return raw.indexOf('data:')===0?raw:'data:audio/mpeg;base64,'+raw;}
+async function volcTtsRequest(text){
+  const cfg=volcTtsConfig(),relay=String(cfg.relayUrl||'').trim(),body={req_params:{text:String(text||''),speaker:String(cfg.speaker||''),audio_params:{format:'mp3',sample_rate:24000,speech_rate:Number(cfg.speechRate)||0,pitch_rate:Number(cfg.pitchRate)||0}}};
+  const headers={'Content-Type':'application/json'};
+  if(!relay){headers['X-Api-Key']=String(cfg.apiKey||'').trim();headers['X-Api-Resource-Id']=String(cfg.resourceId||'seed-tts-2.0');}
+  const res=await fetch(relay||'https://openspeech.bytedance.com/api/v3/tts/unidirectional',{method:'POST',headers,body:JSON.stringify(body)});
+  if(!res.ok)throw new Error((relay?'豆包中转 HTTP ':'豆包语音 HTTP ')+res.status);
+  const rawBody=await res.text();let data;
+  try{data=JSON.parse(rawBody);}catch(_){
+    const chunks=rawBody.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.replace(/^data:\s*/,'')).map(x=>{try{return JSON.parse(x);}catch(_){return null;}}).filter(Boolean);
+    if(!chunks.length)throw new Error('豆包语音返回格式无法解析');
+    data={code:chunks.find(x=>x.code!==undefined)?.code||0,message:chunks.find(x=>x.message)?.message||'',data:chunks.map(x=>String(x.data||'')).join('')};
+  }
+  if(data&&data.code&&Number(data.code)!==0)throw new Error('豆包语音 '+(data.message||data.code));
+  const raw=String(data&&data.data||'').trim();if(!raw)throw new Error('豆包语音没有返回音频');return raw.indexOf('data:')===0?raw:'data:audio/mpeg;base64,'+raw;
+}
 function volcTtsPlay(src,onend){const audio=new Audio(src);volcAudio=audio;let done=false;const finish=()=>{if(done)return;done=true;if(volcAudio===audio)volcAudio=null;if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;onend&&onend();};const cancel=()=>{try{audio.pause();audio.currentTime=0;}catch(_){}if(cancelVolcSpeech===cancel)cancelVolcSpeech=null;};cancelVolcSpeech=cancel;audio.addEventListener('ended',finish,{once:true});audio.addEventListener('error',finish,{once:true});const p=audio.play();if(p&&p.catch)p.catch(finish);}
 async function playVolcAudio(text,lang,onend){stopSpeech();const key=volcTtsCacheKey(text,lang),seq=Date.now()+Math.random();volcTtsPlayPending=seq;try{let src=volcTtsReadCache(key);if(!src){src=await volcTtsRequest(text);volcTtsWriteCache(key,src);}if(volcTtsPlayPending!==seq)return false;volcTtsLastError='';volcTtsPlay(src,onend);return true;}catch(e){volcTtsLastError=(e&&e.message)||'豆包语音请求失败';if(volcTtsPlayPending===seq){const value=String(text||'').trim();if(lang==='en-US'&&!/\s/.test(value))playYoudaoAudio(value,lang,onend);else speakRaw(value,lang,onend);}return false;}}
 let cancelDictionarySpeech=null;
