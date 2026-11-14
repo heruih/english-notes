@@ -463,23 +463,10 @@ function aImageCancel(){
   aImageGenerating=false;
 }
 window.aImageCancel=aImageCancel;
-function aImageShowIdle(term){
-  const box=$('#wmIllus'),img=$('#wmIllusImg'),skel=$('#wmIllusSkel'),cap=$('#wmIllusCap'),generate=$('#wmIllusGenerate'),more=$('#wmIllusMore'),confirm=$('#wmIllusConfirm');
-  if(!box)return;
-  wmMemoHide();box.classList.remove('hidden');
-  if(skel)skel.classList.add('hidden');
-  if(img){img.classList.remove('ok');img.removeAttribute('src');img.alt=String(term||'');}
-  if(cap){cap.textContent='暂未生成配图';cap.removeAttribute('href');cap.onclick=null;}
-  if(generate)generate.classList.remove('hidden');
-  if(more)more.classList.add('hidden');
-  if(confirm)confirm.classList.add('hidden');
-  const note=$('#aImageSwipeNote');if(note)note.textContent=shotsGet(term).length?'已有截图，可左滑或点“截图”查看':'可按需生成一张帮助记忆的配图';
-}
 function aImageSetConfirm(rec){
-  const confirm=$('#wmIllusConfirm'), more=$('#wmIllusMore'), generate=$('#wmIllusGenerate');
+  const confirm=$('#wmIllusConfirm'), more=$('#wmIllusMore');
   if(confirm) confirm.classList.toggle('hidden',!aImageCurrent(rec&&rec.term||'')||!!(rec&&rec.confirmed));
   if(more) more.classList.toggle('hidden',!!(rec&&rec.confirmed)||!rec||!Array.isArray(rec.cands)||rec.cands.length<2);
-  if(generate) generate.classList.toggle('hidden',!!aImageCurrent(rec&&rec.term||''));
 }
 function aImageRenderAi(term){
   const rec=aImageRecord(term), c=aImageCurrent(term);
@@ -493,20 +480,19 @@ function aImageRenderAi(term){
   return false;
 }
 function aImageRenderShot(term){
-  const list=shotsGet(term), img=$('#wmIllusImg'), box=$('#wmIllus'), skel=$('#wmIllusSkel'), cap=$('#wmIllusCap'), more=$('#wmIllusMore'), confirm=$('#wmIllusConfirm'), generate=$('#wmIllusGenerate');
+  const list=shotsGet(term), img=$('#wmIllusImg'), box=$('#wmIllus'), skel=$('#wmIllusSkel'), cap=$('#wmIllusCap'), more=$('#wmIllusMore'), confirm=$('#wmIllusConfirm');
   if(!list.length||!img||!box)return false;
   aImageSlide={term:String(term||''),kind:'shot',touchX:0,touchY:0};
   wmMemoHide();box.classList.remove('hidden');if(skel)skel.classList.add('hidden');img.classList.add('ok');img.alt='原始截图';img.src=list[0].dataUrl;
   if(cap){cap.textContent='原始截图 1 / '+list.length;cap.removeAttribute('href');}
-  if(more)more.classList.add('hidden');if(confirm)confirm.classList.add('hidden');if(generate)generate.classList.add('hidden');
+  if(more)more.classList.add('hidden');if(confirm)confirm.classList.add('hidden');
   const note=$('#aImageSwipeNote');if(note)note.textContent='左滑回到 AI 图';
   return true;
 }
 function aImageSwipe(dir){
   if(!wmState||!wmState.term)return;
   const term=wmState.term;
-  if(dir<0&&aImageSlide.kind==='ai'&&shotsGet(term).length){aImageRenderShot(term);return;}
-  if(dir>0&&aImageSlide.kind==='shot'){aImageRenderAi(term);return;}
+  if(dir>0&&aImageSlide.kind==='ai'&&shotsGet(term).length){aImageRenderShot(term);return;}
   if(dir<0&&aImageSlide.kind==='shot'){aImageRenderAi(term);return;}
 }
 function aImageBindSwipe(){
@@ -533,7 +519,6 @@ async function aImageOpen(term,force){
   const rec=aImageRecord(t);rec.term=t;
   if(!force&&rec.confirmed&&aImageRenderAi(t)){aImageBindSwipe();return;}
   if(!force&&aImageRenderAi(t)){aImageBindSwipe();return;}
-  if(!force){aImageShowIdle(t);aImageBindSwipe();return;}
   if(aRoute()!=='api'){
     const legacy=window.aLegacyWmIllusLoad;
     if(legacy)await legacy(t);
@@ -552,7 +537,7 @@ async function aImageOpen(term,force){
     cands.push(c);const next={local:false,cands:cands.slice(-6),idx:Math.max(0,cands.slice(-6).length-1),src:'ai',prov:'ai',confirmed:false};wmImgStore(t,next);aImageRenderAi(t);aImageBindSwipe();
   }catch(e){
     if(e&&e.name==='AbortError')return;
-    if(requestId===aImageRequestSeq&&wmState&&String(wmState.term||'').trim()===t){aImageShowIdle(t);const cap=$('#wmIllusCap');if(cap)cap.textContent='AI 图片生成失败 · 点击“生成配图”重试';toast('AI 图片生成失败：'+(e.message||'请重试'),'warn');}
+    if(requestId===aImageRequestSeq&&wmState&&String(wmState.term||'').trim()===t){wmIllusFail(t,'AI 图片生成失败 · 点这里重试');toast('AI 图片生成失败：'+(e.message||'请重试'),'warn');}
   }finally{
     clearTimeout(timer);
     if(requestId===aImageRequestSeq){aImageGenerating=false;aImageRequestAbort=null;aImageRequestTerm='';}
@@ -647,9 +632,8 @@ function aInit(){
   $('#aApply').onclick=()=>{if(!aBridgeJob)return;try{const value=aValidateResult(aParseResult($('#aResult').value),aBridgeJob.prompt);const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');job.resolve(value);}catch(e){$('#aBridgeError').textContent='还不能使用：'+e.message;}};
   $('#aRecallClose').onclick=()=>{$('#aRecall').classList.remove('show');render();};$('#aBackupClose').onclick=()=>$('#aBackup').classList.remove('show');$('#aExport').onclick=aDownloadBackup;$('#aImport').onchange=e=>{aImportFile(e.target.files[0]);e.target.value='';};
   ['aPurpose','aOwn','aOriginal','aSource','aTime'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(wmState&&wmState.aMetaKey)aPut(wmState.aMetaKey,aFieldValues());}));
-  const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='左滑查看截图';cap.append(note);}
+  const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='右滑查看截图';cap.append(note);}
   const confirm=$('#wmIllusConfirm');if(confirm){confirm.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(!wmState)return;const rec=aImageRecord(wmState.term),c=aImageCurrent(wmState.term);if(!c)return;rec.term=wmState.term;rec.confirmed=true;wmImgStore(wmState.term,rec);aImageSetConfirm(rec);toast('图片已确定，之后打开会保持这一张','ok');},{capture:true});}
-  const generate=$('#wmIllusGenerate');if(generate)generate.addEventListener('click',()=>{if(wmState&&!aImageGenerating)aImageOpen(wmState.term,true);});
   const more=$('#wmIllusMore');
   if(more)more.addEventListener('click',()=>{
     if(!wmState||aImageGenerating)return;
