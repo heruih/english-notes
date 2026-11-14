@@ -248,8 +248,25 @@ function aiImageRefreshFields(){
   if(key&&document.activeElement!==key)key.value=cfg.apiKey;
   if(model&&document.activeElement!==model)model.value=cfg.model;
 }
+function aImageCacheStats(all,words){
+  const cache=all&&typeof all==='object'?all:{};
+  const list=Array.isArray(words)?words:[];
+  let cachedWords=0,confirmedWords=0;
+  const missingTerms=[];
+  list.forEach(w=>{
+    const rec=cache[wmImgKeyOf(w&&w.term)],has=!!(rec&&(rec.local||(Array.isArray(rec.cands)&&rec.cands.length)||(rec.memo&&rec.memo.scene)));
+    if(has){cachedWords++;if(rec.confirmed)confirmedWords;}else if(w&&w.term)missingTerms.push(String(w.term));
+  });
+  return {records:Object.keys(cache).length,cachedWords,confirmedWords,missingWords:missingTerms.length,missingTerms:missingTerms.slice(0,20)};
+}
+function aImageStatsFromStorage(storage){
+  let words=[],all={};
+  try{const main=JSON.parse(storage&&storage[LS_KEY]||'{}');words=main.words||[];}catch(_){ }
+  try{all=JSON.parse(storage&&storage[WM_IMG_KEY]||'{}')||{};}catch(_){ }
+  return aImageCacheStats(all,words);
+}
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
-function aBackupObject(){return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:Object.keys(wmImgAll()).length},storage:aBackupKeys()};}
+function aBackupObject(){const image=aImageCacheStats(wmImgAll(),state.words);return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:image.records,imageCacheWords:image.cachedWords,imageCacheConfirmed:image.confirmedWords,imageCacheMissing:image.missingWords},storage:aBackupKeys()};}
 function aDownloadBackup(){
   try{if(ui.mode==='edit')persistEditor();if(wmState&&!wmState.saved)wmDraftSave();writeDraftSave();const pack=aBackupObject();const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download='英语学习完整备份-'+aDate(Date.now())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);$('#aBackupStatus').textContent='已请求下载：'+pack.counts.words+' 个表达、'+pack.counts.shots+' 张截图、'+pack.counts.writing+' 篇写作。请在下载列表确认文件已保存。';}
   catch(e){toast('备份失败：'+e.message,'warn');}
@@ -300,19 +317,20 @@ function aPrepareImport(pack){
   const incoming=JSON.parse(storage[LS_KEY]);
   const merged=aMergeState(base,incoming),plan={[LS_KEY]:JSON.stringify(merged)};
   Object.keys(storage).forEach(k=>{if(k===LS_KEY||!k.startsWith('english-notes-')||typeof storage[k]!=='string')return;plan[k]=aMergeExtra(k,localStorage.getItem(k),storage[k]);});
-  return {plan,merged,added:merged.words.length-(base.words||[]).length};
+  return {plan,merged,added:merged.words.length-(base.words||[]).length,imageStats:aImageStatsFromStorage(storage)};
 }
 function aCommitImport(prepared){
   const before={};Object.keys(prepared.plan).forEach(k=>before[k]=localStorage.getItem(k));
   try{Object.keys(prepared.plan).forEach(k=>localStorage.setItem(k,prepared.plan[k]));}
   catch(e){Object.keys(before).forEach(k=>{if(before[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,before[k]);});throw new Error('空间不足，导入已撤回，请先备份并释放空间');}
   state=migrate(prepared.merged);aData=aRead(A_KEY,{words:{},attempts:[]});ui.mode='today';ui.note=null;ui.wordDate='';applyTheme();render();
-  $('#aBackupStatus').textContent='已补充 '+prepared.added+' 个表达；原有表达保持不变。当前共 '+state.words.length+' 个表达、'+shotsTotal(shotsAll())+' 张截图、'+Object.keys(wmImgAll()).length+' 条配图记录。';
+  const image=aImageCacheStats(wmImgAll(),state.words);
+  $('#aBackupStatus').textContent='已补充 '+prepared.added+' 个表达；备份带来 '+(prepared.imageStats?prepared.imageStats.records:0)+' 条配图记录。当前共 '+state.words.length+' 个表达、'+shotsTotal(shotsAll())+' 张截图、'+image.records+' 条配图记录，已确认 '+image.confirmedWords+' 条。';
 }
 function aImportFile(file){
-  if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const p=aPrepareImport(JSON.parse(fr.result));showConfirm({title:'补充导入备份？',msg:'将补充 '+p.added+' 个表达。同 ID／同表达的本机内容不覆盖。请先确认已保存当前完整备份。',okText:'补充导入',onOk(){try{aCommitImport(p);}catch(e){toast(e.message,'warn');}}});}catch(e){toast('导入失败：'+e.message,'warn');}};fr.readAsText(file);
+  if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const p=aPrepareImport(JSON.parse(fr.result)),img=p.imageStats||{};showConfirm({title:'补充导入备份？',msg:'将补充 '+p.added+' 个表达，并带来 '+(img.records||0)+' 条配图记录，其中已确认 '+(img.confirmedWords||0)+' 条。同 ID／同表达的本机内容不覆盖。',okText:'补充导入',onOk(){try{aCommitImport(p);}catch(e){toast(e.message,'warn');}}});}catch(e){toast('导入失败：'+e.message,'warn');}};fr.readAsText(file);
 }
-function aOpenBackup(){$('#aBackupStatus').textContent='当前设备：'+state.words.length+' 个表达，'+shotsTotal(shotsAll())+' 张截图，'+Object.keys(wmImgAll()).length+' 条配图记录。';$('#aBackup').classList.add('show');}
+function aOpenBackup(){const image=aImageCacheStats(wmImgAll(),state.words);$('#aBackupStatus').textContent='当前设备：'+state.words.length+' 个表达，'+shotsTotal(shotsAll())+' 张截图，'+image.records+' 条配图记录，已确认 '+image.confirmedWords+' 条，缺少 '+image.missingWords+' 个词条。';$('#aBackup').classList.add('show');}
 function aOpenWords(filter,date){ui.mode='words';ui.wordFilter=filter||'all';ui.wordDate=date||'';ui.sel=[];ui.selMode=false;render();}
 function aFieldValues(){return {purpose:$('#aPurpose').value,ownSentence:$('#aOwn').value,original:$('#aOriginal').value,sourceUrl:$('#aSource').value,sourceTime:$('#aTime').value};}
 const aOriginalOpenWord=openWordModal;
