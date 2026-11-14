@@ -4,6 +4,7 @@
 
 | 日期 | 做了什么 | 怎么验的 | 结果 | 下一步 |
 |---|---|---|---|---|
+| 2026-11-15 | 首页激励层：加入按本地日期轮换的「每日一句」和依据待整理、到期回想、待再次输出状态变化的鼓励语；不新增学习数据字段 | `node --check` 检查 3 个相关模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查两个产物均包含 `daily-quote` 和 3 个主题选项；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机视觉验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-每日一句首页激励.html`，确认每日一句卡片的层级、字号和滚动体验 |
 | 2026-11-14 | 视觉主题第一步：新增「午夜编辑」「温暖纸张」「柔雾薰衣草」三套主题；保留旧深色/浅色值兼容；调整标题字体、卡片圆角和主题色元标签 | `node --check src/js/01_core.js`；`node --check src/js/07_sync_settings.js`；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；两种产物均静态检查到 3 个主题选项；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；线上版本未改，手机视觉验收待用户确认 | 用户确认后继续每日一句/鼓励语和笔记页布局改版 |
 | 2026-11-14 | 发布已验收的 Pages 版本 | gh-pages 提交 `08f366b`；线上 HTTP 200；缓存传播后线上包含 `imageCacheConfirmed`、`imageCacheMissing`、导入配图报告和右滑截图标记 | 已发布到 `https://heruih.github.io/english-notes/` | 进入日常使用，记录真实备份迁移和图片失效情况 |
 | 2026-11-14 | 增加备份配图完整性报告：导出统计配图记录、已缓存词条、已确认词条和缺少配图词条；导入确认框显示备份带来的配图数量，导入完成显示实际恢复数量 | `node --check`；`node scripts/build.mjs`；构建产物静态检查确认导出、导入和完成状态字段 | 源码与普通单文件构建通过；手机验收待统一进行 | 统一验收时核对备份统计与词条配图是否一致 |

@@ -378,7 +378,9 @@ renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
   const next=pending.length?'整理 '+pending.length+' 个待加工表达':due.length?'回想今天到期的表达':'用 2—3 个表达说一段';
+  const quote=todayDailyQuote(),encouragement=todayEncouragement(pending.length,due.length,weak.length);
   box.innerHTML='<div class="a-callout"><h3>'+next+'</h3><p>一次做好一小步。先自己回想和表达，再查看答案或请 ChatGPT 帮忙。</p><button class="btn primary" id="aNext">开始这一步</button></div>'+
+    '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
     '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+
     '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+todayCard('pack','情景口语','选 2—3 个表达，自己开口使用',Math.min(3,packableWords().length))+'</div>'+
     '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
@@ -392,6 +394,22 @@ renderToday=function(){
   if($('#aResumeGpt'))$('#aResumeGpt').onclick=()=>{const task=aRead(A_TASK_KEY,null);const words=state.words.filter(w=>task&&task.wordIds.includes(w.id));openAiPackPractice(words);};
 };
 function aWeakWords(){return state.words.filter(w=>!aPending(w)&&aMeta(w).outputDue&&aMeta(w).outputDue<=Date.now());}
+const DAILY_QUOTES=[
+  {en:'Small steps every day add up to big changes.',cn:'每天走一小步，时间会把它变成很大的变化。'},
+  {en:'You do not have to be perfect to make progress.',cn:'不用等到完美，往前走就是进步。'},
+  {en:'The words you use become the confidence you feel.',cn:'真正用出来的词，才会变成你的底气。'},
+  {en:'A little practice today makes tomorrow easier.',cn:'今天多练一点，明天就会轻松一点。'},
+  {en:'Keep going. Your future self is listening.',cn:'继续往前，你未来的自己会记得今天。'},
+  {en:'One clear sentence is already a good conversation.',cn:'先说清楚一句话，就是一次好的交流。'},
+  {en:'Progress is built from ordinary days.',cn:'进步就是由一个个普通的日子积累出来的。'}
+];
+function todayDailyQuote(){return DAILY_QUOTES[Math.floor(dayStart(Date.now())/DAY)%DAILY_QUOTES.length];}
+function todayEncouragement(pending,due,weak){
+  if(pending)return '先整理一个表达，今天就已经向前了一步。';
+  if(due)return '先回想，再看答案。记住一次，比刷过一页更有用。';
+  if(weak)return '把今天最容易忘的一个表达说出来，练习才会留下痕迹。';
+  return '今天没有必须清空的队列，完成一小轮就算进步。';
+}
 packableWords=function(){const ids=new Set(),out=[];[...aWeakWords(),...dueList(),...todayNewWords(),...state.words].forEach(w=>{if(!aPending(w)&&!ids.has(w.id)){ids.add(w.id);out.push(w);}});return out.slice(0,3);};
 function aRecord(w,result,attempt,kind){
   const old=aData.words[w.id]||{};const nextDays=result==='independent'?7:result==='hinted'?2:1;

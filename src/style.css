@@ -1081,6 +1081,11 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 /* ============ 今日工作台 ============ */
 .today-greet{font-size:12.5px;color:var(--text3);padding:10px 16px 12px;line-height:1.6}
 .today-actions{display:flex;flex-direction:column;gap:10px;padding:0 14px 20px}
+.daily-quote{margin:12px 14px 4px;padding:16px 16px 15px;border:1px solid var(--sep);border-left:3px solid var(--accent);border-radius:var(--radius-card);background:linear-gradient(135deg,var(--s1),var(--s2));box-shadow:var(--shadow-sm)}
+.daily-quote-kicker{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--accent-fg);text-transform:uppercase}
+.daily-quote-en{font-family:var(--font-display);font-size:22px;line-height:1.25;color:var(--text);margin:8px 0 6px}
+.daily-quote-cn{font-size:13px;color:var(--text2);line-height:1.6;margin:0}
+.daily-quote-foot{font-size:12px;color:var(--text3);line-height:1.6;margin:11px 0 0;padding-top:10px;border-top:1px solid var(--sep)}
 .today-card{background:var(--s1);border:1px solid var(--sep);border-radius:var(--radius-card);padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;min-height:64px}
 .today-card:active{transform:scale(.985);background:var(--s3)}
 .tc-num{font-size:26px;font-weight:700;color:var(--accent-fg);min-width:54px;text-align:center;flex:none}
