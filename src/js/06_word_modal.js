@@ -750,6 +750,7 @@ function highlightWord(range,word){
 function closeWordModal(){
   /* 没保存就关掉：把填过的内容存成草稿，下次打开同一个词接上 */
   try{ clearTimeout(wmDraftTimer); wmDraftSave(); }catch(e){}
+  if($('#aiModal').classList.contains('show')) closeAiModal();
   if(window.aImageCancel) window.aImageCancel();
   imgSeq++;
   $('#wordModal').classList.remove('show'); wmSeq++;
@@ -767,6 +768,7 @@ function renderWmMaster(){
 
 /* ============ AI 对话（情景口语练习） ============ */
 let aiState={seq:0,phase:'scenes',term:'',definition:'',examples:[],scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+let aiSession=0;
 const TONE_SYSTEM={
   friend:'You are a friendly native English-speaking friend. Chat naturally and colloquially, correct mistakes lightly, teach one natural alternative per turn, and always stay warm and lively — never robotic.',
   tutor:'You are a patient, rigorous private English tutor for Chinese learners. Give clear, detailed corrections and grammar explanations, and stay encouraging.',
@@ -894,10 +896,10 @@ function startScene(sc){
   aiState.scene=sc;
   aiState.phase='practice';
   aiState.attempt=''; aiState.attemptPromptCn='';
-  const mySeq=++aiState.seq;
+  const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
   aiShowLoading('正在生成对话…');
   aiBuildDialogue().then(r=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     const lines=(r.lines||[]).filter(x=>x&&(x.who==='YOU'?x.promptCn:x.en));
     if(!lines.some(x=>x.who==='YOU')) throw new Error('对话缺少练习句，请重试');
     aiState.lines=lines;
@@ -906,7 +908,7 @@ function startScene(sc){
     aiSetChatbar('practice');
     aiRenderDialogue();
   }).catch(err=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
     $('#aiScene').innerHTML='<div class="empty-state">'+esc(aiErrText(err))+'</div>';
     const r=$('#aiRetry'); if(r) r.addEventListener('click',()=>startScene(sc));
@@ -923,17 +925,17 @@ async function submitAttempt(){
   aiState.attempt=text;
   aiState.attemptPromptCn=(youLine&&youLine.promptCn)||'';
   input.value='';
-  const mySeq=++aiState.seq;
+  const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
   aiShowLoading('正在批改你的句子…');
   aiJudge(text).then(d=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiState.phase='review';
     aiShowBody();
     aiSetChatbar('review');
     aiRenderReview(d,text);
     saveSpeakLog(d,text);
   }).catch(err=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
     aiSetChatbar('practice');
     toast(String(err&&err.message||'批改失败，请重试'),'warn');
@@ -995,6 +997,7 @@ function renderSpeakLog(){
   box.innerHTML=h;
 }
 function openAiPractice(term,scene){
+  const session=++aiSession;
   const w=state.words.find(x=>String(x.term).toLowerCase()===String(term).toLowerCase());
   const sc=scene&&scene.title?scene:{title:'自由练习',desc:'自然地把这个词用进一句话'};
   aiState={seq:0,phase:'practice',term:String(term||''),definition:w?w.definition:'',
@@ -1013,7 +1016,7 @@ function openAiPractice(term,scene){
     const g=$('#aiGotoSettings'); if(g) g.addEventListener('click',()=>{ closeAiModal(); openSettings(); });
     return;
   }
-  startScene(sc);
+  if(session===aiSession) startScene(sc);
 }
 function aiAgainAction(){
   if(aiState.phase==='scenes'){ openAiDialogue(); return; }
@@ -1074,11 +1077,14 @@ function aiGuideHtml(msg){
 function openAiDialogue(ev){
   /* 只认真人点击：无事件的调用（自动触发）在词卡刚打开 1.5 秒内一律忽略 */
   if(ev&&ev.isTrusted===false) return;
-  if(!ev&&Date.now()-(wmOpenedAt||0)<1500) return;
-  const term=wmState.term;
+  if(!wmState&&!$('#aiModal').classList.contains('show')) return;
+  if(!ev&&!$('#aiModal').classList.contains('show')&&Date.now()-(wmOpenedAt||0)<1500) return;
+  const term=wmState?wmState.term:aiState.term;
+  if(!term) return;
+  const session=++aiSession;
   const ex=state.words.find(x=>x.term.toLowerCase()===term.toLowerCase());
-  const definition=($('#wmDefinition').value||'').trim()||(ex&&ex.definition)||'';
-  const examples=collectExamples().map(x=>x.en).filter(Boolean);
+  const definition=(wmState&&($('#wmDefinition').value||'').trim())||(ex&&ex.definition)||aiState.definition||'';
+  const examples=wmState?collectExamples().map(x=>x.en).filter(Boolean):(aiState.examples||[]).slice();
   if(!examples.length&&ex) examples.push(...(ex.examples||[]).map(x=>x.en).filter(Boolean));
   aiState={seq:0,phase:'scenes',term,definition,examples,scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
   $('#aiTitle').textContent='情景口语 · '+term;
@@ -1097,7 +1103,7 @@ function openAiDialogue(ev){
     return;
   }
   aiSuggestScenes().then(r=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     const sc=(r.scenes||[]).filter(x=>x&&x.title).slice(0,3);
     if(!sc.length) throw new Error('返回内容无法解析，请重试');
     aiState.scenes=sc;
@@ -1106,11 +1112,11 @@ function openAiDialogue(ev){
     aiSetChatbar('scenes');
     aiRenderScenes();
   }).catch(err=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
     $('#aiScene').innerHTML='<div class="empty-state">'+esc(String(err&&err.message||'生成失败，请重试'))+'</div>';
     const r=$('#aiRetry'); if(r) r.addEventListener('click',openAiDialogue);
   });
 }
-function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 
