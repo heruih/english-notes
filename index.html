@@ -414,6 +414,7 @@ body.typing .kb-btn{opacity:1;visibility:visible}
   color:var(--text2);background:var(--s4);flex:none;
 }
 .modal-close:hover{background:var(--s5)}
+#wordModal .modal-close{width:44px;height:44px}
 
 /* 单词卡片弹窗 */
 .wm-head{display:flex;align-items:flex-start;gap:12px;padding:20px 20px 6px}
@@ -450,13 +451,13 @@ body.typing .kb-btn{opacity:1;visibility:visible}
 @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 .ex-head-tip{font-size:11.5px;color:var(--text3);margin-left:auto;font-weight:400}
 .ex-act{display:flex;gap:10px;align-items:center}
-.ex-act-btn{display:inline-flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--line);color:var(--text-body);border-radius:16px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;min-height:34px}
+.ex-act-btn{display:inline-flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--line);color:var(--text-body);border-radius:16px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;min-height:40px}
 .ex-act-btn:active{transform:scale(.96)}
 #wmTags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 #wmTagInput{
   width:100%;border:1px solid var(--s5);border-radius:10px;padding:9px 12px;font-size:16px;background:var(--s0);color:var(--text);
 }
-.wm-actions{display:flex;gap:10px;padding:14px 20px 20px;border-top:1px solid var(--sep);margin-top:18px}
+.wm-actions{display:flex;gap:12px;padding:14px 20px calc(20px + env(safe-area-inset-bottom));border-top:1px solid var(--sep);margin-top:18px;background:var(--s3)}
 .btn{
   min-height:44px;padding:9px 20px;border-radius:22px;font-size:15px;font-weight:600;
   border:1px solid var(--s5);background:var(--s4);color:var(--text);flex:none;
@@ -659,7 +660,7 @@ body.side-open #scrim{display:block}
 .mini-btn:hover{background:var(--s4)}
 .mini-btn:active{transform:scale(.96)}
 .mini-btn:disabled{opacity:.55}
-.wm-label .mini-btn{border:none;background:none;min-height:0;margin-left:auto}
+.wm-label .mini-btn{border:none;background:none;min-height:36px;padding:8px 10px;margin-left:auto}
 .wm-label .mini-btn:hover{background:var(--accent-soft)}
 .wm-actions .btn.grow{flex:1}
 #wmExamples{display:flex;flex-direction:column}
@@ -991,9 +992,11 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .illus-cap a{flex:1;min-width:0;font-size:11px;color:var(--text3);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .illus-more{
   flex:none;background:transparent;border:none;color:var(--accent-fg);
-  font-size:11.5px;padding:2px 0 2px 6px;min-height:0;line-height:1.2;
+  font-size:12px;padding:8px 10px;min-height:40px;line-height:1.2;border-radius:999px;
 }
 .illus-more:active{opacity:.6}
+.illus-confirm{min-height:40px;padding:8px 15px}
+.wm-illus,.illus-box{touch-action:pan-y}
 
 /* ============ 记忆卡（没有配图时的兜底：emoji + 一句话画面） ============ */
 .wm-memo{
@@ -1158,8 +1161,8 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .a-fields label,.a-stack label{display:block;font-size:14px;color:var(--text2);margin:12px 0 6px}
 .a-fields input:not([type=checkbox]),.a-fields textarea,.a-stack textarea,.a-stack input,.a-stack select{width:100%;font-size:16px;padding:12px;border:1px solid var(--s4);border-radius:10px;background:var(--s2);color:var(--text);box-sizing:border-box}
 .a-fields textarea{min-height:66px}.a-fields summary{cursor:pointer;margin-top:14px;color:var(--text2)}
-.illus-cap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.illus-confirm{border:0;border-radius:999px;padding:7px 13px;background:var(--accent,#2388ff);color:#fff;font:inherit;cursor:pointer}.illus-confirm.hidden{display:none}.illus-swipe-note{font-size:12px;color:var(--text3);width:100%;margin-top:2px}
-.a-study-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;margin:0 0 8px;border:1px solid var(--sep);border-radius:14px;background:var(--s1)}.a-study-bar-copy{flex:1;min-width:0}.a-study-bar-title{font-weight:700;color:var(--text)}.a-study-bar-note{font-size:12px;color:var(--text3);margin-top:3px}.a-study-edit,.a-study-more{flex:none;border:1px solid var(--sep);border-radius:999px;padding:7px 10px;color:var(--accent-fg);font-size:13px;background:var(--s2)}.a-study-mode .a-study-advanced,.a-study-mode .a-study-tags,.a-study-mode .a-study-master,.a-study-mode .a-study-move{display:none}.a-study-mode .a-fields>label[for="aPurpose"],.a-study-mode .a-fields>#aPurpose,.a-study-mode .a-fields details,.a-study-mode .a-fields .a-check,.a-study-mode .a-fields #aIllustrate{display:none}.a-study-mode .a-fields>label[for="aOwn"],.a-study-mode .a-fields>#aOwn{display:block}.a-study-mode .a-fields{padding-top:4px}.a-study-mode .a-study-bar-note{color:var(--text2)}.a-study-mode:not(.a-study-show-all) .a-study-examples .ex-card:nth-child(n+2){display:none}.a-study-mode:not(.a-study-show-all) .a-study-examples:has(.ex-card:nth-child(-n+2)){}
+.illus-cap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.illus-confirm{border:0;border-radius:999px;background:var(--accent,#2388ff);color:#fff;font:inherit;cursor:pointer}.illus-confirm.hidden{display:none}.illus-swipe-note{font-size:12px;color:var(--text3);width:100%;margin-top:2px}
+.a-study-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;margin:0 0 8px;border:1px solid var(--sep);border-radius:14px;background:var(--s1)}.a-study-bar-copy{flex:1;min-width:0}.a-study-bar-title{font-weight:700;color:var(--text)}.a-study-bar-note{font-size:12px;color:var(--text3);margin-top:3px}.a-study-edit,.a-study-more{flex:none;border:1px solid var(--sep);border-radius:999px;padding:8px 12px;min-height:40px;color:var(--accent-fg);font-size:13px;background:var(--s2)}.a-study-mode .a-study-advanced,.a-study-mode .a-study-tags,.a-study-mode .a-study-master,.a-study-mode .a-study-move,.a-study-mode .wm-ai-entry{display:none}.a-study-mode .a-fields>label[for="aPurpose"],.a-study-mode .a-fields>#aPurpose,.a-study-mode .a-fields>label[for="aOwn"],.a-study-mode .a-fields>#aOwn,.a-study-mode .a-fields details,.a-study-mode .a-fields .a-check,.a-study-mode .a-fields #aIllustrate,.a-study-mode #wmUseAiDef,.a-study-mode #wmRegen{display:none}.a-study-mode .a-fields{padding-top:4px}.a-study-mode .a-study-bar-note{color:var(--text2)}.a-study-mode:not(.a-study-show-all) .a-study-examples .ex-card:nth-child(n+2){display:none}.a-study-mode:not(.a-study-show-all) .a-study-examples:has(.ex-card:nth-child(-n+2)){}
 .a-check{display:flex!important;align-items:center;gap:8px}.a-check input{width:20px;height:20px}
 .a-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}.a-tools input,.a-tools select{font-size:16px;background:var(--s2);color:var(--text);border:1px solid var(--s4);border-radius:8px;padding:9px;max-width:100%}
 .a-tools button{min-height:38px}.a-note{font-size:13px;color:var(--text2);line-height:1.7;margin:12px 0}.a-callout{padding:16px;border:1px solid var(--accent);border-radius:14px;background:var(--accent-soft);margin:12px 0}
@@ -4682,8 +4685,6 @@ function wmIllusBroken(rec){
   if(!rec||!rec.cands||!rec.cands.length){ wmIllusHide(); return; }
   if(rec.idx+1>=rec.cands.length){
     paintedTerm=''; paintedRec=null;
-    /* 不再静默收起：给一行可点重试的提示（多半是手机到 cdn.pixabay.com 不通） */
-    wmIllusFail(rec.term,'图片加载失败（网络）· 点这里重试');
     try{
       if(!rec.term) return;
       /* 站内插图缺失：7 天后再探一次；图库死链：5 分钟后再试（可能只是这一批链接挂了） */
@@ -4691,6 +4692,14 @@ function wmIllusBroken(rec){
         ? {local:false,cands:[],idx:0,localFailAt:Date.now()}
         : {local:false,cands:[],idx:0,imgFailAt:Date.now()});
     }catch(_){ }
+    /* 导入的 Pixabay 记录只保存网址。网址失效时自动重新搜索，避免用户手动生成。 */
+    try{
+      if(rec.src!=='local'&&typeof photoKey==='function'&&photoKey()){
+        setTimeout(()=>{if(wmState&&wmState.term===rec.term)wmIllusLoad(rec.term);},0);
+        return;
+      }
+    }catch(_){ }
+    wmIllusFail(rec.term,'图片加载失败（网络）· 点这里重试');
     return;
   }
   rec.idx++;
@@ -5321,6 +5330,8 @@ function highlightWord(range,word){
 function closeWordModal(){
   /* 没保存就关掉：把填过的内容存成草稿，下次打开同一个词接上 */
   try{ clearTimeout(wmDraftTimer); wmDraftSave(); }catch(e){}
+  if($('#aiModal').classList.contains('show')) closeAiModal();
+  if(window.aImageCancel) window.aImageCancel();
   imgSeq++;
   $('#wordModal').classList.remove('show'); wmSeq++;
   try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
@@ -5337,6 +5348,7 @@ function renderWmMaster(){
 
 /* ============ AI 对话（情景口语练习） ============ */
 let aiState={seq:0,phase:'scenes',term:'',definition:'',examples:[],scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+let aiSession=0;
 const TONE_SYSTEM={
   friend:'You are a friendly native English-speaking friend. Chat naturally and colloquially, correct mistakes lightly, teach one natural alternative per turn, and always stay warm and lively — never robotic.',
   tutor:'You are a patient, rigorous private English tutor for Chinese learners. Give clear, detailed corrections and grammar explanations, and stay encouraging.',
@@ -5464,10 +5476,10 @@ function startScene(sc){
   aiState.scene=sc;
   aiState.phase='practice';
   aiState.attempt=''; aiState.attemptPromptCn='';
-  const mySeq=++aiState.seq;
+  const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
   aiShowLoading('正在生成对话…');
   aiBuildDialogue().then(r=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     const lines=(r.lines||[]).filter(x=>x&&(x.who==='YOU'?x.promptCn:x.en));
     if(!lines.some(x=>x.who==='YOU')) throw new Error('对话缺少练习句，请重试');
     aiState.lines=lines;
@@ -5476,7 +5488,7 @@ function startScene(sc){
     aiSetChatbar('practice');
     aiRenderDialogue();
   }).catch(err=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
     $('#aiScene').innerHTML='<div class="empty-state">'+esc(aiErrText(err))+'</div>';
     const r=$('#aiRetry'); if(r) r.addEventListener('click',()=>startScene(sc));
@@ -5493,17 +5505,17 @@ async function submitAttempt(){
   aiState.attempt=text;
   aiState.attemptPromptCn=(youLine&&youLine.promptCn)||'';
   input.value='';
-  const mySeq=++aiState.seq;
+  const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
   aiShowLoading('正在批改你的句子…');
   aiJudge(text).then(d=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiState.phase='review';
     aiShowBody();
     aiSetChatbar('review');
     aiRenderReview(d,text);
     saveSpeakLog(d,text);
   }).catch(err=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
     aiSetChatbar('practice');
     toast(String(err&&err.message||'批改失败，请重试'),'warn');
@@ -5565,6 +5577,7 @@ function renderSpeakLog(){
   box.innerHTML=h;
 }
 function openAiPractice(term,scene){
+  const session=++aiSession;
   const w=state.words.find(x=>String(x.term).toLowerCase()===String(term).toLowerCase());
   const sc=scene&&scene.title?scene:{title:'自由练习',desc:'自然地把这个词用进一句话'};
   aiState={seq:0,phase:'practice',term:String(term||''),definition:w?w.definition:'',
@@ -5583,7 +5596,7 @@ function openAiPractice(term,scene){
     const g=$('#aiGotoSettings'); if(g) g.addEventListener('click',()=>{ closeAiModal(); openSettings(); });
     return;
   }
-  startScene(sc);
+  if(session===aiSession) startScene(sc);
 }
 function aiAgainAction(){
   if(aiState.phase==='scenes'){ openAiDialogue(); return; }
@@ -5644,11 +5657,14 @@ function aiGuideHtml(msg){
 function openAiDialogue(ev){
   /* 只认真人点击：无事件的调用（自动触发）在词卡刚打开 1.5 秒内一律忽略 */
   if(ev&&ev.isTrusted===false) return;
-  if(!ev&&Date.now()-(wmOpenedAt||0)<1500) return;
-  const term=wmState.term;
+  if(!wmState&&!$('#aiModal').classList.contains('show')) return;
+  if(!ev&&!$('#aiModal').classList.contains('show')&&Date.now()-(wmOpenedAt||0)<1500) return;
+  const term=wmState?wmState.term:aiState.term;
+  if(!term) return;
+  const session=++aiSession;
   const ex=state.words.find(x=>x.term.toLowerCase()===term.toLowerCase());
-  const definition=($('#wmDefinition').value||'').trim()||(ex&&ex.definition)||'';
-  const examples=collectExamples().map(x=>x.en).filter(Boolean);
+  const definition=(wmState&&($('#wmDefinition').value||'').trim())||(ex&&ex.definition)||aiState.definition||'';
+  const examples=wmState?collectExamples().map(x=>x.en).filter(Boolean):(aiState.examples||[]).slice();
   if(!examples.length&&ex) examples.push(...(ex.examples||[]).map(x=>x.en).filter(Boolean));
   aiState={seq:0,phase:'scenes',term,definition,examples,scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
   $('#aiTitle').textContent='情景口语 · '+term;
@@ -5667,7 +5683,7 @@ function openAiDialogue(ev){
     return;
   }
   aiSuggestScenes().then(r=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     const sc=(r.scenes||[]).filter(x=>x&&x.title).slice(0,3);
     if(!sc.length) throw new Error('返回内容无法解析，请重试');
     aiState.scenes=sc;
@@ -5676,13 +5692,13 @@ function openAiDialogue(ev){
     aiSetChatbar('scenes');
     aiRenderScenes();
   }).catch(err=>{
-    if(mySeq!==aiState.seq) return;
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
     $('#aiScene').innerHTML='<div class="empty-state">'+esc(String(err&&err.message||'生成失败，请重试'))+'</div>';
     const r=$('#aiRetry'); if(r) r.addEventListener('click',openAiDialogue);
   });
 }
-function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 
 /* ============ 云同步（GitHub Gist / WebDAV / 自建地址） ============
    不依赖本机 localStorage：整份数据存到你自己的一个私密位置，
@@ -6223,6 +6239,7 @@ function importData(file){
 function clearSettings(){
   showConfirm({title:'清除 AI 配置？',msg:'清除后，赋能将改用免费词典查询。',okText:'清除',danger:true,onOk(){
     state.settings={baseUrl:'',apiKey:'',model:'',tone:'friend',theme:state.settings.theme||'dark',fs:state.settings.fs||'m'}; save();
+    try{localStorage.removeItem('en-ai-image-v1');}catch(_){ }
     $('#stBase').value=''; $('#stKey').value=''; $('#stModel').value=''; $('#stTone').value='friend';
     $('#settingsModal').classList.remove('show');
     toast('已清除配置');
@@ -7642,6 +7659,7 @@ const A_KEY='english-notes-learning-a-v1';
 const A_PREF_KEY='english-notes-ai-route-a-v1';
 const A_TASK_KEY='english-notes-chatgpt-task-a-v1';
 const AI_PROVIDERS_KEY='en-ai-providers-v1';
+const AI_IMAGE_KEY='en-ai-image-v1';
 const AI_PROVIDER_DEFAULTS={
   deepseek:{label:'DeepSeek',baseUrl:'https://api.deepseek.com',apiKey:'',model:'deepseek-flash'},
   openai:{label:'OpenAI GPT',baseUrl:'https://api.openai.com/v1',apiKey:'',model:'gpt-4o-mini'}
@@ -7691,8 +7709,38 @@ function aiProviderRefreshFields(){
 function aRoute(){return localStorage.getItem(A_PREF_KEY)==='chatgpt'?'chatgpt':'api';}
 function aiApiConfig(){return aiProviderCfg();}
 function aAiReady(){const cfg=aiProviderCfg();return aRoute()==='chatgpt'||!!(String(cfg.apiKey||'').trim()&&String(cfg.model||'').trim()&&String(cfg.baseUrl||'').trim());}
+function aiImageConfig(){
+  const saved=aRead(AI_IMAGE_KEY,{}),provider=aiProviderCfg(),useProvider=provider.name==='openai';
+  return {baseUrl:String(saved.baseUrl||(useProvider?provider.baseUrl:'')).trim(),apiKey:String(saved.apiKey||(useProvider?provider.apiKey:'')).trim(),model:String(saved.model||'gpt-image-1').trim()};
+}
+function aiImageSaveFields(){
+  aStore(AI_IMAGE_KEY,JSON.stringify({baseUrl:$('#stImageBase').value.trim(),apiKey:$('#stImageKey').value.trim(),model:$('#stImageModel').value.trim()||'gpt-image-1'}));
+}
+function aiImageRefreshFields(){
+  const cfg=aiImageConfig(),base=$('#stImageBase'),key=$('#stImageKey'),model=$('#stImageModel');
+  if(base&&document.activeElement!==base)base.value=cfg.baseUrl;
+  if(key&&document.activeElement!==key)key.value=cfg.apiKey;
+  if(model&&document.activeElement!==model)model.value=cfg.model;
+}
+function aImageCacheStats(all,words){
+  const cache=all&&typeof all==='object'?all:{};
+  const list=Array.isArray(words)?words:[];
+  let cachedWords=0,confirmedWords=0;
+  const missingTerms=[];
+  list.forEach(w=>{
+    const rec=cache[wmImgKeyOf(w&&w.term)],has=!!(rec&&(rec.local||(Array.isArray(rec.cands)&&rec.cands.length)||(rec.memo&&rec.memo.scene)));
+    if(has){cachedWords++;if(rec.confirmed)confirmedWords;}else if(w&&w.term)missingTerms.push(String(w.term));
+  });
+  return {records:Object.keys(cache).length,cachedWords,confirmedWords,missingWords:missingTerms.length,missingTerms:missingTerms.slice(0,20)};
+}
+function aImageStatsFromStorage(storage){
+  let words=[],all={};
+  try{const main=JSON.parse(storage&&storage[LS_KEY]||'{}');words=main.words||[];}catch(_){ }
+  try{all=JSON.parse(storage&&storage[WM_IMG_KEY]||'{}')||{};}catch(_){ }
+  return aImageCacheStats(all,words);
+}
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
-function aBackupObject(){return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length},storage:aBackupKeys()};}
+function aBackupObject(){const image=aImageCacheStats(wmImgAll(),state.words);return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:image.records,imageCacheWords:image.cachedWords,imageCacheConfirmed:image.confirmedWords,imageCacheMissing:image.missingWords},storage:aBackupKeys()};}
 function aDownloadBackup(){
   try{if(ui.mode==='edit')persistEditor();if(wmState&&!wmState.saved)wmDraftSave();writeDraftSave();const pack=aBackupObject();const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download='英语学习完整备份-'+aDate(Date.now())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);$('#aBackupStatus').textContent='已请求下载：'+pack.counts.words+' 个表达、'+pack.counts.shots+' 张截图、'+pack.counts.writing+' 篇写作。请在下载列表确认文件已保存。';}
   catch(e){toast('备份失败：'+e.message,'warn');}
@@ -7715,6 +7763,17 @@ function aMergeExtra(key,localRaw,remoteRaw){
   if(key===A_PREF_KEY)return localRaw;
   let l,r;try{l=JSON.parse(localRaw);r=JSON.parse(remoteRaw);}catch(_){return localRaw;}
   if(key===A_KEY){return JSON.stringify({words:Object.assign({},r.words||{},l.words||{}),attempts:aMergeArray(l.attempts||[],r.attempts||[])});}
+  if(key===WM_IMG_KEY){
+    const out=Object.assign({},l||{});
+    Object.keys(r||{}).forEach(k=>{
+      const local=l&&l[k],remote=r&&r[k];
+      const remoteHasCandidates=remote&&Array.isArray(remote.cands)&&remote.cands.length;
+      const remoteConfirmed=!!(remote&&remote.confirmed),localConfirmed=!!(local&&local.confirmed);
+      const remoteIsPixabay=remote&&remote.prov==='pixabay',localIsOther=local&&local.prov&&local.prov!=='pixabay';
+      if(!local||((!Array.isArray(local.cands)||!local.cands.length)&&remoteHasCandidates)||(remoteConfirmed&&!localConfirmed)||(remoteIsPixabay&&localIsOther&&!localConfirmed)||(remote&&local&&(remote.at||0)>(local.at||0)))out[k]=remote;
+    });
+    return JSON.stringify(out);
+  }
   if(key===SHOTS_KEY){const out=Object.assign({},l);Object.keys(r||{}).forEach(k=>{if(!Array.isArray(r[k]))return;out[k]=aMergeArray(Array.isArray(l[k])?l[k]:[],r[k]);});return JSON.stringify(out);}
   if(Array.isArray(l)&&Array.isArray(r))return JSON.stringify(aMergeArray(l,r));
   if(l&&r&&typeof l==='object'&&typeof r==='object'&&!Array.isArray(l)&&!Array.isArray(r))return JSON.stringify(Object.assign({},r,l));
@@ -7732,19 +7791,20 @@ function aPrepareImport(pack){
   const incoming=JSON.parse(storage[LS_KEY]);
   const merged=aMergeState(base,incoming),plan={[LS_KEY]:JSON.stringify(merged)};
   Object.keys(storage).forEach(k=>{if(k===LS_KEY||!k.startsWith('english-notes-')||typeof storage[k]!=='string')return;plan[k]=aMergeExtra(k,localStorage.getItem(k),storage[k]);});
-  return {plan,merged,added:merged.words.length-(base.words||[]).length};
+  return {plan,merged,added:merged.words.length-(base.words||[]).length,imageStats:aImageStatsFromStorage(storage)};
 }
 function aCommitImport(prepared){
   const before={};Object.keys(prepared.plan).forEach(k=>before[k]=localStorage.getItem(k));
   try{Object.keys(prepared.plan).forEach(k=>localStorage.setItem(k,prepared.plan[k]));}
   catch(e){Object.keys(before).forEach(k=>{if(before[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,before[k]);});throw new Error('空间不足，导入已撤回，请先备份并释放空间');}
   state=migrate(prepared.merged);aData=aRead(A_KEY,{words:{},attempts:[]});ui.mode='today';ui.note=null;ui.wordDate='';applyTheme();render();
-  $('#aBackupStatus').textContent='已补充 '+prepared.added+' 个表达；原有表达保持不变。当前共 '+state.words.length+' 个表达、'+shotsTotal(shotsAll())+' 张截图。';
+  const image=aImageCacheStats(wmImgAll(),state.words);
+  $('#aBackupStatus').textContent='已补充 '+prepared.added+' 个表达；备份带来 '+(prepared.imageStats?prepared.imageStats.records:0)+' 条配图记录。当前共 '+state.words.length+' 个表达、'+shotsTotal(shotsAll())+' 张截图、'+image.records+' 条配图记录，已确认 '+image.confirmedWords+' 条。';
 }
 function aImportFile(file){
-  if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const p=aPrepareImport(JSON.parse(fr.result));showConfirm({title:'补充导入备份？',msg:'将补充 '+p.added+' 个表达。同 ID／同表达的本机内容不覆盖。请先确认已保存当前完整备份。',okText:'补充导入',onOk(){try{aCommitImport(p);}catch(e){toast(e.message,'warn');}}});}catch(e){toast('导入失败：'+e.message,'warn');}};fr.readAsText(file);
+  if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const p=aPrepareImport(JSON.parse(fr.result)),img=p.imageStats||{};showConfirm({title:'补充导入备份？',msg:'将补充 '+p.added+' 个表达，并带来 '+(img.records||0)+' 条配图记录，其中已确认 '+(img.confirmedWords||0)+' 条。同 ID／同表达的本机内容不覆盖。',okText:'补充导入',onOk(){try{aCommitImport(p);}catch(e){toast(e.message,'warn');}}});}catch(e){toast('导入失败：'+e.message,'warn');}};fr.readAsText(file);
 }
-function aOpenBackup(){$('#aBackupStatus').textContent='当前设备：'+state.words.length+' 个表达，'+shotsTotal(shotsAll())+' 张截图。';$('#aBackup').classList.add('show');}
+function aOpenBackup(){const image=aImageCacheStats(wmImgAll(),state.words);$('#aBackupStatus').textContent='当前设备：'+state.words.length+' 个表达，'+shotsTotal(shotsAll())+' 张截图，'+image.records+' 条配图记录，已确认 '+image.confirmedWords+' 条，缺少 '+image.missingWords+' 个词条。';$('#aBackup').classList.add('show');}
 function aOpenWords(filter,date){ui.mode='words';ui.wordFilter=filter||'all';ui.wordDate=date||'';ui.sel=[];ui.selMode=false;render();}
 function aFieldValues(){return {purpose:$('#aPurpose').value,ownSentence:$('#aOwn').value,original:$('#aOriginal').value,sourceUrl:$('#aSource').value,sourceTime:$('#aTime').value};}
 const aOriginalOpenWord=openWordModal;
@@ -7901,6 +7961,9 @@ aiCall=async function(messages,opts){
  * 自动生成使用已配置的 OpenAI 兼容 API。ChatGPT 往返模式仍保留缓存、图库和手动任务流程。 */
 let aImageSlide={term:'',kind:'ai',touchX:0,touchY:0};
 let aImageGenerating=false;
+let aImageRequestSeq=0;
+let aImageRequestAbort=null;
+let aImageRequestTerm='';
 function aImageRecord(term){
   const rec=wmImgCached(term);
   return rec&&typeof rec==='object'?rec:{local:false,cands:[],idx:0};
@@ -7909,6 +7972,14 @@ function aImageCurrent(term){
   const rec=aImageRecord(term), c=Array.isArray(rec.cands)?rec.cands[rec.idx||0]:null;
   return c&&String(c.thumb||c.src||'').trim()?c:null;
 }
+function aImageCancel(){
+  aImageRequestSeq++;
+  if(aImageRequestAbort){try{aImageRequestAbort.abort();}catch(_){} }
+  aImageRequestAbort=null;
+  aImageRequestTerm='';
+  aImageGenerating=false;
+}
+window.aImageCancel=aImageCancel;
 function aImageSetConfirm(rec){
   const confirm=$('#wmIllusConfirm'), more=$('#wmIllusMore');
   if(confirm) confirm.classList.toggle('hidden',!aImageCurrent(rec&&rec.term||'')||!!(rec&&rec.confirmed));
@@ -7938,8 +8009,7 @@ function aImageRenderShot(term){
 function aImageSwipe(dir){
   if(!wmState||!wmState.term)return;
   const term=wmState.term;
-  if(dir<0&&aImageSlide.kind==='ai'&&shotsGet(term).length){aImageRenderShot(term);return;}
-  if(dir>0&&aImageSlide.kind==='shot'){aImageRenderAi(term);return;}
+  if(dir>0&&aImageSlide.kind==='ai'&&shotsGet(term).length){aImageRenderShot(term);return;}
   if(dir<0&&aImageSlide.kind==='shot'){aImageRenderAi(term);return;}
 }
 function aImageBindSwipe(){
@@ -7948,25 +8018,36 @@ function aImageBindSwipe(){
   const end=e=>{const p=e.changedTouches?e.changedTouches[0]:e,dx=p.clientX-aImageSlide.touchX,dy=p.clientY-aImageSlide.touchY;if(Math.abs(dx)<45||Math.abs(dx)<Math.abs(dy)*1.2)return;aImageSwipe(dx<0?-1:1);};
   box.addEventListener('touchstart',start,{passive:true});box.addEventListener('touchend',end,{passive:true});
 }
-async function aGenerateImage(term){
-  if(aRoute()!=='api'||!aAiReady())return null;
-  const st=state.settings||{},base=(st.baseUrl||'https://api.openai.com/v1').replace(/\/+$/,'');
+async function aGenerateImage(term,signal){
+  if(aRoute()!=='api')return null;
+  const image=aiImageConfig();
+  if(!image.baseUrl||!image.apiKey||!image.model)throw new Error('请在设置中填写独立的 AI 图片接口地址、Key 和模型');
+  const base=image.baseUrl.replace(/\/+$/,'');
   const w=state.words.find(x=>String(x.term||'').toLowerCase()===String(term||'').toLowerCase()), m=w?aMeta(w):{};
   const prompt='为英语表达「'+term+'」生成一张帮助记忆的横向学习插图。语境：'+(m.original||m.purpose||w&&w.definition||'日常真实使用场景')+'。只表现一个自然动作和一个关键物件，画面干净、具体、适合手机查看，不要在图中出现任何文字、字幕、水印或单词。';
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),45000);
-  try{
-    const res=await fetch(base+'/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.apiKey},body:JSON.stringify({model:st.imageModel||'gpt-image-1',prompt,size:'1024x1024'}),signal:ctrl.signal});
-    if(!res.ok)throw new Error('图片生成 HTTP '+res.status);
-    const data=await res.json(),item=data&&data.data&&data.data[0],src=item&&(item.b64_json?'data:image/png;base64,'+item.b64_json:item.url);
-    if(!src)throw new Error('图片生成没有返回图片');
-    return {src,thumb:src,credit:'AI 生成',createdAt:Date.now()};
-  }finally{clearTimeout(timer);}
+  const requestSignal=signal;
+  const res=await fetch(base+'/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+image.apiKey},body:JSON.stringify({model:image.model,prompt,size:'1024x1024'}),signal:requestSignal});
+  if(!res.ok)throw new Error('图片生成 HTTP '+res.status);
+  const data=await res.json(),item=data&&data.data&&data.data[0],src=item&&(item.b64_json?'data:image/png;base64,'+item.b64_json:item.url);
+  if(!src)throw new Error('图片生成没有返回图片');
+  return {src,thumb:src,credit:'AI 生成',createdAt:Date.now()};
 }
 async function aImageOpen(term,force){
   const t=String(term||'').trim();if(!t)return;
+  if(aImageRequestTerm&&aImageRequestTerm!==t)aImageCancel();
   const rec=aImageRecord(t);rec.term=t;
   if(!force&&rec.confirmed&&aImageRenderAi(t)){aImageBindSwipe();return;}
   if(!force&&aImageRenderAi(t)){aImageBindSwipe();return;}
+  const photo=typeof photoKey==='function'?photoKey():null;
+  if(photo){
+    if(force||rec.imgFailAt){wmImgStore(t,{local:rec.local===false?false:rec.local,cands:[],idx:0,prov:photo.prov,confirmed:false});}
+    const legacy=window.aLegacyWmIllusLoad;
+    if(legacy)await legacy(t);
+    aImageBindSwipe();
+    const shown=aImageRenderAi(t);if(shown)return;
+    const note=$('#aImageSwipeNote');if(note)note.textContent='Pixabay 没有返回图片，可检查 Key 或网络';
+    return;
+  }
   if(aRoute()!=='api'){
     const legacy=window.aLegacyWmIllusLoad;
     if(legacy)await legacy(t);
@@ -7976,13 +8057,20 @@ async function aImageOpen(term,force){
     return;
   }
   if(aImageGenerating)return;
-  aImageGenerating=true;wmIllusSkeleton();
+  const requestId=++aImageRequestSeq,ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),45000);
+  aImageRequestAbort=ctrl;aImageRequestTerm=t;aImageGenerating=true;wmIllusSkeleton();
   try{
-    const c=await aGenerateImage(t);if(!c)return;
+    const c=await aGenerateImage(t,ctrl.signal);if(!c)return;
+    if(requestId!==aImageRequestSeq||!wmState||String(wmState.term||'').trim()!==t)return;
     const fresh=aImageRecord(t),cands=Array.isArray(fresh.cands)?fresh.cands.slice():[];
     cands.push(c);const next={local:false,cands:cands.slice(-6),idx:Math.max(0,cands.slice(-6).length-1),src:'ai',prov:'ai',confirmed:false};wmImgStore(t,next);aImageRenderAi(t);aImageBindSwipe();
-  }catch(e){wmIllusHide();toast('AI 图片生成失败：'+(e.message||'请重试'),'warn');}
-  finally{aImageGenerating=false;}
+  }catch(e){
+    if(e&&e.name==='AbortError')return;
+    if(requestId===aImageRequestSeq&&wmState&&String(wmState.term||'').trim()===t){wmIllusFail(t,'AI 图片生成失败 · 点这里重试');toast('AI 图片生成失败：'+(e.message||'请重试'),'warn');}
+  }finally{
+    clearTimeout(timer);
+    if(requestId===aImageRequestSeq){aImageGenerating=false;aImageRequestAbort=null;aImageRequestTerm='';}
+  }
 }
 const aLegacyWmIllusLoad=wmIllusLoad;window.aLegacyWmIllusLoad=aLegacyWmIllusLoad;
 wmIllusLoad=async function(term){await aImageOpen(term,false);};
@@ -8020,9 +8108,9 @@ function aSetStudyExamplesExpanded(show){
 function aSetStudyMode(study){
   aStudyMode=!!study;const modal=$('#wordModal'),button=$('#aStudyEdit'),note=$('#aStudyModeNote');
   if(modal)modal.classList.toggle('a-study-mode',aStudyMode);
-  if(button)button.textContent=aStudyMode?'编辑整理':'收起整理';
+  if(button)button.textContent=aStudyMode?'编辑整理':'返回学习卡片';
   if(aStudyMode)aSetStudyExamplesExpanded(false);else aSetStudyExamplesExpanded(true);
-  if(note)note.textContent=aStudyMode?'先看图、释义和例句，再决定是否整理':'正在编辑完整词条，保存后可回到学习卡片';
+  if(note)note.textContent=aStudyMode?'先看图、释义和例句，再决定是否整理':'正在编辑完整词条，保存后可返回学习卡片';
 }
 function aApplyStudyMode(){aMountStudyCard();aSetStudyMode(true);}
 function aRefreshSettings(){
@@ -8031,6 +8119,7 @@ function aRefreshSettings(){
   ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&el.closest('.st-field'))el.closest('.st-field').hidden=aRoute()!=='api';});
   $$('#stgAi .st-presets').forEach(el=>el.hidden=true);
   const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':aiProviderCfg().label;
+  aiImageRefreshFields();
   ttsRefreshSettings();
 }
 function ttsRefreshSettings(){
@@ -8073,7 +8162,7 @@ function aInit(){
   $('#aApply').onclick=()=>{if(!aBridgeJob)return;try{const value=aValidateResult(aParseResult($('#aResult').value),aBridgeJob.prompt);const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');job.resolve(value);}catch(e){$('#aBridgeError').textContent='还不能使用：'+e.message;}};
   $('#aRecallClose').onclick=()=>{$('#aRecall').classList.remove('show');render();};$('#aBackupClose').onclick=()=>$('#aBackup').classList.remove('show');$('#aExport').onclick=aDownloadBackup;$('#aImport').onchange=e=>{aImportFile(e.target.files[0]);e.target.value='';};
   ['aPurpose','aOwn','aOriginal','aSource','aTime'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(wmState&&wmState.aMetaKey)aPut(wmState.aMetaKey,aFieldValues());}));
-  const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='左滑查看截图';cap.append(note);}
+  const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='右滑查看截图';cap.append(note);}
   const confirm=$('#wmIllusConfirm');if(confirm){confirm.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(!wmState)return;const rec=aImageRecord(wmState.term),c=aImageCurrent(wmState.term);if(!c)return;rec.term=wmState.term;rec.confirmed=true;wmImgStore(wmState.term,rec);aImageSetConfirm(rec);toast('图片已确定，之后打开会保持这一张','ok');},{capture:true});}
   const more=$('#wmIllusMore');
   if(more)more.addEventListener('click',()=>{
@@ -8094,6 +8183,8 @@ function aInit(){
   $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
   ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
   $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
+  const image=document.createElement('div');image.className='st-field';image.id='stAiImage';image.hidden=true;image.innerHTML='<label>高级 AI 图片生成（可选）</label><input id="stImageBase" placeholder="支持图片生成的接口地址，例如 https://api.openai.com/v1" autocomplete="off"><input id="stImageKey" type="password" placeholder="图片接口 API Key" autocomplete="off"><input id="stImageModel" placeholder="图片模型，例如 gpt-image-1" autocomplete="off"><p class="a-note">当前默认使用 Pixabay。只有需要真正的 AI 生图时才配置这里，DeepSeek 文本接口不能直接生成图片。</p>';aiBody.append(image);aiImageRefreshFields();
+  ['stImageBase','stImageKey','stImageModel'].forEach(id=>$('#'+id).addEventListener('input',aiImageSaveFields));
   const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="直连时粘贴豆包 API Key，中转模式可留空" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><input id="stTtsRelay" placeholder="可选：服务端中转地址，例如 https://你的域名/tts" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">填写中转地址后，网页只请求中转服务，豆包 API Key 保存在服务端。未填写中转地址时继续直连豆包。</p>';
   aiBody.append(tts);ttsRefreshSettings();
   ['stTtsKey','stTtsSpeaker','stTtsRelay','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),relayUrl:$('#stTtsRelay').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
@@ -8103,7 +8194,7 @@ function aInit(){
   const syncBody=$('#stgSync .st-g-body');if(syncBody){const note=document.createElement('p');note.className='a-note';note.textContent='A 版默认暂停旧同步的自动上传与启动合并，以保留本机内容。完整备份覆盖截图、写作和学习记录；旧同步码仅搬运部分主数据，不是完整备份。';syncBody.prepend(note);}
   $('#stgSync').hidden=true;/* 2026-11-08 恢复：单词配图入口重新显示，Pixabay 实测可达（不需要节点） */
   const legacyNotes=$$('#settingsModal .st-note');legacyNotes.forEach(el=>{el.textContent='A 版默认使用 ChatGPT 往返；自动模式仅使用 OpenAI 官方 API，单独计费。原有同步配置保留，但新版不自动上传或合并。跨设备请使用完整备份。';});
-  const help=$('#settingsModal .st-help');if(help)help.innerHTML='<b>AI：</b>默认把任务复制到 ChatGPT，练完导回结果；套餐和模型由你的 ChatGPT 账号决定。自动调用仅支持你自己配置的 OpenAI 官方 API，费用单独结算。<br><b>数据：</b>表达仍在本机浏览器，旧键名保持兼容；新增学习记录独立保存。跨地址使用先导出备份。<br><b>同步：</b>保留旧配置，默认暂停自动上传与启动合并；截图、写作和新学习记录请用完整备份迁移。<br><b>跟读：</b>保留播放、录音与回听；分数只作文本匹配、节奏和音量参考。';
+  const help=$('#settingsModal .st-help');if(help)help.innerHTML='<b>AI：</b>默认把任务复制到 ChatGPT，练完导回结果；套餐和模型由你的 ChatGPT 账号决定。自动调用仅支持你自己配置的 OpenAI 官方 API，费用单独结算。<br><b>图片：</b>当前默认使用 Pixabay，独立 AI 图片配置属于隐藏的高级功能，通常不需要填写。<br><b>数据：</b>表达仍在本机浏览器，旧键名保持兼容；新增学习记录独立保存。跨地址使用先导出备份。<br><b>同步：</b>保留旧配置，默认暂停自动上传与启动合并；截图、写作和新学习记录请用完整备份迁移。<br><b>跟读：</b>保留播放、录音与回听；分数只作文本匹配、节奏和音量参考。';
   $('#stModel').placeholder='填写你在 OpenAI API 中可用的模型名称';
   aRefreshSettings();
 }
@@ -8233,7 +8324,7 @@ function bInit(){
   $('#bOriginalAudio').ontimeupdate=()=>{const a=$('#bOriginalAudio'),start=Number($('#bStart').value)||0,end=Number($('#bEnd').value);if(end>start&&a.currentTime>=end)a.currentTime=start;};
   $('#bSaveRange').onclick=()=>{const id=$('#bAudioWord').value,start=Number($('#bStart').value)||0,end=Number($('#bEnd').value)||0;if(!id||start<0||(end&&end<=start)){toast('结束时间需要大于开始时间');return;}const all=aRead('english-notes-audio-v2',{});all[id]={...(all[id]||{}),start,end,updatedAt:Date.now()};aStore('english-notes-audio-v2',JSON.stringify(all));toast('循环范围已保存');};
   $('#bSystemFollow').onclick=()=>{if(bRecorder){toast('请先停止录音');return;}bRecordingRequest=null;$('#bAudioWord').disabled=false;const w=state.words.find(w=>w.id===$('#bAudioWord').value);if(w){$('#bOriginalAudio').pause();$('#bAudio').classList.remove('show');openFollow(aMeta(w).original||w.examples?.[0]?.en||w.term,w.term,'');}};
-  const button=document.createElement('button');button.className='btn';button.textContent='听原音／录音对照';button.onclick=()=>bOpenAudio(state.words.find(w=>w.term===wmState.term));$('#wmBody').append(button);
+  const button=document.createElement('button');button.className='btn a-study-advanced';button.textContent='听原音／录音对照';button.onclick=()=>bOpenAudio(state.words.find(w=>w.term===wmState.term));$('#wmBody').append(button);
   window.addEventListener('online',()=>bSync());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')bSync();});
   setInterval(()=>{if(document.visibilityState==='visible')bSync();},60000);
   bSync();
