@@ -4,6 +4,7 @@
 
 | 日期 | 做了什么 | 怎么验的 | 结果 | 下一步 |
 |---|---|---|---|---|
+| 2026-11-15 | 笔记页第二层整理入口：编辑页新增“整理”按钮和底部整理面板，显示当前笔记已关联表达，可直接打开词卡、表达库或今日复习；离开编辑页自动关闭面板 | `node --check` 检查编辑器、返回流程和首页模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查整理入口、每日一句和三套主题；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机整理面板验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-笔记整理入口.html`，在旧笔记中点“整理”，检查关联词条、打开词卡、表达库和今日复习跳转 |
 | 2026-11-15 | 按原方案继续做笔记页布局：增加“笔记 / 原始语境 · 个人表达”上下文栏、正文分区和更清晰的编辑留白；将“深色纸张杂志式首页”记入 `docs/backlog.md`，当前不实施 | `node --check` 检查编辑器和首页相关模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查笔记页标记、每日一句和待考虑清单；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机笔记编辑验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-笔记页布局第一步.html`，编辑旧笔记并确认标题、正文、标亮和返回流程 |
 | 2026-11-15 | 首页激励层：加入按本地日期轮换的「每日一句」和依据待整理、到期回想、待再次输出状态变化的鼓励语；不新增学习数据字段 | `node --check` 检查 3 个相关模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查两个产物均包含 `daily-quote` 和 3 个主题选项；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机视觉验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-每日一句首页激励.html`，确认每日一句卡片的层级、字号和滚动体验 |
 | 2026-11-14 | 视觉主题第一步：新增「午夜编辑」「温暖纸张」「柔雾薰衣草」三套主题；保留旧深色/浅色值兼容；调整标题字体、卡片圆角和主题色元标签 | `node --check src/js/01_core.js`；`node --check src/js/07_sync_settings.js`；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；两种产物均静态检查到 3 个主题选项；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；线上版本未改，手机视觉验收待用户确认 | 用户确认后继续每日一句/鼓励语和笔记页布局改版 |

@@ -89,6 +89,7 @@
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
       <span id="edBreadcrumb"></span>
+      <button class="note-organize-btn" id="btnNoteOrganize" type="button" title="整理这篇笔记">整理</button>
       <button class="kb-btn" id="btnKb" title="收起键盘" aria-label="收起键盘">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="10" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 13h12"/><path d="M9 19l3 2 3-2"/></svg>
         <span>收起键盘</span>
@@ -103,6 +104,14 @@
       <div id="edHint" class="ed-hint hidden">行首打 <b>#</b> 加空格 = 大标题；选中英文单词点 <b>empower</b> 存进表达库</div>
       <div class="note-body-label">正文</div>
       <div id="noteBody" class="ce" contenteditable="true" data-ph="写点什么…"></div>
+    </div>
+    <div id="noteOrganize" aria-hidden="true">
+      <div class="note-organize-card" role="dialog" aria-modal="true" aria-labelledby="noteOrganizeTitle">
+        <div class="note-organize-head"><div><div class="note-organize-kicker">编辑整理</div><h3 id="noteOrganizeTitle">整理这篇笔记</h3></div><button class="modal-close" id="noteOrganizeClose" type="button" aria-label="关闭整理面板">✕</button></div>
+        <p class="note-organize-summary" id="noteOrganizeSummary"></p>
+        <div class="note-organize-list" id="noteOrganizeWords"></div>
+        <div class="note-organize-actions"><button class="btn" id="noteOrganizeWordsBtn" type="button">打开表达库</button><button class="btn primary" id="noteOrganizeFlashBtn" type="button">去今日复习</button></div>
+      </div>
     </div>
   </main>
 </div>

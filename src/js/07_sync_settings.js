@@ -928,6 +928,15 @@ function bindEvents(){
   /* 编辑器 */
   $('#btnBack').addEventListener('click',backToList);
   $('#btnDelNote').addEventListener('click',()=>{ if(ui.note) deleteNote(ui.note); });
+  $('#btnNoteOrganize').addEventListener('click',openNoteOrganize);
+  $('#noteOrganizeClose').addEventListener('click',closeNoteOrganize);
+  $('#noteOrganize').addEventListener('click',e=>{
+    if(e.target.id==='noteOrganize'){ closeNoteOrganize(); return; }
+    const b=e.target.closest('[data-note-organize-word]');
+    if(b){ const w=state.words.find(x=>x.id===b.dataset.noteOrganizeWord); if(w){ closeNoteOrganize(); openWordModal(w.term,null,null,w); } }
+  });
+  $('#noteOrganizeWordsBtn').addEventListener('click',()=>{ closeNoteOrganize(); ui.mode='words'; ui.note=null; ui.wordFilter='all'; ui.wordTag=''; ui.selMode=false; ui.sel=[]; render(); });
+  $('#noteOrganizeFlashBtn').addEventListener('click',()=>{ closeNoteOrganize(); ui.mode='flash'; ui.note=null; ui.flash=null; render(); });
   titleEl.addEventListener('input',onEditorInput);
   bodyEl.addEventListener('input',onEditorInput);
   bodyEl.addEventListener('paste',e=>{

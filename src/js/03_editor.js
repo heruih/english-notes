@@ -191,7 +191,7 @@ function renderFlash(){
 const titleEl=$('#noteTitle'), bodyEl=$('#noteBody'), editorWrap=$('#editorWrap');
 function renderEditor(){
   const n=state.notes.find(x=>x.id===ui.note);
-  if(!n||ui.mode!=='edit'){ editorWrap.classList.add('hidden'); return; }
+  if(!n||ui.mode!=='edit'){ editorWrap.classList.add('hidden'); closeNoteOrganize(); return; }
   editorWrap.classList.remove('hidden');
   $('#edBreadcrumb').textContent=folderName()+' / '+(n.title||'无标题');
   if(ui.lastNote!==ui.note){
@@ -204,6 +204,28 @@ function renderEditor(){
   }
   updatePlaceholders();
   syncEdHint();
+}
+function noteLinkedWords(noteId){
+  return state.words.filter(w=>Array.isArray(w.notes)&&w.notes.some(x=>x&&x.noteId===noteId));
+}
+function closeNoteOrganize(){
+  const panel=$('#noteOrganize');
+  if(!panel)return;
+  panel.classList.remove('show');
+  panel.setAttribute('aria-hidden','true');
+}
+function openNoteOrganize(){
+  const panel=$('#noteOrganize'),summary=$('#noteOrganizeSummary'),list=$('#noteOrganizeWords');
+  const n=state.notes.find(x=>x.id===ui.note);
+  if(!panel||!n)return;
+  persistEditor();
+  const words=noteLinkedWords(n.id);
+  if(summary)summary.textContent=words.length?'这篇笔记已关联 '+words.length+' 个表达。点词条可直接查看，完整整理仍在表达库中进行。':'这篇笔记暂时还没有关联表达。选中文字后点 empower，就能加入表达库。';
+  if(list){
+    list.innerHTML=words.length?words.map(w=>'<button class="note-organize-word" type="button" data-note-organize-word="'+esc(w.id)+'"><span>'+esc(w.term)+'</span><small>'+esc((w.definition||'待补释义').split('\n')[0])+'</small></button>').join(''):'<div class="note-organize-empty">还没有关联表达</div>';
+  }
+  panel.classList.add('show');
+  panel.setAttribute('aria-hidden','false');
 }
 
 /* 首次新建笔记时的一行提示：用够 3 次就不再出现，输入第一个字就收起 */
