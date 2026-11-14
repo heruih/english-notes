@@ -579,9 +579,9 @@ function aSetStudyExamplesExpanded(show){
 function aSetStudyMode(study){
   aStudyMode=!!study;const modal=$('#wordModal'),button=$('#aStudyEdit'),note=$('#aStudyModeNote');
   if(modal)modal.classList.toggle('a-study-mode',aStudyMode);
-  if(button)button.textContent=aStudyMode?'编辑整理':'收起整理';
+  if(button)button.textContent=aStudyMode?'编辑整理':'返回学习卡片';
   if(aStudyMode)aSetStudyExamplesExpanded(false);else aSetStudyExamplesExpanded(true);
-  if(note)note.textContent=aStudyMode?'先看图、释义和例句，再决定是否整理':'正在编辑完整词条，保存后可回到学习卡片';
+  if(note)note.textContent=aStudyMode?'先看图、释义和例句，再决定是否整理':'正在编辑完整词条，保存后可返回学习卡片';
 }
 function aApplyStudyMode(){aMountStudyCard();aSetStudyMode(true);}
 function aRefreshSettings(){
@@ -792,7 +792,7 @@ function bInit(){
   $('#bOriginalAudio').ontimeupdate=()=>{const a=$('#bOriginalAudio'),start=Number($('#bStart').value)||0,end=Number($('#bEnd').value);if(end>start&&a.currentTime>=end)a.currentTime=start;};
   $('#bSaveRange').onclick=()=>{const id=$('#bAudioWord').value,start=Number($('#bStart').value)||0,end=Number($('#bEnd').value)||0;if(!id||start<0||(end&&end<=start)){toast('结束时间需要大于开始时间');return;}const all=aRead('english-notes-audio-v2',{});all[id]={...(all[id]||{}),start,end,updatedAt:Date.now()};aStore('english-notes-audio-v2',JSON.stringify(all));toast('循环范围已保存');};
   $('#bSystemFollow').onclick=()=>{if(bRecorder){toast('请先停止录音');return;}bRecordingRequest=null;$('#bAudioWord').disabled=false;const w=state.words.find(w=>w.id===$('#bAudioWord').value);if(w){$('#bOriginalAudio').pause();$('#bAudio').classList.remove('show');openFollow(aMeta(w).original||w.examples?.[0]?.en||w.term,w.term,'');}};
-  const button=document.createElement('button');button.className='btn';button.textContent='听原音／录音对照';button.onclick=()=>bOpenAudio(state.words.find(w=>w.term===wmState.term));$('#wmBody').append(button);
+  const button=document.createElement('button');button.className='btn a-study-advanced';button.textContent='听原音／录音对照';button.onclick=()=>bOpenAudio(state.words.find(w=>w.term===wmState.term));$('#wmBody').append(button);
   window.addEventListener('online',()=>bSync());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')bSync();});
   setInterval(()=>{if(document.visibilityState==='visible')bSync();},60000);
   bSync();
