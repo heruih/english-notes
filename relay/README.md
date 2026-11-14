@@ -6,7 +6,7 @@
 
 - `DOUBAO_API_KEY`，豆包 API Key，使用 `wrangler secret put DOUBAO_API_KEY`
 - `DOUBAO_RESOURCE_ID`，当前默认资源为 `volc.seedtts.default`。如果接口返回资源未授权，再以控制台“API 接入”页面显示的资源 ID 为准。
-- `ALLOWED_ORIGIN`，默认 `https://heruih.github.io`
+- `ALLOWED_ORIGIN`，默认 `https://heruih.github.io`。Worker 另外允许 `Origin: null` 和 `sitecase://...`，用于 Sitecase 打开的本地 HTML。
 
 部署命令示例：
 

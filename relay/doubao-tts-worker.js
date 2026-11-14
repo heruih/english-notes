@@ -1,7 +1,11 @@
 const UPSTREAM = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';
 
+function originAllowed(origin, allowed) {
+  return !origin || origin === allowed || origin === 'null' || /^sitecase:\/\//i.test(origin);
+}
+
 function cors(origin, allowed) {
-  const value = origin && origin === allowed ? origin : allowed;
+  const value = origin && originAllowed(origin, allowed) ? origin : allowed;
   return {
     'Access-Control-Allow-Origin': value,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -18,7 +22,7 @@ export default {
     const headers = cors(origin, allowed);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers });
-    if (origin && origin !== allowed) return new Response('Origin Not Allowed', { status: 403, headers });
+    if (!originAllowed(origin, allowed)) return new Response('Origin Not Allowed', { status: 403, headers });
     if (!env.DOUBAO_API_KEY) return new Response(JSON.stringify({ code: 500, message: 'DOUBAO_API_KEY 未配置' }), { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } });
 
     let input;

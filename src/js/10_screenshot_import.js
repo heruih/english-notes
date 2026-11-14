@@ -185,6 +185,7 @@ const A_KEY='english-notes-learning-a-v1';
 const A_PREF_KEY='english-notes-ai-route-a-v1';
 const A_TASK_KEY='english-notes-chatgpt-task-a-v1';
 const AI_PROVIDERS_KEY='en-ai-providers-v1';
+const AI_IMAGE_KEY='en-ai-image-v1';
 const AI_PROVIDER_DEFAULTS={
   deepseek:{label:'DeepSeek',baseUrl:'https://api.deepseek.com',apiKey:'',model:'deepseek-flash'},
   openai:{label:'OpenAI GPT',baseUrl:'https://api.openai.com/v1',apiKey:'',model:'gpt-4o-mini'}
@@ -234,6 +235,19 @@ function aiProviderRefreshFields(){
 function aRoute(){return localStorage.getItem(A_PREF_KEY)==='chatgpt'?'chatgpt':'api';}
 function aiApiConfig(){return aiProviderCfg();}
 function aAiReady(){const cfg=aiProviderCfg();return aRoute()==='chatgpt'||!!(String(cfg.apiKey||'').trim()&&String(cfg.model||'').trim()&&String(cfg.baseUrl||'').trim());}
+function aiImageConfig(){
+  const saved=aRead(AI_IMAGE_KEY,{}),provider=aiProviderCfg(),useProvider=provider.name==='openai';
+  return {baseUrl:String(saved.baseUrl||(useProvider?provider.baseUrl:'')).trim(),apiKey:String(saved.apiKey||(useProvider?provider.apiKey:'')).trim(),model:String(saved.model||'gpt-image-1').trim()};
+}
+function aiImageSaveFields(){
+  aStore(AI_IMAGE_KEY,JSON.stringify({baseUrl:$('#stImageBase').value.trim(),apiKey:$('#stImageKey').value.trim(),model:$('#stImageModel').value.trim()||'gpt-image-1'}));
+}
+function aiImageRefreshFields(){
+  const cfg=aiImageConfig(),base=$('#stImageBase'),key=$('#stImageKey'),model=$('#stImageModel');
+  if(base&&document.activeElement!==base)base.value=cfg.baseUrl;
+  if(key&&document.activeElement!==key)key.value=cfg.apiKey;
+  if(model&&document.activeElement!==model)model.value=cfg.model;
+}
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
 function aBackupObject(){return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length},storage:aBackupKeys()};}
 function aDownloadBackup(){
@@ -502,12 +516,14 @@ function aImageBindSwipe(){
   box.addEventListener('touchstart',start,{passive:true});box.addEventListener('touchend',end,{passive:true});
 }
 async function aGenerateImage(term,signal){
-  if(aRoute()!=='api'||!aAiReady())return null;
-  const st=state.settings||{},base=(st.baseUrl||'https://api.openai.com/v1').replace(/\/+$/,'');
+  if(aRoute()!=='api')return null;
+  const image=aiImageConfig();
+  if(!image.baseUrl||!image.apiKey||!image.model)throw new Error('请在设置中填写独立的 AI 图片接口地址、Key 和模型');
+  const base=image.baseUrl.replace(/\/+$/,'');
   const w=state.words.find(x=>String(x.term||'').toLowerCase()===String(term||'').toLowerCase()), m=w?aMeta(w):{};
   const prompt='为英语表达「'+term+'」生成一张帮助记忆的横向学习插图。语境：'+(m.original||m.purpose||w&&w.definition||'日常真实使用场景')+'。只表现一个自然动作和一个关键物件，画面干净、具体、适合手机查看，不要在图中出现任何文字、字幕、水印或单词。';
   const requestSignal=signal;
-  const res=await fetch(base+'/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.apiKey},body:JSON.stringify({model:st.imageModel||'gpt-image-1',prompt,size:'1024x1024'}),signal:requestSignal});
+  const res=await fetch(base+'/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+image.apiKey},body:JSON.stringify({model:image.model,prompt,size:'1024x1024'}),signal:requestSignal});
   if(!res.ok)throw new Error('图片生成 HTTP '+res.status);
   const data=await res.json(),item=data&&data.data&&data.data[0],src=item&&(item.b64_json?'data:image/png;base64,'+item.b64_json:item.url);
   if(!src)throw new Error('图片生成没有返回图片');
@@ -590,6 +606,7 @@ function aRefreshSettings(){
   ['stBase','stKey','stModel'].forEach(id=>{const el=$('#'+id);if(el&&el.closest('.st-field'))el.closest('.st-field').hidden=aRoute()!=='api';});
   $$('#stgAi .st-presets').forEach(el=>el.hidden=true);
   const el=$('#stgSumAi');if(el)el.textContent=aRoute()==='chatgpt'?'ChatGPT 往返':aiProviderCfg().label;
+  aiImageRefreshFields();
   ttsRefreshSettings();
 }
 function ttsRefreshSettings(){
@@ -653,6 +670,8 @@ function aInit(){
   $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
   ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
   $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
+  const image=document.createElement('div');image.className='st-field';image.id='stAiImage';image.innerHTML='<label>AI 图片生成（独立配置）</label><input id="stImageBase" placeholder="支持图片生成的接口地址，例如 https://api.openai.com/v1" autocomplete="off"><input id="stImageKey" type="password" placeholder="图片接口 API Key" autocomplete="off"><input id="stImageModel" placeholder="图片模型，例如 gpt-image-1" autocomplete="off"><p class="a-note">DeepSeek 负责文本和对话，不能直接生成图片。Sitecase 使用时建议填写支持跨来源请求的图片中转地址。</p>';aiBody.append(image);aiImageRefreshFields();
+  ['stImageBase','stImageKey','stImageModel'].forEach(id=>$('#'+id).addEventListener('input',aiImageSaveFields));
   const tts=document.createElement('div');tts.className='st-field';tts.id='stVolcTts';tts.innerHTML='<label>豆包语音合成 2.0（单词和例句）</label><input id="stTtsKey" type="password" placeholder="直连时粘贴豆包 API Key，中转模式可留空" autocomplete="off"><input id="stTtsSpeaker" placeholder="音色 ID，例如 zh_female_vv_uranus_bigtts（Vivi 2.0）" autocomplete="off"><input id="stTtsRelay" placeholder="可选：服务端中转地址，例如 https://你的域名/tts" autocomplete="off"><div class="st-inline"><input id="stTtsRate" type="number" min="-50" max="100" step="1" value="0" placeholder="语速"><input id="stTtsPitch" type="number" min="-12" max="12" step="1" value="0" placeholder="音调"><button class="btn" id="stTtsTest" type="button">试听</button></div><div class="bk-note" id="stTtsStatus">还未配置</div><p class="a-note">填写中转地址后，网页只请求中转服务，豆包 API Key 保存在服务端。未填写中转地址时继续直连豆包。</p>';
   aiBody.append(tts);ttsRefreshSettings();
   ['stTtsKey','stTtsSpeaker','stTtsRelay','stTtsRate','stTtsPitch'].forEach(id=>$('#'+id).addEventListener('input',()=>{const el=$('#'+id);volcTtsSave({apiKey:$('#stTtsKey').value.trim(),speaker:$('#stTtsSpeaker').value.trim(),relayUrl:$('#stTtsRelay').value.trim(),speechRate:Number($('#stTtsRate').value)||0,pitchRate:Number($('#stTtsPitch').value)||0});ttsRefreshSettings();}));
@@ -662,7 +681,7 @@ function aInit(){
   const syncBody=$('#stgSync .st-g-body');if(syncBody){const note=document.createElement('p');note.className='a-note';note.textContent='A 版默认暂停旧同步的自动上传与启动合并，以保留本机内容。完整备份覆盖截图、写作和学习记录；旧同步码仅搬运部分主数据，不是完整备份。';syncBody.prepend(note);}
   $('#stgSync').hidden=true;/* 2026-11-08 恢复：单词配图入口重新显示，Pixabay 实测可达（不需要节点） */
   const legacyNotes=$$('#settingsModal .st-note');legacyNotes.forEach(el=>{el.textContent='A 版默认使用 ChatGPT 往返；自动模式仅使用 OpenAI 官方 API，单独计费。原有同步配置保留，但新版不自动上传或合并。跨设备请使用完整备份。';});
-  const help=$('#settingsModal .st-help');if(help)help.innerHTML='<b>AI：</b>默认把任务复制到 ChatGPT，练完导回结果；套餐和模型由你的 ChatGPT 账号决定。自动调用仅支持你自己配置的 OpenAI 官方 API，费用单独结算。<br><b>数据：</b>表达仍在本机浏览器，旧键名保持兼容；新增学习记录独立保存。跨地址使用先导出备份。<br><b>同步：</b>保留旧配置，默认暂停自动上传与启动合并；截图、写作和新学习记录请用完整备份迁移。<br><b>跟读：</b>保留播放、录音与回听；分数只作文本匹配、节奏和音量参考。';
+  const help=$('#settingsModal .st-help');if(help)help.innerHTML='<b>AI：</b>默认把任务复制到 ChatGPT，练完导回结果；套餐和模型由你的 ChatGPT 账号决定。自动调用仅支持你自己配置的 OpenAI 官方 API，费用单独结算。<br><b>图片：</b>图片生成使用独立的图片接口、Key 和模型，DeepSeek 文本接口不能直接生成图片。Sitecase 建议使用支持跨来源请求的图片中转地址。<br><b>数据：</b>表达仍在本机浏览器，旧键名保持兼容；新增学习记录独立保存。跨地址使用先导出备份。<br><b>同步：</b>保留旧配置，默认暂停自动上传与启动合并；截图、写作和新学习记录请用完整备份迁移。<br><b>跟读：</b>保留播放、录音与回听；分数只作文本匹配、节奏和音量参考。';
   $('#stModel').placeholder='填写你在 OpenAI API 中可用的模型名称';
   aRefreshSettings();
 }

@@ -537,6 +537,7 @@ function importData(file){
 function clearSettings(){
   showConfirm({title:'清除 AI 配置？',msg:'清除后，赋能将改用免费词典查询。',okText:'清除',danger:true,onOk(){
     state.settings={baseUrl:'',apiKey:'',model:'',tone:'friend',theme:state.settings.theme||'dark',fs:state.settings.fs||'m'}; save();
+    try{localStorage.removeItem('en-ai-image-v1');}catch(_){ }
     $('#stBase').value=''; $('#stKey').value=''; $('#stModel').value=''; $('#stTone').value='friend';
     $('#settingsModal').classList.remove('show');
     toast('已清除配置');
