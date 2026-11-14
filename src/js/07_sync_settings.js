@@ -325,7 +325,8 @@ function stGroupSummary(){
   const set=(id,txt)=>{ const el=$('#'+id); if(el) el.textContent=txt; };
   set('stgSumAi',st.apiKey?('已配置 · '+(st.model||'默认模型')):'未配置 Key');
   set('stgSumImg',st.pixabayKey?'已有 Pixabay Key':(st.pexelsKey?'已有 Pexels Key':'未配置 · 用记忆卡代替'));
-  set('stgSumLook',(st.theme==='light'?'浅色':'深色')+' · 字号'+(st.fs==='l'?'大':(st.fs==='s'?'小':'中')));
+  const themeLabel={midnight:'午夜编辑',paper:'温暖纸张',lavender:'柔雾薰衣草',dark:'午夜编辑',light:'温暖纸张'};
+  set('stgSumLook',(themeLabel[st.theme]||'午夜编辑')+' · 字号'+(st.fs==='l'?'大':(st.fs==='s'?'小':'中')));
   try{
     const cfg0=state.meta&&state.meta.sync;
     if(cfg0&&syncReady(cfg0)&&cfg0.lastAt) set('stgSumData','已开启云同步');
@@ -342,7 +343,8 @@ function stGroupSummary(){
 function syncSettingsUI(){
   const st=state.settings||{};
   try{ stGroupSummary(); }catch(_){ }
-  $$('#stTheme [data-theme-val]').forEach(b=>b.classList.toggle('on',(st.theme||'dark')===b.dataset.themeVal));
+  const activeTheme=st.theme==='dark'?'midnight':(st.theme==='light'?'paper':(st.theme||'midnight'));
+  $$('#stTheme [data-theme-val]').forEach(b=>b.classList.toggle('on',activeTheme===b.dataset.themeVal));
   $$('#stFs [data-fs-val]').forEach(b=>b.classList.toggle('on',(st.fs||'m')===b.dataset.fsVal));
   const n=$('#stBackupNote');
   if(n){
@@ -436,7 +438,7 @@ function saveSettings(){
   state.settings=Object.assign({},state.settings,{
     baseUrl:$('#stBase').value.trim(),apiKey:$('#stKey').value.trim(),model:$('#stModel').value.trim(),
     pexelsKey:$('#stPexels').value.trim(),pixabayKey:$('#stPixabay').value.trim(),tone:$('#stTone').value||'friend',
-    theme:state.settings.theme||'dark',fs:state.settings.fs||'m'});
+    theme:state.settings.theme||'midnight',fs:state.settings.fs||'m'});
   save(); applyTheme(); $('#settingsModal').classList.remove('show');
   toast('设置已保存');
   /* 刚配好 AI，顺手把当前打开的词条例句补上 */
@@ -536,7 +538,7 @@ function importData(file){
 }
 function clearSettings(){
   showConfirm({title:'清除 AI 配置？',msg:'清除后，赋能将改用免费词典查询。',okText:'清除',danger:true,onOk(){
-    state.settings={baseUrl:'',apiKey:'',model:'',tone:'friend',theme:state.settings.theme||'dark',fs:state.settings.fs||'m'}; save();
+    state.settings={baseUrl:'',apiKey:'',model:'',tone:'friend',theme:state.settings.theme||'midnight',fs:state.settings.fs||'m'}; save();
     try{localStorage.removeItem('en-ai-image-v1');}catch(_){ }
     $('#stBase').value=''; $('#stKey').value=''; $('#stModel').value=''; $('#stTone').value='friend';
     $('#settingsModal').classList.remove('show');

@@ -19,20 +19,48 @@ body{
   --chip-bg:#1c1c1e;--chip-text:#d0d0d4;
   --bar-bg:rgba(10,10,12,.96);--toast-bg:rgba(28,28,30,.94);
   --shadow-sm:0 4px 16px rgba(0,0,0,.55);--shadow-lg:0 12px 34px rgba(0,0,0,.45);
+  --font-display:"Cormorant Garamond","Iowan Old Style",Georgia,serif;
+  --radius-card:16px;--radius-control:12px;
   --fs-body:17px;
 }
-/* 浅色主题 */
-html[data-theme="light"]{
+/* 午夜编辑主题 */
+html[data-theme="midnight"]{
+  color-scheme:dark;
+  --bg:#141416;--sidebar:#111113;--sep:#332f38;--line:#332f38;
+  --text:#f4efe8;--text-body:#e9e0d7;--text2:#b3a8a0;--text3:#80756e;--ph:#5b514c;
+  --s0:#17171a;--s1:#1c1b1f;--s2:#232129;--s3:#2d2932;--s4:#3b3542;--s5:#4b4050;
+  --hover:#332d39;--hover-soft:rgba(240,226,209,.08);--active-soft:rgba(171,186,255,.14);
+  --accent:#8b9dff;--accent-fg:#b1baff;--accent-soft:rgba(139,157,255,.18);
+  --danger:#f17d73;--ok:#78cfa1;--ok-soft:#173328;--ok-line:#32634a;--warn:#e3ad70;
+  --chip-bg:#302b35;--chip-text:#e7dcd3;
+  --bar-bg:rgba(20,20,22,.96);--toast-bg:rgba(45,41,50,.96);
+  --shadow-sm:0 5px 18px rgba(0,0,0,.28);--shadow-lg:0 14px 38px rgba(0,0,0,.34);
+}
+/* 温暖纸张主题 */
+html[data-theme="paper"],html[data-theme="light"]{
   color-scheme:light;
-  --bg:#ffffff;--sidebar:#f7f7f9;--sep:#e4e4e9;--line:#e4e4e9;
-  --text:#141416;--text-body:#2b2b30;--text2:#5e5e66;--text3:#8a8a92;--ph:#b4b4bc;
-  --s0:#f4f4f7;--s1:#ffffff;--s2:#f7f7f9;--s3:#f2f2f6;--s4:#e9e9ee;--s5:#d9d9e0;
+  --bg:#f5efe7;--sidebar:#eee6db;--sep:#e0d5c7;--line:#e0d5c7;
+  --text:#2b2830;--text-body:#3e3941;--text2:#756b67;--text3:#9a8d84;--ph:#c2b5ab;
+  --s0:#fffaf2;--s1:#fffdf8;--s2:#f8f0e6;--s3:#efe4d6;--s4:#e3d4c3;--s5:#cdbba9;
   --hover:#eeeef2;--hover-soft:rgba(0,0,0,.05);--active-soft:rgba(0,0,0,.08);
-  --accent:#0a7cff;--accent-fg:#0a6ce0;--accent-soft:rgba(10,124,255,.13);
+  --accent:#6679ad;--accent-fg:#50669e;--accent-soft:rgba(102,121,173,.15);
   --danger:#d92b20;--ok:#1a8f42;--ok-soft:#eaf7ee;--ok-line:#bfe3ca;--warn:#c47b00;
-  --chip-bg:#eeeef2;--chip-text:#4a4a52;
-  --bar-bg:rgba(255,255,255,.97);--toast-bg:rgba(30,30,34,.94);
+  --chip-bg:#eee2d5;--chip-text:#5c514a;
+  --bar-bg:rgba(255,250,242,.97);--toast-bg:rgba(48,42,38,.94);
   --shadow-sm:0 2px 10px rgba(0,0,0,.07);--shadow-lg:0 10px 30px rgba(0,0,0,.10);
+}
+/* 柔雾薰衣草主题 */
+html[data-theme="lavender"]{
+  color-scheme:light;
+  --bg:#f3f0fa;--sidebar:#ece8f7;--sep:#ded7eb;--line:#ded7eb;
+  --text:#302a40;--text-body:#49415a;--text2:#756c86;--text3:#9a90aa;--ph:#c4bbd2;
+  --s0:#faf8ff;--s1:#fffefe;--s2:#f6f2fb;--s3:#ebe4f6;--s4:#ddd2ec;--s5:#c7b7dc;
+  --hover:#e7e0f2;--hover-soft:rgba(108,91,169,.07);--active-soft:rgba(129,115,189,.15);
+  --accent:#8173bd;--accent-fg:#6d5aa9;--accent-soft:rgba(129,115,189,.16);
+  --danger:#c74d67;--ok:#388c70;--ok-soft:#e3f3ed;--ok-line:#b6dfd0;--warn:#ad7437;
+  --chip-bg:#e8def4;--chip-text:#5b4d78;
+  --bar-bg:rgba(250,248,255,.96);--toast-bg:rgba(48,42,64,.94);
+  --shadow-sm:0 4px 14px rgba(79,61,116,.09);--shadow-lg:0 12px 32px rgba(79,61,116,.13);
 }
 /* 字号档位 */
 html[data-fs="s"]{--fs-body:15.5px}
@@ -98,7 +126,7 @@ body.side-open #sidebar{transform:none}
 .pane-header h2{flex:1;min-width:0;font-size:17px;font-weight:600;padding:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #noteList{flex:1;overflow-y:auto;padding:6px 0;display:flex;flex-direction:column}
 .note-item{
-  display:flex;align-items:center;gap:8px;padding:12px 14px 12px 18px;margin:1px 8px;border-radius:10px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;padding:12px 14px 12px 18px;margin:1px 8px;border-radius:var(--radius-control);cursor:pointer;
 }
 .note-item:hover{background:var(--s3)}
 .note-item.active{background:var(--hover)}
@@ -129,7 +157,7 @@ body.side-open #sidebar{transform:none}
 .words-grid{padding:14px;display:grid;gap:12px;grid-template-columns:1fr;align-content:start;overflow-y:auto}
 @media (min-width:768px){.words-grid{grid-template-columns:repeat(2,1fr)}}
 .word-card{
-  background:var(--s1);border:1px solid var(--sep);border-radius:14px;padding:14px 16px;cursor:pointer;
+  background:var(--s1);border:1px solid var(--sep);border-radius:var(--radius-card);padding:14px 16px;cursor:pointer;
   transition:box-shadow .15s ease,transform .15s ease;min-width:0;
 }
 .word-card:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px)}
@@ -158,7 +186,7 @@ body.mode-edit #noteListPane{display:none}
 }
 #edBreadcrumb{flex:1;min-width:0;font-size:13px;color:var(--text3);padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #editorWrap{flex:1;overflow-y:auto;padding:30px 22px 140px;width:100%;max-width:860px;margin:0 auto}
-#noteTitle{font-size:clamp(26px,3.2vw,34px);font-weight:700;line-height:1.25;padding:6px 0 6px;outline:none;min-height:1.2em;word-break:break-word}
+#noteTitle{font-family:var(--font-display);letter-spacing:.01em;font-size:clamp(26px,3.2vw,34px);font-weight:700;line-height:1.25;padding:6px 0 6px;outline:none;min-height:1.2em;word-break:break-word}
 #noteBody{font-size:var(--fs-body);line-height:1.75;padding-top:10px;outline:none;min-height:55vh;word-break:break-word;color:var(--text-body)}
 /* 每 10 行（每按一次回车算一行）多留一小档，长文读起来有节奏 */
 #noteBody>*:nth-child(10n+1):not(:first-child){margin-top:18px}
@@ -409,7 +437,7 @@ body.typing .kb-btn{opacity:1;visibility:visible}
 /* 单词卡片弹窗 */
 .wm-head{display:flex;align-items:flex-start;gap:12px;padding:20px 20px 6px}
 .wm-term-wrap{flex:1;min-width:0}
-#wmTerm{font-size:30px;font-weight:700;line-height:1.15;word-break:break-word}
+#wmTerm{font-family:var(--font-display);letter-spacing:.01em;font-size:30px;font-weight:700;line-height:1.15;word-break:break-word}
 #wmPhonetic{font-size:15px;color:var(--text2);margin-top:5px}
 .wm-body{padding:12px 20px 20px}
 .wm-section{margin-top:16px}
@@ -421,7 +449,7 @@ body.typing .kb-btn{opacity:1;visibility:visible}
   font-size:16px;line-height:1.6;resize:vertical;background:var(--s0);color:var(--text);
 }
 /* 例句卡（AI 自动生成，只读） */
-.ex-card{background:var(--s2);border:1px solid var(--s4);border-radius:12px;padding:12px 13px;margin-bottom:10px;position:relative}
+.ex-card{background:var(--s2);border:1px solid var(--s4);border-radius:var(--radius-control);padding:12px 13px;margin-bottom:10px;position:relative}
 .ex-card .ex-sense{
   display:inline-block;font-size:11.5px;font-weight:600;color:var(--accent-fg);
   background:rgba(10,132,255,.14);border:1px solid rgba(10,132,255,.32);
@@ -825,6 +853,7 @@ body.side-open #scrim{display:block}
 .seg button.on{background:var(--s4);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .st-inline{display:flex;gap:10px;align-items:center}
 .st-inline .seg{flex:1}
+.theme-seg{flex-wrap:wrap}
 .bk-note{font-size:12px;color:var(--text3);margin-top:7px;line-height:1.6}
 .st-sync-fields{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .st-sync-fields.hidden{display:none}
@@ -1052,7 +1081,7 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 /* ============ 今日工作台 ============ */
 .today-greet{font-size:12.5px;color:var(--text3);padding:10px 16px 12px;line-height:1.6}
 .today-actions{display:flex;flex-direction:column;gap:10px;padding:0 14px 20px}
-.today-card{background:var(--s1);border:1px solid var(--sep);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;min-height:64px}
+.today-card{background:var(--s1);border:1px solid var(--sep);border-radius:var(--radius-card);padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;min-height:64px}
 .today-card:active{transform:scale(.985);background:var(--s3)}
 .tc-num{font-size:26px;font-weight:700;color:var(--accent-fg);min-width:54px;text-align:center;flex:none}
 .tc-main{flex:1;min-width:0}

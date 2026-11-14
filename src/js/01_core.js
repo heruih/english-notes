@@ -41,7 +41,7 @@ function defaultState(){
      tags:['日常'],notes:[],source:'demo',createdAt:t,updatedAt:t}
   ];
   return {folders:[],notes:[],words:[],aiLog:[],grave:[],tagList:['职场','日常'],meta:{backupAt:null,sync:{provider:'gist',ghToken:'',ghGistId:'',url:'',user:'',pass:'',auto:true,lastAt:0,lastBy:''}},
-    settings:{baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'dark',fs:'m'}};
+    settings:{baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'midnight',fs:'m'}};
 }
 /* ============ 间隔复习（Leitner 分箱） ============ */
 const SRS_DAYS=[0,0,1,3,7,15,30];   // 箱位 -> 间隔天数
@@ -99,7 +99,7 @@ function migrate(d){
   d.meta.sync=Object.assign({provider:'gist',ghToken:'',ghGistId:'',url:'',user:'',pass:'',auto:true,lastAt:0,lastBy:''},d.meta.sync||{});
   if(!d.meta.sync.provider) d.meta.sync.provider='gist';
   if(!d.meta.device) d.meta.device=uid();
-  d.settings=Object.assign({baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'dark',fs:'m'},d.settings||{});
+  d.settings=Object.assign({baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'midnight',fs:'m'},d.settings||{});
   if(!Array.isArray(d.folders)) d.folders=[];
   if(!Array.isArray(d.notes)) d.notes=[];
   if(!Array.isArray(d.words)) d.words=[];
@@ -122,10 +122,11 @@ function load(){
 /* 主题 / 字号 */
 function applyTheme(){
   const st=state&&state.settings||{};
-  document.documentElement.setAttribute('data-theme',st.theme==='light'?'light':'dark');
+  const theme=st.theme==='dark'?'midnight':(st.theme==='light'?'paper':(['midnight','paper','lavender'].includes(st.theme)?st.theme:'midnight'));
+  document.documentElement.setAttribute('data-theme',theme);
   document.documentElement.setAttribute('data-fs',st.fs||'m');
   const mt=document.querySelector('meta[name="theme-color"]');
-  if(mt) mt.setAttribute('content',st.theme==='light'?'#ffffff':'#000000');
+  if(mt) mt.setAttribute('content',theme==='paper'?'#f5efe7':(theme==='lavender'?'#f3f0fa':'#141416'));
 }
 function save(skipSync){
   if(!aStore(LS_KEY,JSON.stringify(state))) throw new Error('保存失败：请先导出完整备份并释放浏览器空间');
