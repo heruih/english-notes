@@ -750,6 +750,7 @@ function highlightWord(range,word){
 function closeWordModal(){
   /* 没保存就关掉：把填过的内容存成草稿，下次打开同一个词接上 */
   try{ clearTimeout(wmDraftTimer); wmDraftSave(); }catch(e){}
+  if(window.aImageCancel) window.aImageCancel();
   imgSeq++;
   $('#wordModal').classList.remove('show'); wmSeq++;
   try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}

@@ -444,6 +444,9 @@ aiCall=async function(messages,opts){
  * 自动生成使用已配置的 OpenAI 兼容 API。ChatGPT 往返模式仍保留缓存、图库和手动任务流程。 */
 let aImageSlide={term:'',kind:'ai',touchX:0,touchY:0};
 let aImageGenerating=false;
+let aImageRequestSeq=0;
+let aImageRequestAbort=null;
+let aImageRequestTerm='';
 function aImageRecord(term){
   const rec=wmImgCached(term);
   return rec&&typeof rec==='object'?rec:{local:false,cands:[],idx:0};
@@ -452,10 +455,31 @@ function aImageCurrent(term){
   const rec=aImageRecord(term), c=Array.isArray(rec.cands)?rec.cands[rec.idx||0]:null;
   return c&&String(c.thumb||c.src||'').trim()?c:null;
 }
+function aImageCancel(){
+  aImageRequestSeq++;
+  if(aImageRequestAbort){try{aImageRequestAbort.abort();}catch(_){} }
+  aImageRequestAbort=null;
+  aImageRequestTerm='';
+  aImageGenerating=false;
+}
+window.aImageCancel=aImageCancel;
+function aImageShowIdle(term){
+  const box=$('#wmIllus'),img=$('#wmIllusImg'),skel=$('#wmIllusSkel'),cap=$('#wmIllusCap'),generate=$('#wmIllusGenerate'),more=$('#wmIllusMore'),confirm=$('#wmIllusConfirm');
+  if(!box)return;
+  wmMemoHide();box.classList.remove('hidden');
+  if(skel)skel.classList.add('hidden');
+  if(img){img.classList.remove('ok');img.removeAttribute('src');img.alt=String(term||'');}
+  if(cap){cap.textContent='暂未生成配图';cap.removeAttribute('href');cap.onclick=null;}
+  if(generate)generate.classList.remove('hidden');
+  if(more)more.classList.add('hidden');
+  if(confirm)confirm.classList.add('hidden');
+  const note=$('#aImageSwipeNote');if(note)note.textContent=shotsGet(term).length?'已有截图，可左滑或点“截图”查看':'可按需生成一张帮助记忆的配图';
+}
 function aImageSetConfirm(rec){
-  const confirm=$('#wmIllusConfirm'), more=$('#wmIllusMore');
+  const confirm=$('#wmIllusConfirm'), more=$('#wmIllusMore'), generate=$('#wmIllusGenerate');
   if(confirm) confirm.classList.toggle('hidden',!aImageCurrent(rec&&rec.term||'')||!!(rec&&rec.confirmed));
   if(more) more.classList.toggle('hidden',!!(rec&&rec.confirmed)||!rec||!Array.isArray(rec.cands)||rec.cands.length<2);
+  if(generate) generate.classList.toggle('hidden',!!aImageCurrent(rec&&rec.term||''));
 }
 function aImageRenderAi(term){
   const rec=aImageRecord(term), c=aImageCurrent(term);
@@ -469,12 +493,12 @@ function aImageRenderAi(term){
   return false;
 }
 function aImageRenderShot(term){
-  const list=shotsGet(term), img=$('#wmIllusImg'), box=$('#wmIllus'), skel=$('#wmIllusSkel'), cap=$('#wmIllusCap'), more=$('#wmIllusMore'), confirm=$('#wmIllusConfirm');
+  const list=shotsGet(term), img=$('#wmIllusImg'), box=$('#wmIllus'), skel=$('#wmIllusSkel'), cap=$('#wmIllusCap'), more=$('#wmIllusMore'), confirm=$('#wmIllusConfirm'), generate=$('#wmIllusGenerate');
   if(!list.length||!img||!box)return false;
   aImageSlide={term:String(term||''),kind:'shot',touchX:0,touchY:0};
   wmMemoHide();box.classList.remove('hidden');if(skel)skel.classList.add('hidden');img.classList.add('ok');img.alt='原始截图';img.src=list[0].dataUrl;
   if(cap){cap.textContent='原始截图 1 / '+list.length;cap.removeAttribute('href');}
-  if(more)more.classList.add('hidden');if(confirm)confirm.classList.add('hidden');
+  if(more)more.classList.add('hidden');if(confirm)confirm.classList.add('hidden');if(generate)generate.classList.add('hidden');
   const note=$('#aImageSwipeNote');if(note)note.textContent='左滑回到 AI 图';
   return true;
 }
@@ -491,25 +515,25 @@ function aImageBindSwipe(){
   const end=e=>{const p=e.changedTouches?e.changedTouches[0]:e,dx=p.clientX-aImageSlide.touchX,dy=p.clientY-aImageSlide.touchY;if(Math.abs(dx)<45||Math.abs(dx)<Math.abs(dy)*1.2)return;aImageSwipe(dx<0?-1:1);};
   box.addEventListener('touchstart',start,{passive:true});box.addEventListener('touchend',end,{passive:true});
 }
-async function aGenerateImage(term){
+async function aGenerateImage(term,signal){
   if(aRoute()!=='api'||!aAiReady())return null;
   const st=state.settings||{},base=(st.baseUrl||'https://api.openai.com/v1').replace(/\/+$/,'');
   const w=state.words.find(x=>String(x.term||'').toLowerCase()===String(term||'').toLowerCase()), m=w?aMeta(w):{};
   const prompt='为英语表达「'+term+'」生成一张帮助记忆的横向学习插图。语境：'+(m.original||m.purpose||w&&w.definition||'日常真实使用场景')+'。只表现一个自然动作和一个关键物件，画面干净、具体、适合手机查看，不要在图中出现任何文字、字幕、水印或单词。';
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),45000);
-  try{
-    const res=await fetch(base+'/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.apiKey},body:JSON.stringify({model:st.imageModel||'gpt-image-1',prompt,size:'1024x1024'}),signal:ctrl.signal});
-    if(!res.ok)throw new Error('图片生成 HTTP '+res.status);
-    const data=await res.json(),item=data&&data.data&&data.data[0],src=item&&(item.b64_json?'data:image/png;base64,'+item.b64_json:item.url);
-    if(!src)throw new Error('图片生成没有返回图片');
-    return {src,thumb:src,credit:'AI 生成',createdAt:Date.now()};
-  }finally{clearTimeout(timer);}
+  const requestSignal=signal;
+  const res=await fetch(base+'/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.apiKey},body:JSON.stringify({model:st.imageModel||'gpt-image-1',prompt,size:'1024x1024'}),signal:requestSignal});
+  if(!res.ok)throw new Error('图片生成 HTTP '+res.status);
+  const data=await res.json(),item=data&&data.data&&data.data[0],src=item&&(item.b64_json?'data:image/png;base64,'+item.b64_json:item.url);
+  if(!src)throw new Error('图片生成没有返回图片');
+  return {src,thumb:src,credit:'AI 生成',createdAt:Date.now()};
 }
 async function aImageOpen(term,force){
   const t=String(term||'').trim();if(!t)return;
+  if(aImageRequestTerm&&aImageRequestTerm!==t)aImageCancel();
   const rec=aImageRecord(t);rec.term=t;
   if(!force&&rec.confirmed&&aImageRenderAi(t)){aImageBindSwipe();return;}
   if(!force&&aImageRenderAi(t)){aImageBindSwipe();return;}
+  if(!force){aImageShowIdle(t);aImageBindSwipe();return;}
   if(aRoute()!=='api'){
     const legacy=window.aLegacyWmIllusLoad;
     if(legacy)await legacy(t);
@@ -519,13 +543,20 @@ async function aImageOpen(term,force){
     return;
   }
   if(aImageGenerating)return;
-  aImageGenerating=true;wmIllusSkeleton();
+  const requestId=++aImageRequestSeq,ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),45000);
+  aImageRequestAbort=ctrl;aImageRequestTerm=t;aImageGenerating=true;wmIllusSkeleton();
   try{
-    const c=await aGenerateImage(t);if(!c)return;
+    const c=await aGenerateImage(t,ctrl.signal);if(!c)return;
+    if(requestId!==aImageRequestSeq||!wmState||String(wmState.term||'').trim()!==t)return;
     const fresh=aImageRecord(t),cands=Array.isArray(fresh.cands)?fresh.cands.slice():[];
     cands.push(c);const next={local:false,cands:cands.slice(-6),idx:Math.max(0,cands.slice(-6).length-1),src:'ai',prov:'ai',confirmed:false};wmImgStore(t,next);aImageRenderAi(t);aImageBindSwipe();
-  }catch(e){wmIllusHide();toast('AI 图片生成失败：'+(e.message||'请重试'),'warn');}
-  finally{aImageGenerating=false;}
+  }catch(e){
+    if(e&&e.name==='AbortError')return;
+    if(requestId===aImageRequestSeq&&wmState&&String(wmState.term||'').trim()===t){aImageShowIdle(t);const cap=$('#wmIllusCap');if(cap)cap.textContent='AI 图片生成失败 · 点击“生成配图”重试';toast('AI 图片生成失败：'+(e.message||'请重试'),'warn');}
+  }finally{
+    clearTimeout(timer);
+    if(requestId===aImageRequestSeq){aImageGenerating=false;aImageRequestAbort=null;aImageRequestTerm='';}
+  }
 }
 const aLegacyWmIllusLoad=wmIllusLoad;window.aLegacyWmIllusLoad=aLegacyWmIllusLoad;
 wmIllusLoad=async function(term){await aImageOpen(term,false);};
@@ -618,6 +649,7 @@ function aInit(){
   ['aPurpose','aOwn','aOriginal','aSource','aTime'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(wmState&&wmState.aMetaKey)aPut(wmState.aMetaKey,aFieldValues());}));
   const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='左滑查看截图';cap.append(note);}
   const confirm=$('#wmIllusConfirm');if(confirm){confirm.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(!wmState)return;const rec=aImageRecord(wmState.term),c=aImageCurrent(wmState.term);if(!c)return;rec.term=wmState.term;rec.confirmed=true;wmImgStore(wmState.term,rec);aImageSetConfirm(rec);toast('图片已确定，之后打开会保持这一张','ok');},{capture:true});}
+  const generate=$('#wmIllusGenerate');if(generate)generate.addEventListener('click',()=>{if(wmState&&!aImageGenerating)aImageOpen(wmState.term,true);});
   const more=$('#wmIllusMore');
   if(more)more.addEventListener('click',()=>{
     if(!wmState||aImageGenerating)return;
