@@ -111,8 +111,6 @@ function wmIllusBroken(rec){
   if(!rec||!rec.cands||!rec.cands.length){ wmIllusHide(); return; }
   if(rec.idx+1>=rec.cands.length){
     paintedTerm=''; paintedRec=null;
-    /* 不再静默收起：给一行可点重试的提示（多半是手机到 cdn.pixabay.com 不通） */
-    wmIllusFail(rec.term,'图片加载失败（网络）· 点这里重试');
     try{
       if(!rec.term) return;
       /* 站内插图缺失：7 天后再探一次；图库死链：5 分钟后再试（可能只是这一批链接挂了） */
@@ -120,6 +118,14 @@ function wmIllusBroken(rec){
         ? {local:false,cands:[],idx:0,localFailAt:Date.now()}
         : {local:false,cands:[],idx:0,imgFailAt:Date.now()});
     }catch(_){ }
+    /* 导入的 Pixabay 记录只保存网址。网址失效时自动重新搜索，避免用户手动生成。 */
+    try{
+      if(rec.src!=='local'&&typeof photoKey==='function'&&photoKey()){
+        setTimeout(()=>{if(wmState&&wmState.term===rec.term)wmIllusLoad(rec.term);},0);
+        return;
+      }
+    }catch(_){ }
+    wmIllusFail(rec.term,'图片加载失败（网络）· 点这里重试');
     return;
   }
   rec.idx++;
