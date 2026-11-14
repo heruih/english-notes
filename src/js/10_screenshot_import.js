@@ -276,7 +276,10 @@ function aMergeExtra(key,localRaw,remoteRaw){
     const out=Object.assign({},l||{});
     Object.keys(r||{}).forEach(k=>{
       const local=l&&l[k],remote=r&&r[k];
-      if(!local||((!Array.isArray(local.cands)||!local.cands.length)&&remote&&Array.isArray(remote.cands)&&remote.cands.length)||(remote&&local&&(remote.at||0)>(local.at||0)))out[k]=remote;
+      const remoteHasCandidates=remote&&Array.isArray(remote.cands)&&remote.cands.length;
+      const remoteConfirmed=!!(remote&&remote.confirmed),localConfirmed=!!(local&&local.confirmed);
+      const remoteIsPixabay=remote&&remote.prov==='pixabay',localIsOther=local&&local.prov&&local.prov!=='pixabay';
+      if(!local||((!Array.isArray(local.cands)||!local.cands.length)&&remoteHasCandidates)||(remoteConfirmed&&!localConfirmed)||(remoteIsPixabay&&localIsOther&&!localConfirmed)||(remote&&local&&(remote.at||0)>(local.at||0)))out[k]=remote;
     });
     return JSON.stringify(out);
   }

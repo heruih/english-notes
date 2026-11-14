@@ -4,6 +4,7 @@
 
 | 日期 | 做了什么 | 怎么验的 | 结果 | 下一步 |
 |---|---|---|---|---|
+| 2026-11-14 | 检查用户提供的 `英语学习完整备份-2026-11-12.json` 并加强图片缓存导入：备份含 120 条 `wmimg` 记录、110 条 Pixabay 候选、99 条已确认记录；导入时已确认的远程记录优先恢复 | PowerShell 只读解析备份 key、候选数、确认状态和时间戳；`node --check`；`node scripts/build.mjs`；构建产物静态检查 | 确认问题来自导入合并优先级或远程网址可用性，不是备份缺少缓存；最新源码已加入确认缓存优先规则 | 用最新 Sitecase 文件重新导入这份备份，检查配图记录数和已确认图片 |
 | 2026-11-14 | 按用户确认调整图片流程：Pixabay 有 Key 时优先使用，远程图片缓存失效后自动重新搜索；独立 AI 图片配置隐藏；完整备份显示配图记录数并按时间合并 `wmimg` 缓存 | `node --check`；`node scripts/build.mjs`；静态检查确认 Pixabay 优先、自动重搜、配图记录计数和缓存合并逻辑 | 源码与普通单文件构建通过；Sitecase 备份导入和远程图片失效待真机验收 | 用新文件做一次 Pixabay 配图导出、导入和缓存恢复验收 |
 | 2026-11-14 | 部署 Worker 的 Sitecase CORS 修复 | Worker 实际 POST：GitHub、`null`、`sitecase://local` 均返回 HTTP 200；三种来源的 OPTIONS 预检均返回 204，并回显对应来源 | 豆包中转链路已允许 Sitecase 常见来源；图片独立配置仍需在页面填写并验收 | 用最新 Sitecase 文件测试豆包试听，再填写图片接口配置测试 AI 图 |
 | 2026-11-14 | 修复 Sitecase TTS 来源限制并拆分 AI 图片配置：Worker 允许 `null` / `sitecase://...` 来源；图片新增独立接口、Key、模型设置，不再复用 DeepSeek 文本地址 | `node --check`；`node scripts/build.mjs`；构建产物检查独立图片配置；Worker 来源规则静态检查；线上旧 Worker 用 GitHub 来源返回 200、Sitecase 常见来源返回 403 | 源码与普通单文件构建通过；Worker 尚未重新部署，图片和 Sitecase 真机待验 | 部署 Worker 后先验收豆包，再配置图片接口并统一验收 |
