@@ -17,7 +17,7 @@
 - **能跑**：能。iPhone 真机已验：配图出图、复习页例句标亮、复习卡背面配图、情景口语不会自动弹。
 - **本地测试候选**：`dist/英语学习笔记.html`（650,887 字节）。已构建同内容的 `英语学习笔记-Sitecase-20261111-语音相册测试.html`，包含 `1079c39` 的复习与配图修复。
 - **手机现用文件**：`英语学习笔记-20261108-c.html`（648,014 字节），通过 Sitecase 打开，基线 tag `v2026.11.08`。
-- **线上版**：https://heruih.github.io/english-notes/ 。当前验收版为 gh-pages `34c44f6`，默认使用已验通的 TTS Worker。用户已确认线上版和 Sitecase 中转版的单词、例句豆包声音成功。此前回退提交 `2d659ef` 和验收版 `6abf22d` 保留在历史中。浏览器学习数据独立于 Sitecase。
+- **线上版**：https://heruih.github.io/english-notes/ 。当前发布提交为 gh-pages `08f366b`，包含已验收的方案 C、Pixabay 缓存导入修复和备份配图完整性报告。线上 HTTP 200，缓存传播后关键标记已核对。默认使用已验通的 TTS Worker。浏览器学习数据独立于 Sitecase。
 - **最终本地候选**：方案 C 最终统一验收文件已生成。随后已修复并部署 Worker 对 Sitecase 来源的 CORS 限制，并完成 Pixabay 优先、缓存失效自动重搜和备份缓存合并。独立 AI 图片配置默认隐藏。Worker 当前对 GitHub、`null` 和 `sitecase://local` 的实际 POST 返回 200，OPTIONS 预检返回 204。新的 Pixabay 备份导入流程仍待 Sitecase 真机验收。
 - **备份诊断**：用户提供的 `英语学习完整备份-2026-11-12.json` 含 `english-notes-wmimg-v1`，共 120 条记录、110 条 Pixabay 候选、99 条已确认。最新导入规则优先恢复备份中的已确认 Pixabay 记录。
 - **备份报告**：最新版本导出时显示配图记录、已缓存词条、已确认词条和缺少配图词条。导入确认框显示备份带来的配图数量，导入完成显示当前恢复数量。
