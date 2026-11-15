@@ -829,18 +829,37 @@ function aiWordCtx(){
   }
   return '"'+aiState.term+'"（释义：'+(aiState.definition||'暂无')+(aiState.examples.length?'；例句：'+aiState.examples.join('；'):'')+'）';
 }
+function aiScenePlanCacheKey(){
+  const ids=(aiState.allTermIds||aiState.termIds||[]).slice().sort();
+  const terms=(aiState.allTerms||aiState.terms||[aiState.term||'']).slice();
+  let model='';
+  try{ model=(typeof aiApiConfig==='function'&&aiApiConfig().model)||''; }catch(e){}
+  return 'english-notes-dialogue-plan-v1:'+JSON.stringify({ids,terms,model});
+}
 async function aiSuggestScenes(){
   const multi=aiState.terms&&aiState.terms.length>1;
-  const task=multi?'给出一个能把这些词都用上的生活或职场场景（尽量都自然用上）。':'给出该词最常用、最适合做口语练习的 3 个生活或职场场景。';
-  return aiCall([{role:'system',content:'你是英语情景口语设计者。直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'学习者在学 '+aiWordCtx()+'。'+task+'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"一句话说明这个场景里怎么用，20字以内（中文）"}]}'}]);
+  try{
+    const cached=JSON.parse(localStorage.getItem(aiScenePlanCacheKey())||'null');
+    if(cached&&cached.at&&Date.now()-cached.at<7*24*60*60*1000&&cached.data&&Array.isArray(cached.data.scenes)) return cached.data;
+  }catch(e){}
+  const task=multi?'请按真实使用场景把这些词分成 1—3 个场景，每个场景 1—3 个词。每个词必须且只能出现在一个场景。优先选择最典型、最贴切的用法，避免为了凑数强行拼接。':'给出该词最常用、最适合做口语练习的 3 个生活或职场场景。';
+  const schema=multi?'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"20字以内说明","wordIds":["原样保留的词条ID"]}]}':'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"一句话说明这个场景里怎么用，20字以内（中文）"}]}';
+  const data=await aiCall([{role:'system',content:'你是英语情景口语设计者。直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
+    {role:'user',content:'学习者在学 '+aiWordCtx()+'。'+task+schema}],multi?{maxTokens:520,timeout:15000}:undefined);
+  try{ localStorage.setItem(aiScenePlanCacheKey(),JSON.stringify({at:Date.now(),data})); }catch(e){}
+  return data;
+}
+function aiFallbackSceneGroups(){
+  const ids=aiState.allTermIds||aiState.termIds||[],groups=[];
+  for(let i=0;i<ids.length;i+=2){const part=ids.slice(i,i+2);groups.push({title:'情景 '+(groups.length+1),desc:'把这组词放进一个自然对话',wordIds:part});}
+  return groups.slice(0,3);
 }
 async function aiBuildDialogue(){
   const multi=aiState.terms&&aiState.terms.length>1;
   const useTxt=multi?('自然使用这些单词：'+aiState.terms.join('、')):'自然使用该单词至少一次';
   const youTxt=multi?'为每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn，不要把多个目标词塞进同一个句子。目标词必须且只能各出现一次。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
   return aiCall([{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。对话长度适中，保持真实交流。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}]);
+    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。对话长度适中，保持真实交流。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}],aiState.multiTurn?{maxTokens:760,timeout:20000}:undefined);
 }
 async function aiJudge(attempt){
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
@@ -876,7 +895,7 @@ function aiRenderScenes(){
   $('#aiScene').innerHTML='<div class="ai-hint">'+esc(tip)+'</div>'+
     aiState.scenes.map((s,i)=>'<div class="scene-card" data-scene="'+i+'">'+
       '<span class="scene-num">0'+(i+1)+'</span>'+
-      '<span class="scene-main"><span class="scene-title">'+esc(s.title)+'</span><span class="scene-desc">'+esc(s.desc||'')+'</span></span>'+
+      '<span class="scene-main"><span class="scene-title">'+esc(s.title)+'</span><span class="scene-desc">'+esc(s.desc||'')+'</span>'+(Array.isArray(s.wordIds)&&s.wordIds.length?'<span class="scene-words">'+s.wordIds.map(id=>{const w=(state.words||[]).find(x=>x.id===id);return w?'<span class="scene-word">'+esc(w.term)+'</span>':'';}).join('')+'</span>':'')+'</span>'+
       '<svg class="icon-sm scene-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'+
       '</div>').join('');
 }
@@ -913,6 +932,16 @@ function aiGotoScenes(){
 }
 function startScene(sc){
   if(!sc) return;
+  if(aiState.multiTurn){
+    const sourceIds=aiState.allTermIds||aiState.termIds||[];
+    const ids=(Array.isArray(sc.wordIds)?sc.wordIds:[]).filter(id=>sourceIds.includes(id)).slice(0,3);
+    if(!ids.length){ toast('这个情景没有对应词条，请换一个情景','warn'); return; }
+    aiState.termIds=ids;
+    aiState.terms=ids.map(id=>{const w=(state.words||[]).find(x=>x.id===id);return w&&w.term;}).filter(Boolean);
+    aiState.term=aiState.terms.join(' · ');
+    aiState.definition=ids.map(id=>{const w=(state.words||[]).find(x=>x.id===id);return w&&String(w.definition||'').split('\n')[0];}).filter(Boolean).join('；');
+    aiState.examples=ids.reduce((out,id)=>{const w=(state.words||[]).find(x=>x.id===id);return out.concat(w&&w.examples?w.examples.map(x=>x.en).filter(Boolean):[]);},[]).slice(0,4);
+  }
   aiState.scene=sc;
   aiState.phase='practice';
   aiState.attempt=''; aiState.attemptPromptCn='';
