@@ -5517,6 +5517,11 @@ function aiWordCtx(){
   }
   return '"'+aiState.term+'"（释义：'+(aiState.definition||'暂无')+(aiState.examples.length?'；例句：'+aiState.examples.join('；'):'')+'）';
 }
+function aiTargetTerm(value){
+  const raw=String(value||'');
+  const w=(state.words||[]).find(x=>x.id===raw);
+  return w?w.term:raw;
+}
 function aiScenePlanCacheKey(){
   const ids=(aiState.allTermIds||aiState.termIds||[]).slice().sort();
   const terms=(aiState.allTerms||aiState.terms||[aiState.term||'']).slice();
@@ -5568,7 +5573,7 @@ async function aiBuildDialogue(){
 async function aiJudge(attempt){
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
   const multi=aiState.terms&&aiState.terms.length>1;
-  const target=aiState.currentTargetWord||aiState.term;
+  const target=aiTargetTerm(aiState.currentTargetWord||aiState.term);
   const stdTxt=multi?'标准地道的英文句子（必须自然使用目标词「'+target+'」）':'标准地道的英文句子（必须使用该单词）';
   return aiCall([{role:'system',content:'你是严格的英语口语陪练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
     {role:'user',content:'目标词「'+target+'」。对话语境：\n'+ctx+'\n学习者口译的句子："'+attempt+'"（中文提示：'+aiState.attemptPromptCn+'）。判断语法是否正确、表达是否地道，并确认是否自然使用了目标词。严格输出 JSON：{"score":0-100,"verdict":"很地道/基本正确/需要改进/不太对","comment":"中文点评，指出具体问题并解释","standard":"'+stdTxt+'"}'}]);
@@ -5578,7 +5583,7 @@ function aiShowBody(){ $('#aiLoading').classList.add('hidden'); $('#aiBody').cla
 function aiSyncContext(phase){
   const strip=$('#aiContextStrip'),word=$('#aiTargetWord'),hint=$('#aiRoundHint');
   if(!strip)return;
-  const term=String(aiState&&aiState.multiTurn&&aiState.currentTargetWord?aiState.currentTargetWord:aiState&&aiState.term||'').trim();
+  const term=aiTargetTerm(String(aiState&&aiState.multiTurn&&aiState.currentTargetWord?aiState.currentTargetWord:aiState&&aiState.term||'').trim());
   if(!term){ strip.classList.add('hidden'); return; }
   if(word)word.textContent=term;
   if(hint)hint.textContent=phase==='practice'?(aiState.multiTurn?'第 '+(aiState.turnIndex+1)+' / '+((aiState.lines||[]).filter(l=>l.who==='YOU').length||aiState.terms.length)+' 句 · 把这个词用进句子':'把目标词用进你的句子'):(phase==='review'?'看反馈，再试一次':'选一个场景开始 · 1—2 个来回');
@@ -5709,7 +5714,7 @@ function saveSpeakLog(d,attempt){
   const score=Math.max(0,Math.min(100,parseInt(d.score,10)||0));
   const sc=aiState.scene||{};
   state.aiLog.unshift({
-    id:uid(),term:aiState.currentTargetWord||aiState.term,scene:sc.title||'',sceneDesc:sc.desc||'',
+    id:uid(),term:aiTargetTerm(aiState.currentTargetWord||aiState.term),scene:sc.title||'',sceneDesc:sc.desc||'',
     promptCn:aiState.attemptPromptCn||'',attempt:String(attempt||''),
     score,verdict:String(d.verdict||''),comment:String(d.comment||''),
     standard:String(d.standard||''),createdAt:Date.now()
