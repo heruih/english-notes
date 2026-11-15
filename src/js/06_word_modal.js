@@ -773,7 +773,7 @@ function renderWmMaster(){
 }
 
 /* ============ AI 对话（情景口语练习） ============ */
-let aiState={seq:0,phase:'scenes',term:'',definition:'',examples:[],scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+let aiState={seq:0,phase:'scenes',term:'',termIds:[],terms:[],multiTurn:false,turnIndex:0,currentTargetWord:'',turnResults:[],definition:'',examples:[],scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
 let aiSession=0;
 const TONE_SYSTEM={
   friend:'You are a friendly native English-speaking friend. Chat naturally and colloquially, correct mistakes lightly, teach one natural alternative per turn, and always stay warm and lively — never robotic.',
@@ -837,27 +837,28 @@ async function aiSuggestScenes(){
 }
 async function aiBuildDialogue(){
   const multi=aiState.terms&&aiState.terms.length>1;
-  const useTxt=multi?('自然使用这些单词（尽量都用到）：'+aiState.terms.join('、')):'自然使用该单词至少一次';
-  const youTxt=multi?'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到至少一个目标词）':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
+  const useTxt=multi?('自然使用这些单词：'+aiState.terms.join('、')):'自然使用该单词至少一次';
+  const youTxt=multi?'为每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn，不要把多个目标词塞进同一个句子。目标词必须且只能各出现一次。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
   return aiCall([{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。创作一段 4-5 句、包含 1-2 个来回的自然口语对话，'+useTxt+'；'+youTxt+'；目标词必须放在 YOU 这一句最自然的位置；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","promptCn":"…"}]}'}]);
+    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。对话长度适中，保持真实交流。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}]);
 }
 async function aiJudge(attempt){
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
   const multi=aiState.terms&&aiState.terms.length>1;
-  const stdTxt=multi?'标准地道的英文句子（尽量用上这些目标词）':'标准地道的英文句子（必须使用该单词）';
+  const target=aiState.currentTargetWord||aiState.term;
+  const stdTxt=multi?'标准地道的英文句子（必须自然使用目标词「'+target+'」）':'标准地道的英文句子（必须使用该单词）';
   return aiCall([{role:'system',content:'你是严格的英语口语陪练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'。对话语境：\n'+ctx+'\n学习者口译的句子："'+attempt+'"（中文提示：'+aiState.attemptPromptCn+'）。判断语法是否正确、表达是否地道，并给出标准说法。严格输出 JSON：{"score":0-100,"verdict":"很地道/基本正确/需要改进/不太对","comment":"中文点评，指出具体问题并解释","standard":"'+stdTxt+'"}'}]);
+    {role:'user',content:'目标词「'+target+'」。对话语境：\n'+ctx+'\n学习者口译的句子："'+attempt+'"（中文提示：'+aiState.attemptPromptCn+'）。判断语法是否正确、表达是否地道，并确认是否自然使用了目标词。严格输出 JSON：{"score":0-100,"verdict":"很地道/基本正确/需要改进/不太对","comment":"中文点评，指出具体问题并解释","standard":"'+stdTxt+'"}'}]);
 }
 function aiShowLoading(t){ $('#aiBody').classList.add('hidden'); $('#aiLoading').classList.remove('hidden'); $('#aiLoadStatus').textContent=t; }
 function aiShowBody(){ $('#aiLoading').classList.add('hidden'); $('#aiBody').classList.remove('hidden'); }
 function aiSyncContext(phase){
   const strip=$('#aiContextStrip'),word=$('#aiTargetWord'),hint=$('#aiRoundHint');
   if(!strip)return;
-  const term=String(aiState&&aiState.term||'').trim();
+  const term=String(aiState&&aiState.multiTurn&&aiState.currentTargetWord?aiState.currentTargetWord:aiState&&aiState.term||'').trim();
   if(!term){ strip.classList.add('hidden'); return; }
   if(word)word.textContent=term;
-  if(hint)hint.textContent=phase==='practice'?'把目标词用进你的句子':(phase==='review'?'看反馈，再试一次':'选一个场景开始 · 1—2 个来回');
+  if(hint)hint.textContent=phase==='practice'?(aiState.multiTurn?'第 '+(aiState.turnIndex+1)+' / '+((aiState.lines||[]).filter(l=>l.who==='YOU').length||aiState.terms.length)+' 句 · 把这个词用进句子':'把目标词用进你的句子'):(phase==='review'?'看反馈，再试一次':'选一个场景开始 · 1—2 个来回');
   strip.classList.remove('hidden');
 }
 function aiSetChatbar(phase){
@@ -880,7 +881,9 @@ function aiRenderScenes(){
       '</div>').join('');
 }
 function aiRenderDialogue(){
-  $('#aiScene').innerHTML=aiState.lines.map(l=>{
+  let visible=aiState.lines;
+  if(aiState.multiTurn){const out=[],target=aiState.turnIndex||0;let seen=0;for(const l of aiState.lines){if(l.who==='YOU'){if(seen>target)break;out.push(l);if(seen===target)break;seen++;}else if(seen<=target)out.push(l);}visible=out;}
+  $('#aiScene').innerHTML=visible.map(l=>{
     if(l.who==='YOU'){
       return '<div class="ai-line ai-you"><div class="ai-text"><div class="ai-en"><span class="you-tag">你说</span><span class="you-prompt">'+esc(l.promptCn||'')+'</span>'+speakBtn(l.promptCn||'','zh-CN')+'</div></div></div>';
     }
@@ -919,7 +922,9 @@ function startScene(sc){
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     const lines=(r.lines||[]).filter(x=>x&&(x.who==='YOU'?x.promptCn:x.en));
     if(!lines.some(x=>x.who==='YOU')) throw new Error('对话缺少练习句，请重试');
+    if(aiState.multiTurn){const wanted=new Set(aiState.termIds||[]),used=lines.filter(x=>x.who==='YOU').map(x=>x.wordId);if(wanted.size!==used.length||used.some(id=>!wanted.has(id))||new Set(used).size!==used.length)throw new Error('每个目标词需要一个独立练习句，请重试');}
     aiState.lines=lines;
+    aiState.turnIndex=0;aiState.turnResults=[];aiState.currentTargetWord=aiState.multiTurn?((lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
     aiState.phase='practice';
     aiShowBody();
     aiSetChatbar('practice');
@@ -938,9 +943,11 @@ async function submitAttempt(){
   if(!text){ toast('先把你的翻译说出来或写下来','warn'); return; }
   stopAiDictation();
   aiState.busy=true;
-  const youLine=aiState.lines.find(l=>l.who==='YOU');
+  const youLines=aiState.lines.filter(l=>l.who==='YOU');
+  const youLine=aiState.multiTurn?(youLines[aiState.turnIndex]||youLines[0]):youLines[0];
   aiState.attempt=text;
   aiState.attemptPromptCn=(youLine&&youLine.promptCn)||'';
+  aiState.currentTargetWord=(youLine&&youLine.wordId)||aiState.term;
   input.value='';
   const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
   aiShowLoading('正在批改你的句子…');
@@ -962,7 +969,7 @@ function saveSpeakLog(d,attempt){
   const score=Math.max(0,Math.min(100,parseInt(d.score,10)||0));
   const sc=aiState.scene||{};
   state.aiLog.unshift({
-    id:uid(),term:aiState.term,scene:sc.title||'',sceneDesc:sc.desc||'',
+    id:uid(),term:aiState.currentTargetWord||aiState.term,scene:sc.title||'',sceneDesc:sc.desc||'',
     promptCn:aiState.attemptPromptCn||'',attempt:String(attempt||''),
     score,verdict:String(d.verdict||''),comment:String(d.comment||''),
     standard:String(d.standard||''),createdAt:Date.now()
@@ -1017,7 +1024,7 @@ function openAiPractice(term,scene){
   const session=++aiSession;
   const w=state.words.find(x=>String(x.term).toLowerCase()===String(term).toLowerCase());
   const sc=scene&&scene.title?scene:{title:'自由练习',desc:'自然地把这个词用进一句话'};
-  aiState={seq:0,phase:'practice',term:String(term||''),definition:w?w.definition:'',
+  aiState={seq:0,phase:'practice',term:String(term||''),termIds:w?[w.id]:[],terms:[],multiTurn:false,turnIndex:0,currentTargetWord:String(term||''),turnResults:[],definition:w?w.definition:'',
     examples:w?(w.examples||[]).map(x=>x.en).slice(0,2):[],scenes:[],scene:sc,
     lines:[],attempt:'',attemptPromptCn:'',busy:false};
   $('#aiTitle').textContent='情景口语 · '+term;
@@ -1103,7 +1110,7 @@ function openAiDialogue(ev){
   const definition=(wmState&&($('#wmDefinition').value||'').trim())||(ex&&ex.definition)||aiState.definition||'';
   const examples=wmState?collectExamples().map(x=>x.en).filter(Boolean):(aiState.examples||[]).slice();
   if(!examples.length&&ex) examples.push(...(ex.examples||[]).map(x=>x.en).filter(Boolean));
-  aiState={seq:0,phase:'scenes',term,definition,examples,scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+  aiState={seq:0,phase:'scenes',term,termIds:ex?[ex.id]:[],terms:[],multiTurn:false,turnIndex:0,currentTargetWord:term,turnResults:[],definition,examples,scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
   $('#aiTitle').textContent='情景口语 · '+term;
   $('#aiSub').textContent='选情景 → 开口翻译 → AI 批改 → 跟读';
   $('#aiScoreChip').classList.add('hidden');

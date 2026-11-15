@@ -503,6 +503,14 @@ openAiPackPractice=function(words){
 const aOriginalAiReview=aiRenderReview;
 aiRenderReview=function(d,attempt){
   aOriginalAiReview(d,attempt);const el=document.createElement('div');el.className='a-date-pack';
+  if(aiState.multiTurn){
+    const target=aiState.currentTargetWord||aiState.term,w=state.words.find(x=>x.id===target||x.term===target),you=aiState.lines.filter(l=>l.who==='YOU'),last=aiState.turnIndex>=you.length-1;
+    el.innerHTML='<p class="a-note">本回合目标词：<b>'+esc(w?w.term:target)+'</b>。确认这一句是否算独立用出。</p><div class="a-actions"><button class="btn" id="aTurnNeedsWork">还要再练</button><button class="btn primary" id="aTurnUsed">记为已用出</button></div>';
+    $('#aiScene').append(el);
+    const finish=result=>{if(w)aRecord(w,result,attempt,'dialogue-turn');aiState.turnResults.push({wordId:target,result,attempt});if(last){batchMarkActiveGroup();batchMarkActiveSegment();toast('这一组对话完成了');closeAiModal();return;}aiState.turnIndex++;const next=you[aiState.turnIndex];aiState.currentTargetWord=next&&next.wordId||aiState.term;aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').focus();};
+    $('#aTurnNeedsWork').onclick=()=>finish('forgot');$('#aTurnUsed').onclick=()=>finish('independent');
+    return;
+  }
   const terms=aiState.terms||[aiState.term];const words=state.words.filter(w=>terms.includes(w.term));
   el.innerHTML='<p class="a-note">哪些表达是你自己实际用出的？逐个确认，不把 AI 说出的算作你的使用。</p>'+words.map(w=>'<label class="a-check"><input type="checkbox" data-a-used="'+esc(w.id)+'">'+esc(w.term)+'</label>').join('')+'<div class="a-actions"><button class="btn primary" id="aSaveUsage">记录本次使用</button><button class="btn" id="aRetryOwn">改进后再说一次</button></div>';
   $('#aiScene').append(el);$('#aSaveUsage').onclick=()=>{const used=new Set($$('#aiScene [data-a-used]:checked').map(x=>x.dataset.aUsed));words.forEach(w=>aRecord(w,used.has(w.id)?'independent':'forgot',attempt,'dialogue'));batchMarkActiveGroup();batchMarkActiveSegment();$('#aSaveUsage').disabled=true;toast('已逐个记录，下次优先练还没用出的表达');};
