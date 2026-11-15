@@ -1413,7 +1413,7 @@ function packableWords(){
 function openAiPackPractice(terms){
   const list=(terms&&terms.length)?terms:(packableWords());
   if(!list.length){ toast('还没有可以打包练习的词，先去攒几个','warn'); return; }
-  aiState={seq:0,phase:'scenes',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),allTerms:list.map(w=>w.term),allTermIds:list.map(w=>w.id),multiTurn:list.length>1,turnIndex:0,currentTargetWord:'',turnResults:[],
+  aiState={seq:0,phase:'scenes',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),allTerms:list.map(w=>w.term),allTermIds:list.map(w=>w.id),multiTurn:list.length>1,sceneIndex:-1,turnIndex:0,currentTargetWord:'',turnResults:[],
     term:list.map(w=>w.term).join(' · '),
     definition:list.map(w=>(w.definition||'').split('\n')[0]).filter(Boolean).join('；'),
     examples:list.slice(0,4).reduce((a,w)=>a.concat((w.examples||[]).map(x=>x.en)),[]),

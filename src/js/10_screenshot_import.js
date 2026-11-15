@@ -427,6 +427,15 @@ function batchRender(){
 function batchStartGroup(index){const d=dialogueBatchState(),g=d.plan&&d.plan.groups&&d.plan.groups[index];if(!g)return;const words=g.wordIds.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);if(!words.length)return;d.active=index;batchSave(d);batchActiveGroup=index;batchClose();openAiPackPractice(words);}
 function batchMarkActiveGroup(){if(batchActiveGroup<0)return;const d=dialogueBatchState();if(!d.completed.includes(batchActiveGroup))d.completed.push(batchActiveGroup);d.active=-1;batchSave(d);batchActiveGroup=-1;}
 function batchMarkActiveSegment(){if(!batchActiveSegment||!batchActiveSegment.length)return;const d=dialogueBatchState();const ids=batchActiveSegment.slice();d.segmentHistory=Array.isArray(d.segmentHistory)?d.segmentHistory:[];d.segmentHistory.push({ids,completedAt:Date.now()});d.recentIds=(d.recentIds||[]).filter(id=>!ids.includes(id));d.activeSegment=null;batchSave(d);batchActiveSegment=null;}
+function batchAdvanceDialogueScene(){
+  if(!aiState.multiTurn||!Array.isArray(aiState.scenes)) return false;
+  const next=(Number(aiState.sceneIndex)||0)+1;
+  if(next>=aiState.scenes.length) return false;
+  aiState.sceneIndex=next;
+  toast('当前场景完成，进入下一个场景');
+  startScene(aiState.scenes[next]);
+  return true;
+}
 renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
@@ -507,7 +516,7 @@ aiRenderReview=function(d,attempt){
     const target=aiState.currentTargetWord||aiState.term,w=state.words.find(x=>x.id===target||x.term===target),you=aiState.lines.filter(l=>l.who==='YOU'),last=aiState.turnIndex>=you.length-1;
     el.innerHTML='<p class="a-note">本回合目标词：<b>'+esc(w?w.term:target)+'</b>。确认这一句是否算独立用出。</p><div class="a-actions"><button class="btn" id="aTurnNeedsWork">还要再练</button><button class="btn primary" id="aTurnUsed">记为已用出</button></div>';
     $('#aiScene').append(el);
-    const finish=result=>{if(w)aRecord(w,result,attempt,'dialogue-turn');aiState.turnResults.push({wordId:target,result,attempt});if(last){batchMarkActiveGroup();batchMarkActiveSegment();toast('这一组对话完成了');closeAiModal();return;}aiState.turnIndex++;const next=you[aiState.turnIndex];aiState.currentTargetWord=next&&next.wordId||aiState.term;aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').focus();};
+    const finish=result=>{if(w)aRecord(w,result,attempt,'dialogue-turn');aiState.turnResults.push({wordId:target,result,attempt});if(last){if(batchAdvanceDialogueScene())return;batchMarkActiveGroup();batchMarkActiveSegment();toast('这一组对话完成了');closeAiModal();return;}aiState.turnIndex++;const next=you[aiState.turnIndex];aiState.currentTargetWord=next&&next.wordId||aiState.term;aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').focus();};
     $('#aTurnNeedsWork').onclick=()=>finish('forgot');$('#aTurnUsed').onclick=()=>finish('independent');
     return;
   }

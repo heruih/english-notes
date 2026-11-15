@@ -773,7 +773,7 @@ function renderWmMaster(){
 }
 
 /* ============ AI 对话（情景口语练习） ============ */
-let aiState={seq:0,phase:'scenes',term:'',termIds:[],terms:[],multiTurn:false,turnIndex:0,currentTargetWord:'',turnResults:[],definition:'',examples:[],scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+let aiState={seq:0,phase:'scenes',term:'',termIds:[],terms:[],multiTurn:false,sceneIndex:-1,turnIndex:0,currentTargetWord:'',turnResults:[],definition:'',examples:[],scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
 let aiSession=0;
 const TONE_SYSTEM={
   friend:'You are a friendly native English-speaking friend. Chat naturally and colloquially, correct mistakes lightly, teach one natural alternative per turn, and always stay warm and lively — never robotic.',
@@ -855,7 +855,7 @@ function aiNormalizeScenePlan(data){
   const allowed=new Set(aiState.allTermIds||aiState.termIds||[]),seen=new Set(),scenes=[];
   raw.slice(0,3).forEach(x=>{
     if(!x||!String(x.title||'').trim()||!Array.isArray(x.wordIds)) return;
-    const ids=x.wordIds.map(id=>String(id)).filter(id=>allowed.has(id)&&!seen.has(id)).slice(0,3);
+    const ids=x.wordIds.map(id=>String(id)).filter(id=>allowed.has(id)&&!seen.has(id)).slice(0,2);
     if(!ids.length) return;
     ids.forEach(id=>seen.add(id));
     scenes.push({title:String(x.title).trim().slice(0,20),desc:String(x.desc||'').trim().slice(0,60),wordIds:ids});
@@ -870,7 +870,7 @@ async function aiSuggestScenes(){
     const normalized=cached&&cached.data&&aiNormalizeScenePlan(cached.data);
     if(cached&&cached.at&&Date.now()-cached.at<7*24*60*60*1000&&normalized) return normalized;
   }catch(e){}
-  const task=multi?'请按真实使用场景把这些词分成 1—3 个场景，每个场景 1—3 个词。每个词必须且只能出现在一个场景。优先选择最典型、最贴切的用法，避免为了凑数强行拼接。':'给出该词最常用、最适合做口语练习的 3 个生活或职场场景。';
+  const task=multi?'请按真实使用场景把这些词分成 1—3 个场景，每个场景 1—2 个词。每个词必须且只能出现在一个场景。优先选择最典型、最贴切的用法，避免为了凑数强行拼接。':'给出该词最常用、最适合做口语练习的 3 个生活或职场场景。';
   const schema=multi?'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"20字以内说明","wordIds":["原样保留的词条ID"]}]}':'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"一句话说明这个场景里怎么用，20字以内（中文）"}]}';
   const subject=multi?'目标词清单（wordId 必须从清单中原样复制，不能改成单词文本）：'+JSON.stringify(aiSceneTermsPayload()):'学习者在学 '+aiWordCtx();
   const data=await aiCall([{role:'system',content:'你是英语情景口语设计者。直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
@@ -899,10 +899,10 @@ function aiFallbackDialogue(){
 async function aiBuildDialogue(){
   const multi=aiState.terms&&aiState.terms.length>1;
   const useTxt=multi?('自然使用这些单词：'+aiState.terms.join('、')):'自然使用该单词至少一次';
-  const youTxt=multi?'为每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn，不要把多个目标词塞进同一个句子。目标词必须且只能各出现一次。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
+  const youTxt=multi?'每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn。这个场景最多 2 个目标词，最多 2 个来回，全部对话控制在 4—5 行。不要追加闲聊，不要把多个目标词塞进同一句。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
   const messages=[{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。对话长度适中，保持真实交流。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}];
-  try{ return await aiCall(messages,aiState.multiTurn?{maxTokens:760,timeout:20000}:undefined); }
+    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}];
+  try{ return await aiCall(messages,aiState.multiTurn?{maxTokens:520,timeout:20000}:undefined); }
   catch(err){
     if(!aiState.multiTurn||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
     return aiCall(messages.concat({role:'user',content:'上一次返回格式无效。请只返回可解析的 JSON，必须包含 lines 数组，且每个目标词只对应一个 YOU 回合。'}),{maxTokens:600,timeout:15000});
@@ -979,9 +979,10 @@ function aiGotoScenes(){
 }
 function startScene(sc){
   if(!sc) return;
+  if(aiState.multiTurn) aiState.sceneIndex=Math.max(0,aiState.scenes.indexOf(sc));
   if(aiState.multiTurn){
     const sourceIds=aiState.allTermIds||aiState.termIds||[];
-    const ids=(Array.isArray(sc.wordIds)?sc.wordIds:[]).filter(id=>sourceIds.includes(id)).slice(0,3);
+    const ids=(Array.isArray(sc.wordIds)?sc.wordIds:[]).filter(id=>sourceIds.includes(id)).slice(0,2);
     if(!ids.length){ toast('这个情景没有对应词条，请换一个情景','warn'); return; }
     aiState.termIds=ids;
     aiState.terms=ids.map(id=>{const w=(state.words||[]).find(x=>x.id===id);return w&&w.term;}).filter(Boolean);
@@ -998,7 +999,7 @@ function startScene(sc){
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     const lines=(r.lines||[]).filter(x=>x&&(x.who==='YOU'?x.promptCn:x.en));
     if(!lines.some(x=>x.who==='YOU')) throw new Error('对话缺少练习句，请重试');
-    if(aiState.multiTurn){const wanted=new Set(aiState.termIds||[]),used=lines.filter(x=>x.who==='YOU').map(x=>x.wordId);if(wanted.size!==used.length||used.some(id=>!wanted.has(id))||new Set(used).size!==used.length)throw new Error('每个目标词需要一个独立练习句，请重试');}
+    if(aiState.multiTurn){const wanted=new Set(aiState.termIds||[]),you=lines.filter(x=>x.who==='YOU'),used=you.map(x=>x.wordId);if(wanted.size!==used.length||used.some(id=>!wanted.has(id))||new Set(used).size!==used.length)throw new Error('每个目标词需要一个独立练习句，请重试');if(you.length>2||lines.length>6)throw new Error('对话超过两轮，请重试');}
     aiState.lines=lines;
     aiState.turnIndex=0;aiState.turnResults=[];aiState.currentTargetWord=aiState.multiTurn?((lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
     aiState.phase='practice';
@@ -1007,7 +1008,7 @@ function startScene(sc){
     aiRenderDialogue();
   }).catch(err=>{
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
-    if(aiState.multiTurn&&/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))){
+    if(aiState.multiTurn&&/解析|格式|JSON|返回内容|目标词|超过两轮/i.test(String(err&&err.message||''))){
       aiState.lines=aiFallbackDialogue().lines;
       aiState.turnIndex=0; aiState.turnResults=[]; aiState.currentTargetWord=(aiState.lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0];
       aiState.phase='practice'; aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
