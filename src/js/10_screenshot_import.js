@@ -375,12 +375,20 @@ const aOriginalCard=wordCardHTML;
 wordCardHTML=function(w){return '<div class="a-word-wrap"><div class="a-word-status">'+(aPending(w)?'待整理':aOutputLabel(w))+'</div>'+aOriginalCard(w)+'</div>';};
 function aOutputLabel(w){const n=aData.attempts.filter(x=>x.wordId===w.id&&x.result==='independent').length;return n?'独立用出 '+n+' 次':'已入库 · 等待实际使用';}
 const BATCH_KEY='english-notes-dialogue-batch-v1';
-let batchActiveGroup=-1;
-function batchEmpty(){return {date:aDate(Date.now()),wordIds:[],plan:null,completed:[],active:-1};}
+let batchActiveGroup=-1,batchActiveSegment=null;
+function batchEmpty(){return {date:aDate(Date.now()),wordIds:[],recentIds:[],segmentHistory:[],activeSegment:null,plan:null,completed:[],active:-1};}
 function dialogueBatchState(){const d=aRead(BATCH_KEY,null);if(d&&d.date===aDate(Date.now())&&Array.isArray(d.wordIds))return Object.assign(batchEmpty(),d);const fresh=batchEmpty();aStore(BATCH_KEY,JSON.stringify(fresh));return fresh;}
 function batchSave(d){aStore(BATCH_KEY,JSON.stringify(d));}
 function batchReviewedWords(d){const ids=new Set((d||dialogueBatchState()).wordIds||[]);return state.words.filter(w=>ids.has(w.id)&&!aPending(w));}
-function batchReviewRecord(id){if(!id)return;const d=dialogueBatchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;batchSave(d);}}
+function batchReviewRecord(id){if(!id)return;const d=dialogueBatchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;}if(!d.recentIds.includes(id))d.recentIds.push(id);batchSave(d);}
+function batchRecentCount(){const d=dialogueBatchState();return Array.isArray(d.recentIds)?d.recentIds.length:0;}
+function batchPauseRecent(){
+  const d=dialogueBatchState(),ids=(d.recentIds||[]).slice();
+  if(ids.length<3){toast('至少复习 3 个词后再暂停练习','warn');return;}
+  const words=ids.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);
+  if(words.length<3){toast('最近复习的词条已发生变化，请继续复习','warn');return;}
+  d.activeSegment={ids:words.map(w=>w.id),startedAt:Date.now()};batchSave(d);batchActiveSegment=words.map(w=>w.id);openAiPackPractice(words);
+}
 function batchReady(d){const n=batchReviewedWords(d).length;return n>=20||(dueCount()===0&&n>=5);}
 function batchFallbackPlan(words){const groups=[];for(let i=0;i<words.length;i+=5){const part=words.slice(i,i+5);groups.push({title:'情景对话 '+(groups.length+1),desc:'把这组表达自然用进同一个场景',wordIds:part.map(w=>w.id)});}return {groups};}
 function batchPlanValid(plan,words){
@@ -413,6 +421,7 @@ function batchRender(){
 }
 function batchStartGroup(index){const d=dialogueBatchState(),g=d.plan&&d.plan.groups&&d.plan.groups[index];if(!g)return;const words=g.wordIds.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);if(!words.length)return;d.active=index;batchSave(d);batchActiveGroup=index;batchClose();openAiPackPractice(words);}
 function batchMarkActiveGroup(){if(batchActiveGroup<0)return;const d=dialogueBatchState();if(!d.completed.includes(batchActiveGroup))d.completed.push(batchActiveGroup);d.active=-1;batchSave(d);batchActiveGroup=-1;}
+function batchMarkActiveSegment(){if(!batchActiveSegment||!batchActiveSegment.length)return;const d=dialogueBatchState();const ids=batchActiveSegment.slice();d.segmentHistory=Array.isArray(d.segmentHistory)?d.segmentHistory:[];d.segmentHistory.push({ids,completedAt:Date.now()});d.recentIds=(d.recentIds||[]).filter(id=>!ids.includes(id));d.activeSegment=null;batchSave(d);batchActiveSegment=null;}
 renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
@@ -483,7 +492,7 @@ openAiPackPractice=function(words){
   aStore(A_TASK_KEY,JSON.stringify({wordIds:list.map(w=>w.id),createdAt:Date.now()}));
   aBridge([{role:'user',content:prompt}]).then(result=>{
     if(!Array.isArray(result.feedback))throw new Error('缺少逐表达反馈');
-    result.feedback.forEach(f=>{const w=list.find(x=>x.id===f.wordId);if(!w)return;aRecord(w,f.used===true&&String(f.attempt||'').trim()?'independent':'forgot',String(f.attempt||''),'chatgpt-session');const rec=aData.attempts[0];rec.comment=String(f.comment||'');rec.revision=String(f.revision||'');});aFlush();localStorage.removeItem(A_TASK_KEY);batchMarkActiveGroup();render();toast('练习反馈已按表达保存；可在表达详情回看');
+    result.feedback.forEach(f=>{const w=list.find(x=>x.id===f.wordId);if(!w)return;aRecord(w,f.used===true&&String(f.attempt||'').trim()?'independent':'forgot',String(f.attempt||''),'chatgpt-session');const rec=aData.attempts[0];rec.comment=String(f.comment||'');rec.revision=String(f.revision||'');});aFlush();localStorage.removeItem(A_TASK_KEY);batchMarkActiveGroup();batchMarkActiveSegment();render();toast('练习反馈已按表达保存；可在表达详情回看');
   }).catch(e=>toast(e.message,'warn'));
 };
 const aOriginalAiReview=aiRenderReview;
@@ -491,7 +500,7 @@ aiRenderReview=function(d,attempt){
   aOriginalAiReview(d,attempt);const el=document.createElement('div');el.className='a-date-pack';
   const terms=aiState.terms||[aiState.term];const words=state.words.filter(w=>terms.includes(w.term));
   el.innerHTML='<p class="a-note">哪些表达是你自己实际用出的？逐个确认，不把 AI 说出的算作你的使用。</p>'+words.map(w=>'<label class="a-check"><input type="checkbox" data-a-used="'+esc(w.id)+'">'+esc(w.term)+'</label>').join('')+'<div class="a-actions"><button class="btn primary" id="aSaveUsage">记录本次使用</button><button class="btn" id="aRetryOwn">改进后再说一次</button></div>';
-  $('#aiScene').append(el);$('#aSaveUsage').onclick=()=>{const used=new Set($$('#aiScene [data-a-used]:checked').map(x=>x.dataset.aUsed));words.forEach(w=>aRecord(w,used.has(w.id)?'independent':'forgot',attempt,'dialogue'));batchMarkActiveGroup();$('#aSaveUsage').disabled=true;toast('已逐个记录，下次优先练还没用出的表达');};
+  $('#aiScene').append(el);$('#aSaveUsage').onclick=()=>{const used=new Set($$('#aiScene [data-a-used]:checked').map(x=>x.dataset.aUsed));words.forEach(w=>aRecord(w,used.has(w.id)?'independent':'forgot',attempt,'dialogue'));batchMarkActiveGroup();batchMarkActiveSegment();$('#aSaveUsage').disabled=true;toast('已逐个记录，下次优先练还没用出的表达');};
   $('#aRetryOwn').onclick=()=>{aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').value=attempt;$('#aiInput').focus();};
 };
 const aOriginalWriteReview=writeRenderReview;

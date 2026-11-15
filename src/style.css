@@ -786,6 +786,8 @@ body.side-open #scrim{display:block}
 .grade-btn.hard{color:var(--warn);border-color:rgba(255,159,10,.35)}
 .grade-btn.good{background:var(--accent);border-color:transparent;color:#fff}
 .grade-btn.good small{color:rgba(255,255,255,.75)}
+.review-pause-btn{width:min(94%,600px);min-height:42px;margin-top:10px;border:1px solid var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--accent-fg);font-size:13px;font-weight:700}
+.review-pause-btn:active{transform:scale(.98);background:var(--accent)}
 .flash-empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:56px 28px;text-align:center}
 .flash-empty .big{font-size:44px}
 .flash-empty b{font-size:17px}
@@ -896,6 +898,8 @@ body.side-open #scrim{display:block}
 @media (max-width:767px){
   .grade-row{gap:8px}
   .grade-btn{min-height:50px;font-size:14px}
+  body.mode-flash #tabbar{display:none}
+  body.mode-flash .flash-wrap{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
   #followBody{padding:26px 20px 150px}
   #followSentence{font-size:20px}
 }
