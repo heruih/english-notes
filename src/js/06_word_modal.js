@@ -841,18 +841,44 @@ function aiScenePlanCacheKey(){
   try{ model=(typeof aiApiConfig==='function'&&aiApiConfig().model)||''; }catch(e){}
   return 'english-notes-dialogue-plan-v1:'+JSON.stringify({ids,terms,model});
 }
+function aiSceneTermsPayload(){
+  const ids=aiState.allTermIds||aiState.termIds||[];
+  return ids.map(id=>{
+    const w=(state.words||[]).find(x=>x.id===id);
+    return {wordId:id,term:w&&w.term||'',definition:w&&String(w.definition||'').split('\n')[0]||'',example:w&&w.examples&&w.examples[0]&&w.examples[0].en||''};
+  });
+}
+function aiNormalizeScenePlan(data){
+  const raw=Array.isArray(data&&data.scenes)?data.scenes:[];
+  if(!raw.length) return null;
+  if(!(aiState.terms&&aiState.terms.length>1)) return {scenes:raw.filter(x=>x&&String(x.title||'').trim()).slice(0,3).map(x=>({title:String(x.title).trim().slice(0,20),desc:String(x.desc||'').trim().slice(0,60)}))};
+  const allowed=new Set(aiState.allTermIds||aiState.termIds||[]),seen=new Set(),scenes=[];
+  raw.slice(0,3).forEach(x=>{
+    if(!x||!String(x.title||'').trim()||!Array.isArray(x.wordIds)) return;
+    const ids=x.wordIds.map(id=>String(id)).filter(id=>allowed.has(id)&&!seen.has(id)).slice(0,3);
+    if(!ids.length) return;
+    ids.forEach(id=>seen.add(id));
+    scenes.push({title:String(x.title).trim().slice(0,20),desc:String(x.desc||'').trim().slice(0,60),wordIds:ids});
+  });
+  if(seen.size!==allowed.size) return null;
+  return {scenes};
+}
 async function aiSuggestScenes(){
   const multi=aiState.terms&&aiState.terms.length>1;
   try{
     const cached=JSON.parse(localStorage.getItem(aiScenePlanCacheKey())||'null');
-    if(cached&&cached.at&&Date.now()-cached.at<7*24*60*60*1000&&cached.data&&Array.isArray(cached.data.scenes)) return cached.data;
+    const normalized=cached&&cached.data&&aiNormalizeScenePlan(cached.data);
+    if(cached&&cached.at&&Date.now()-cached.at<7*24*60*60*1000&&normalized) return normalized;
   }catch(e){}
   const task=multi?'请按真实使用场景把这些词分成 1—3 个场景，每个场景 1—3 个词。每个词必须且只能出现在一个场景。优先选择最典型、最贴切的用法，避免为了凑数强行拼接。':'给出该词最常用、最适合做口语练习的 3 个生活或职场场景。';
   const schema=multi?'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"20字以内说明","wordIds":["原样保留的词条ID"]}]}':'严格输出 JSON：{"scenes":[{"title":"场景中文名，6字以内","desc":"一句话说明这个场景里怎么用，20字以内（中文）"}]}';
+  const subject=multi?'目标词清单（wordId 必须从清单中原样复制，不能改成单词文本）：'+JSON.stringify(aiSceneTermsPayload()):'学习者在学 '+aiWordCtx();
   const data=await aiCall([{role:'system',content:'你是英语情景口语设计者。直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'学习者在学 '+aiWordCtx()+'。'+task+schema}],multi?{maxTokens:520,timeout:15000}:undefined);
-  try{ localStorage.setItem(aiScenePlanCacheKey(),JSON.stringify({at:Date.now(),data})); }catch(e){}
-  return data;
+    {role:'user',content:subject+'。'+task+schema}],multi?{maxTokens:520,timeout:15000}:undefined);
+  const normalized=aiNormalizeScenePlan(data);
+  if(!normalized) throw new Error('场景规划结果不完整，请重试');
+  try{ localStorage.setItem(aiScenePlanCacheKey(),JSON.stringify({at:Date.now(),data:normalized})); }catch(e){}
+  return normalized;
 }
 function aiFallbackSceneGroups(){
   const ids=aiState.allTermIds||aiState.termIds||[],groups=[];
