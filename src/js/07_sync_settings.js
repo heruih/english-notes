@@ -1413,7 +1413,7 @@ function packableWords(){
 function openAiPackPractice(terms){
   const list=(terms&&terms.length)?terms:(packableWords());
   if(!list.length){ toast('还没有可以打包练习的词，先去攒几个','warn'); return; }
-  aiState={seq:0,phase:'scenes',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),allTerms:list.map(w=>w.term),allTermIds:list.map(w=>w.id),multiTurn:list.length>1,sceneIndex:-1,turnIndex:0,currentTargetWord:'',turnResults:[],
+  aiState={seq:0,phase:'scenes',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),allTerms:list.map(w=>w.term),allTermIds:list.map(w=>w.id),multiTurn:list.length>1,sceneIndex:-1,scenePlanFallback:false,turnIndex:0,currentTargetWord:'',turnResults:[],
     term:list.map(w=>w.term).join(' · '),
     definition:list.map(w=>(w.definition||'').split('\n')[0]).filter(Boolean).join('；'),
     examples:list.slice(0,4).reduce((a,w)=>a.concat((w.examples||[]).map(x=>x.en)),[]),
@@ -1437,15 +1437,15 @@ function openAiPackPractice(terms){
     const sourceIds=new Set(aiState.allTermIds||aiState.termIds||[]);
     const sc=(r.scenes||[]).filter(x=>x&&x.title&&(!aiState.multiTurn||(Array.isArray(x.wordIds)&&x.wordIds.some(id=>sourceIds.has(id))))).slice(0,3);
     if(!sc.length) throw new Error('返回内容无法解析，请重试');
-    aiState.scenes=sc; aiState.phase='scenes';
+    aiState.scenes=sc; aiState.phase='scenes'; aiState.scenePlanFallback=false;
     aiShowBody(); aiSetChatbar('scenes'); aiRenderScenes();
   }).catch(err=>{
     if(mySeq!==aiState.seq) return;
     if(aiState.multiTurn){
       aiState.scenes=aiFallbackSceneGroups();
-      aiState.phase='scenes';
+      aiState.phase='scenes'; aiState.scenePlanFallback=true;
       aiShowBody(); aiSetChatbar('scenes'); aiRenderScenes();
-      toast('场景规划超时，已切换为快速分组','warn');
+      toast(/abort|超时/i.test(String(err&&err.message||''))?'AI 场景请求超时，已显示快速分组':'AI 场景请求失败，已显示快速分组','warn');
       return;
     }
     aiShowBody();
