@@ -4,6 +4,7 @@
 
 | 日期 | 做了什么 | 怎么验的 | 结果 | 下一步 |
 |---|---|---|---|---|
+| 2026-11-15 | 发布网页验收版：包含今日批量情景对话、Sitecase 启动保护、AI 中文按需展开和复习轮次调整 | gh-pages 提交 `4d3a0f0`；GitHub Pages HTTP 200；传播后通过带时间参数请求确认批量状态 key、启动保护和中文折叠标记存在 | 网页版已发布，Sitecase 仅保留为最终真机专项验收环境 | 先在网页验证批量规划和续接，再决定是否做 Sitecase 真机复测 |
 | 2026-11-15 | 修复 Sitecase 空白启动：批量面板事件改为可选绑定，启动阶段对学习模块和同步模块增加异常隔离；空库页增加旧文件备份导入提示 | `node --check`；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；`git diff --check` | 启动保护和两个候选构建通过；Sitecase 真机重新打开待验 | 用 `英语学习笔记-Sitecase-20261115-启动修复版.html` 重新打开，确认至少显示“还没有笔记”提示或已有数据 |
 | 2026-11-15 | 主线调整为“复习后批量情景对话”：每日到期复习轮次上限调整为 25 个并独立记录当天完成词；新增批量场景规划面板，AI 按语境分成每组 4—6 个，复用现有多词对话和逐词记录；单词页单独对话保留 | `node --check` 检查复习、批量、AI 和首页模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查批量状态 key、入口、分组面板、复习上限和既有 AI 标记；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机批量复习、AI 分组和续接尚未验收，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-今日批量情景对话.html`，完成至少 20 个复习词后检查批量入口、场景规划和每组约 5 个词 |
 | 2026-11-15 | AI 对话中文层级：除“你说”的中文提示外，其他 AI 句子的中文默认隐藏，点中文提示展开；不改对话请求和批改流程 | `node --check` 检查 AI、编辑器和首页模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查 `data-aicn`、中文展开提示和既有页面标记；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机 AI 对话验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-AI中文折叠.html`，确认 AI 句子中文默认收起，点一下可展开 |
