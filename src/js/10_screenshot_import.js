@@ -377,10 +377,10 @@ function aOutputLabel(w){const n=aData.attempts.filter(x=>x.wordId===w.id&&x.res
 const BATCH_KEY='english-notes-dialogue-batch-v1';
 let batchActiveGroup=-1;
 function batchEmpty(){return {date:aDate(Date.now()),wordIds:[],plan:null,completed:[],active:-1};}
-function batchState(){const d=aRead(BATCH_KEY,null);if(d&&d.date===aDate(Date.now())&&Array.isArray(d.wordIds))return Object.assign(batchEmpty(),d);const fresh=batchEmpty();aStore(BATCH_KEY,JSON.stringify(fresh));return fresh;}
+function dialogueBatchState(){const d=aRead(BATCH_KEY,null);if(d&&d.date===aDate(Date.now())&&Array.isArray(d.wordIds))return Object.assign(batchEmpty(),d);const fresh=batchEmpty();aStore(BATCH_KEY,JSON.stringify(fresh));return fresh;}
 function batchSave(d){aStore(BATCH_KEY,JSON.stringify(d));}
-function batchReviewedWords(d){const ids=new Set((d||batchState()).wordIds||[]);return state.words.filter(w=>ids.has(w.id)&&!aPending(w));}
-function batchReviewRecord(id){if(!id)return;const d=batchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;batchSave(d);}}
+function batchReviewedWords(d){const ids=new Set((d||dialogueBatchState()).wordIds||[]);return state.words.filter(w=>ids.has(w.id)&&!aPending(w));}
+function batchReviewRecord(id){if(!id)return;const d=dialogueBatchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;batchSave(d);}}
 function batchReady(d){const n=batchReviewedWords(d).length;return n>=20||(dueCount()===0&&n>=5);}
 function batchFallbackPlan(words){const groups=[];for(let i=0;i<words.length;i+=5){const part=words.slice(i,i+5);groups.push({title:'情景对话 '+(groups.length+1),desc:'把这组表达自然用进同一个场景',wordIds:part.map(w=>w.id)});}return {groups};}
 function batchPlanValid(plan,words){
@@ -390,7 +390,7 @@ function batchPlanValid(plan,words){
   return seen.length===allowed.size&&seen.every(id=>allowed.has(id));
 }
 async function batchPlanToday(){
-  const d=batchState(),words=batchReviewedWords(d);
+  const d=dialogueBatchState(),words=batchReviewedWords(d);
   if(words.length<5){toast('至少完成 5 个复习词后再规划情景','warn');return;}
   const fallback=()=>{d.plan=batchFallbackPlan(words);d.completed=[];d.active=-1;batchSave(d);batchRender();};
   if(!aAiReady()){fallback();toast('未配置自动 AI，已按每组 5 个词生成练习分组','warn');return;}
@@ -402,7 +402,7 @@ async function batchPlanToday(){
 function batchOpen(){const el=$('#aBatch');if(!el)return;el.classList.add('show');batchRender();}
 function batchClose(){const el=$('#aBatch');if(el)el.classList.remove('show');}
 function batchRender(){
-  const box=$('#aBatchBody');if(!box)return;const d=batchState(),words=batchReviewedWords(d),done=new Set(d.completed||[]);
+  const box=$('#aBatchBody');if(!box)return;const d=dialogueBatchState(),words=batchReviewedWords(d),done=new Set(d.completed||[]);
   if(!words.length){box.innerHTML='<div class="empty-state"><b>今天还没有完成的复习词</b><div>先完成今日复习，再统一练情景对话。</div></div>';return;}
   let h='<p class="a-note">今天已复习 '+words.length+' 个表达。AI 会把它们分成每组约 5 个的场景，完成后逐词记录是否独立用出。</p>';
   if(!d.plan)h+='<button class="btn primary batch-plan-btn" id="aBatchPlan">规划今日场景</button>';
@@ -411,14 +411,14 @@ function batchRender(){
   const plan=$('#aBatchPlan');if(plan)plan.onclick=batchPlanToday;
   $$('[data-batch-group]').forEach(b=>b.onclick=()=>batchStartGroup(Number(b.dataset.batchGroup)));
 }
-function batchStartGroup(index){const d=batchState(),g=d.plan&&d.plan.groups&&d.plan.groups[index];if(!g)return;const words=g.wordIds.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);if(!words.length)return;d.active=index;batchSave(d);batchActiveGroup=index;batchClose();openAiPackPractice(words);}
-function batchMarkActiveGroup(){if(batchActiveGroup<0)return;const d=batchState();if(!d.completed.includes(batchActiveGroup))d.completed.push(batchActiveGroup);d.active=-1;batchSave(d);batchActiveGroup=-1;}
+function batchStartGroup(index){const d=dialogueBatchState(),g=d.plan&&d.plan.groups&&d.plan.groups[index];if(!g)return;const words=g.wordIds.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);if(!words.length)return;d.active=index;batchSave(d);batchActiveGroup=index;batchClose();openAiPackPractice(words);}
+function batchMarkActiveGroup(){if(batchActiveGroup<0)return;const d=dialogueBatchState();if(!d.completed.includes(batchActiveGroup))d.completed.push(batchActiveGroup);d.active=-1;batchSave(d);batchActiveGroup=-1;}
 renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
   const next=pending.length?'整理 '+pending.length+' 个待加工表达':due.length?'回想今天到期的表达':'用 2—3 个表达说一段';
   const quote=todayDailyQuote(),encouragement=todayEncouragement(pending.length,due.length,weak.length);
-  const batch=batchState(),reviewed=batchReviewedWords(batch).length,batchEntry=(batchReady(batch)||batch.plan)?'<div class="a-batch-entry"><div><b>今日批量情景对话</b><small>已完成复习 '+reviewed+' 个表达 · 每组约 5 个</small></div><button class="btn primary" id="aBatchOpen">'+(batch.plan?'继续场景练习':'规划今日场景')+'</button></div>':'';
+  const batch=dialogueBatchState(),reviewed=batchReviewedWords(batch).length,batchEntry=(batchReady(batch)||batch.plan)?'<div class="a-batch-entry"><div><b>今日批量情景对话</b><small>已完成复习 '+reviewed+' 个表达 · 每组约 5 个</small></div><button class="btn primary" id="aBatchOpen">'+(batch.plan?'继续场景练习':'规划今日场景')+'</button></div>':'';
   box.innerHTML='<div class="a-callout"><h3>'+next+'</h3><p>一次做好一小步。先自己回想和表达，再查看答案或请 ChatGPT 帮忙。</p><button class="btn primary" id="aNext">开始这一步</button></div>'+
     '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
     '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+batchEntry+
