@@ -1,7 +1,7 @@
 /* ============ 启动 ============ */
 state=migrate(load());
-aInit();
-bInit();
+try{aInit();}catch(e){console.error('学习模块初始化失败',e);}
+try{bInit();}catch(e){console.error('同步模块初始化失败',e);}
 applyTheme();
 // Preserve existing image cache on upgrade.
 /* 老标亮（标了词就到处亮）搬迁成「只亮当时那一处」 */

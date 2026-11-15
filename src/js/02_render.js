@@ -212,7 +212,7 @@ function renderNoteList(){
   if(!notes.length){
     box.innerHTML='<div class="empty-state">'+
       '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
-      '<div><b>'+(ui.folder==='all'?'还没有笔记':'这个文件夹还没有笔记')+'</b><br>点右上角 ＋ 新建一篇笔记，开始积累你的英语表达。</div></div>';
+      '<div><b>'+(ui.folder==='all'?'还没有笔记':'这个文件夹还没有笔记')+'</b><br>点右上角 ＋ 新建一篇笔记，开始积累你的英语表达。<br><span style="font-size:12px;color:var(--text3)">如果这是新候选文件，请从旧文件导出完整备份，再到设置中导入。</span></div></div>';
     return;
   }
   box.innerHTML=notes.map(n=>{
