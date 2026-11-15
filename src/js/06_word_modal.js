@@ -854,12 +854,28 @@ function aiFallbackSceneGroups(){
   for(let i=0;i<ids.length;i+=2){const part=ids.slice(i,i+2);groups.push({title:'情景 '+(groups.length+1),desc:'把这组词放进一个自然对话',wordIds:part});}
   return groups.slice(0,3);
 }
+function aiFallbackDialogue(){
+  const lines=[];
+  const scene=aiState.scene||{};
+  (aiState.termIds||[]).forEach((id,i)=>{
+    const w=(state.words||[]).find(x=>x.id===id);
+    if(i===0) lines.push({who:'A',en:'Let’s practice these expressions in a natural situation.',cn:'我们把这些表达放进一个自然场景里练习。'});
+    lines.push({who:'A',en:w&&w.examples&&w.examples[0]&&w.examples[0].en||('Let’s talk about '+(w&&w.term||'this expression')+' in the '+(scene.title||'situation')+'.'),cn:w&&w.examples&&w.examples[0]&&w.examples[0].cn||'请结合这个场景理解这句话。'});
+    lines.push({who:'YOU',wordId:id,promptCn:'请在“'+(scene.title||'这个场景')+'”中自然用出“'+(w&&w.term||'这个词')+'”。'});
+  });
+  return {lines};
+}
 async function aiBuildDialogue(){
   const multi=aiState.terms&&aiState.terms.length>1;
   const useTxt=multi?('自然使用这些单词：'+aiState.terms.join('、')):'自然使用该单词至少一次';
   const youTxt=multi?'为每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn，不要把多个目标词塞进同一个句子。目标词必须且只能各出现一次。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
-  return aiCall([{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。对话长度适中，保持真实交流。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}],aiState.multiTurn?{maxTokens:760,timeout:20000}:undefined);
+  const messages=[{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
+    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。对话长度适中，保持真实交流。'+youTxt+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}];
+  try{ return await aiCall(messages,aiState.multiTurn?{maxTokens:760,timeout:20000}:undefined); }
+  catch(err){
+    if(!aiState.multiTurn||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
+    return aiCall(messages.concat({role:'user',content:'上一次返回格式无效。请只返回可解析的 JSON，必须包含 lines 数组，且每个目标词只对应一个 YOU 回合。'}),{maxTokens:600,timeout:15000});
+  }
 }
 async function aiJudge(attempt){
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
@@ -960,6 +976,13 @@ function startScene(sc){
     aiRenderDialogue();
   }).catch(err=>{
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
+    if(aiState.multiTurn&&/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))){
+      aiState.lines=aiFallbackDialogue().lines;
+      aiState.turnIndex=0; aiState.turnResults=[]; aiState.currentTargetWord=(aiState.lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0];
+      aiState.phase='practice'; aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
+      toast('AI 返回格式异常，已切换为快速练习模板','warn');
+      return;
+    }
     aiShowBody();
     $('#aiScene').innerHTML='<div class="empty-state">'+esc(aiErrText(err))+'</div>';
     const r=$('#aiRetry'); if(r) r.addEventListener('click',()=>startScene(sc));

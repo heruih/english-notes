@@ -41,7 +41,8 @@ function buildPagesScript(sourceScript) {
   return lines.join('\n')
     .replace(/  const f=\{id:'f_welcome'[\s\S]*?  return \{folders:/, '  return {folders:')
     .replace("document.title='英语学习笔记 · 离线文件版'", "document.title='英语学习笔记 · 在线版'")
-    .replace('<b>离线文件：</b>表达、笔记、复习和编辑保存在当前手机浏览器。', '<b>在线版：</b>表达、笔记、复习和编辑保存在当前浏览器。');
+    .replace('<b>离线文件：</b>表达、笔记、复习和编辑保存在当前手机浏览器。', '<b>在线网页：</b>表达、笔记、复习和编辑保存在当前浏览器。AI 功能可联网请求。')
+    .replace("bSetStatus('离线本机 · 已保存');", "bSetStatus('本机已保存');");
 }
 
 const appScript = publishPages ? buildPagesScript(script) : script;
