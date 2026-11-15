@@ -8190,7 +8190,7 @@ function aiDialogueHistoryStart(words){
 function aiDialogueHistoryScene(scene,lines,words){
   const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
   s.updatedAt=Date.now();s.scenes=s.scenes||[];const entry={title:scene&&scene.title||'情景练习',desc:scene&&scene.desc||'',wordIds:(words||[]).map(w=>w.id||w),lines:(lines||[]).map(l=>({who:l.who,en:l.en||'',cn:l.cn||'',wordId:l.wordId||'',promptCn:l.promptCn||''}))};
-  const index=Number(aiState.sceneIndex)||0;s.scenes[index]=entry;aiDialogueHistoryWrite(v);
+  const index=Math.max(0,Number(aiState.sceneIndex)||0);s.scenes[index]=entry;aiDialogueHistoryWrite(v);
 }
 function aiDialogueHistoryTurn(data){
   const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
