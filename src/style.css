@@ -682,7 +682,7 @@ body.side-open #scrim{display:block}
 .ai-line.ai-you .ai-en{background:rgba(255,159,10,.12);border-color:rgba(255,159,10,.4)}
 .you-tag{flex:none;font-size:11px;font-weight:700;color:var(--warn);background:rgba(255,159,10,.15);border-radius:6px;padding:2px 8px}
 .you-prompt{flex:1;min-width:0}
-.ai-cn{font-size:13px;color:var(--text2);margin-top:3px}
+.ai-cn{font-size:13px;color:var(--text2);margin-top:3px;cursor:pointer;padding:2px 0 3px;-webkit-tap-highlight-color:transparent}.ai-cn:active{opacity:.7}.ai-cn .cn-tip{display:none;color:var(--accent-fg);border-bottom:1px dashed currentColor;padding-bottom:1px}.ai-cn.hided .cn-real{display:none}.ai-cn.hided .cn-tip{display:inline}
 .ai-score.big{font-size:15px;padding:3px 12px}
 .ai-fb-actions{margin-top:10px;display:flex;gap:8px;justify-content:flex-end}
 .ai-actions{display:flex;gap:10px;padding:14px 20px 20px;border-top:1px solid var(--sep);margin-top:16px}

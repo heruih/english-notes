@@ -884,8 +884,9 @@ function aiRenderDialogue(){
     if(l.who==='YOU'){
       return '<div class="ai-line ai-you"><div class="ai-text"><div class="ai-en"><span class="you-tag">你说</span><span class="you-prompt">'+esc(l.promptCn||'')+'</span>'+speakBtn(l.promptCn||'','zh-CN')+'</div></div></div>';
     }
-    return '<div class="ai-line"><div class="ai-text"><div class="ai-en">'+esc(l.en||'')+speakBtn(l.en||'','en-US')+'</div>'+(l.cn?'<div class="ai-cn">'+esc(l.cn)+'</div>':'')+'</div></div>';
+    return '<div class="ai-line"><div class="ai-text"><div class="ai-en">'+esc(l.en||'')+speakBtn(l.en||'','en-US')+'</div>'+(l.cn?'<div class="ai-cn hided" data-aicn><span class="cn-real">'+esc(l.cn)+'</span><span class="cn-tip">点一下显示中文</span></div>':'')+'</div></div>';
   }).join('');
+  $$('#aiScene [data-aicn]').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('hided')));
   $('#aiScene').scrollTop=$('#aiScene').scrollHeight;
 }
 function aiRenderReview(d,attempt){
