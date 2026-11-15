@@ -796,8 +796,7 @@ body.side-open #scrim{display:block}
 .grade-btn.hard{color:var(--warn);border-color:rgba(255,159,10,.35)}
 .grade-btn.good{background:var(--accent);border-color:transparent;color:#fff}
 .grade-btn.good small{color:rgba(255,255,255,.75)}
-.review-pause-btn{width:min(94%,600px);min-height:42px;margin-top:10px;border:1px solid var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--accent-fg);font-size:13px;font-weight:700}
-.review-pause-btn:active{transform:scale(.98);background:var(--accent)}
+.review-pause-choice{width:min(94%,600px);margin-top:10px;padding:10px 12px;border:1px solid var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--accent-fg);font-size:12px;font-weight:700}.review-pause-choice>span{display:block;margin-bottom:8px}.review-pause-choice>div{display:flex;gap:8px}.review-pause-choice .btn{flex:1;min-height:40px}
 .flash-empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:56px 28px;text-align:center}
 .flash-empty .big{font-size:44px}
 .flash-empty b{font-size:17px}
@@ -2718,6 +2717,7 @@ function renderFlash(){
   const pos=f.idx+1;
   const pct=Math.round((f.idx/total)*100);
   const recentCount=typeof batchRecentCount==='function'?batchRecentCount():0;
+  const recentThreshold=typeof dialogueThreshold==='function'?dialogueThreshold():3;
   /* 保留原始序号：标亮的存储键是（词, 例句序号, 原文快照），过滤后序号会错位就查不到 */
   const indexedExamples=(w.examples||[]).map((x,oi)=>({x,oi}));
   const examples=indexedExamples.filter(o=>o.x.sense!=='原文');
@@ -2759,7 +2759,7 @@ function renderFlash(){
           '<button class="grade-btn hard" data-grade="1">有点难<small>缩短间隔</small></button>'+
           '<button class="grade-btn good" data-grade="2">记住了<small>拉长间隔</small></button>'+
         '</div>':'<div style="font-size:12.5px;color:var(--text3);height:52px;display:flex;align-items:center">先回想，再点卡片翻开</div>')+
-      (dueMode&&recentCount>=3?'<button class="review-pause-btn" id="reviewPause">暂停并练这组 · '+recentCount+' 个词</button>':'')
+      (dueMode&&recentCount>=recentThreshold?'<div class="review-pause-choice"><span>已完成 '+recentCount+' 个词，下一步？</span><div><button class="btn" id="reviewContinue">继续复习</button><button class="btn primary" id="reviewPause">AI 对话这组</button></div></div>':'')
         :'<div class="flash-actions">'+
           '<button class="btn" id="flashPrev"'+(f.idx===0?' disabled':'')+'>上一张</button>'+
           '<button class="btn" id="flashNext"'+(f.idx===total-1?' disabled':'')+'>下一张</button>'+
@@ -2800,6 +2800,7 @@ function renderFlash(){
   }));
   $$('.grade-btn').forEach(b=>b.addEventListener('click',()=>gradeCurrent(Number(b.dataset.grade))));
   const pause=$('#reviewPause');if(pause)pause.addEventListener('click',()=>{if(typeof batchPauseRecent==='function')batchPauseRecent();});
+  const cont=$('#reviewContinue');if(cont)cont.addEventListener('click',()=>{if(typeof batchContinueRecent==='function')batchContinueRecent();});
   const pv=$('#flashPrev'), nx=$('#flashNext'), ex=$('#flashExit');
   if(pv) pv.addEventListener('click',()=>stepFlash(-1));
   if(nx) nx.addEventListener('click',()=>stepFlash(1));
@@ -7982,18 +7983,23 @@ const aOriginalCard=wordCardHTML;
 wordCardHTML=function(w){return '<div class="a-word-wrap"><div class="a-word-status">'+(aPending(w)?'待整理':aOutputLabel(w))+'</div>'+aOriginalCard(w)+'</div>';};
 function aOutputLabel(w){const n=aData.attempts.filter(x=>x.wordId===w.id&&x.result==='independent').length;return n?'独立用出 '+n+' 次':'已入库 · 等待实际使用';}
 const BATCH_KEY='english-notes-dialogue-batch-v1';
+const DIALOGUE_PREF_KEY='english-notes-dialogue-preferences-v1';
 let batchActiveGroup=-1,batchActiveSegment=null;
+function dialoguePrefs(){const p=aRead(DIALOGUE_PREF_KEY,{});const n=Number(p&&p.threshold);return {threshold:Number.isFinite(n)?Math.max(3,Math.min(10,Math.round(n))):3};}
+function dialogueThreshold(){return dialoguePrefs().threshold;}
+function saveDialogueThreshold(value){const n=Math.max(3,Math.min(10,Math.round(Number(value)||3)));aStore(DIALOGUE_PREF_KEY,JSON.stringify({threshold:n}));return n;}
 function batchEmpty(){return {date:aDate(Date.now()),wordIds:[],recentIds:[],segmentHistory:[],activeSegment:null,plan:null,completed:[],active:-1};}
 function dialogueBatchState(){const d=aRead(BATCH_KEY,null);if(d&&d.date===aDate(Date.now())&&Array.isArray(d.wordIds))return Object.assign(batchEmpty(),d);const fresh=batchEmpty();aStore(BATCH_KEY,JSON.stringify(fresh));return fresh;}
 function batchSave(d){aStore(BATCH_KEY,JSON.stringify(d));}
 function batchReviewedWords(d){const ids=new Set((d||dialogueBatchState()).wordIds||[]);return state.words.filter(w=>ids.has(w.id)&&!aPending(w));}
 function batchReviewRecord(id){if(!id)return;const d=dialogueBatchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;}if(!d.recentIds.includes(id))d.recentIds.push(id);batchSave(d);}
 function batchRecentCount(){const d=dialogueBatchState();return Array.isArray(d.recentIds)?d.recentIds.length:0;}
+function batchContinueRecent(){const d=dialogueBatchState();d.recentIds=[];d.activeSegment=null;batchSave(d);if(typeof renderFlash==='function')renderFlash();}
 function batchPauseRecent(){
   const d=dialogueBatchState(),ids=(d.recentIds||[]).slice();
-  if(ids.length<3){toast('至少复习 3 个词后再暂停练习','warn');return;}
+  if(ids.length<dialogueThreshold()){toast('至少复习 '+dialogueThreshold()+' 个词后再暂停练习','warn');return;}
   const words=ids.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);
-  if(words.length<3){toast('最近复习的词条已发生变化，请继续复习','warn');return;}
+  if(words.length<dialogueThreshold()){toast('最近复习的词条已发生变化，请继续复习','warn');return;}
   d.activeSegment={ids:words.map(w=>w.id),startedAt:Date.now()};batchSave(d);batchActiveSegment=words.map(w=>w.id);openAiPackPractice(words);
 }
 function batchReady(d){const n=batchReviewedWords(d).length;return n>=20||(dueCount()===0&&n>=5);}
@@ -8381,6 +8387,7 @@ function aInit(){
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
   const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="api">API 自动（DeepSeek 默认）</option><option value="chatgpt">ChatGPT 往返（Plus 额度）</option></select><label for="aProvider" style="margin-top:10px">API 提供商</label><select id="aProvider"><option value="deepseek">DeepSeek（默认）</option><option value="openai">OpenAI GPT（备用）</option></select><p class="a-note">DeepSeek 默认使用 deepseek-flash。GPT 需要自己的 OpenAI API Key。ChatGPT Plus 只在复制往返模式里使用。</p>';
   aiBody.prepend(route);$('#aRoute').onchange=()=>{aStore(A_PREF_KEY,$('#aRoute').value);aRefreshSettings();};
+  const lookBody=$('#stgLook .st-g-body');if(lookBody&&!$('#stDialogueThreshold')){const pref=document.createElement('div');pref.className='st-field';pref.id='stDialogueThreshold';pref.innerHTML='<label for="stDialogueThresholdSelect">复习后 AI 对话频率</label><div class="st-inline"><select id="stDialogueThresholdSelect"><option value="3">每 3 个词询问</option><option value="5">每 5 个词询问</option><option value="10">每 10 个词询问</option><option value="custom">自定义</option></select><input id="stDialogueThresholdCustom" type="number" min="3" max="10" step="1" placeholder="3—10" style="max-width:92px"></div><p class="a-note">达到数量后由你选择继续复习，或用刚刚的词练 AI 对话。</p>';lookBody.append(pref);const select=$('#stDialogueThresholdSelect'),custom=$('#stDialogueThresholdCustom'),sync=()=>{const n=dialogueThreshold(),preset=[3,5,10].includes(n)?String(n):'custom';select.value=preset;custom.value=preset==='custom'?String(n):'';custom.hidden=preset!=='custom';};select.onchange=()=>{if(select.value!=='custom'){saveDialogueThreshold(select.value);sync();toast('已设置为每 '+dialogueThreshold()+' 个词询问');}else{custom.hidden=false;custom.focus();}};custom.onchange=()=>{saveDialogueThreshold(custom.value);sync();toast('已设置为每 '+dialogueThreshold()+' 个词询问');};sync();}
   $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
   ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
   $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
