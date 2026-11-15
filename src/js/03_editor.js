@@ -126,7 +126,9 @@ function renderFlash(){
       (srcN?'<div class="fb-src">来自笔记：'+esc(srcN.title||'')+'</div>':'')+
     '</div>';
   const dueMode=f.mode!=='free';
+  const reviewGuide='<div class="review-guide"><div class="review-guide-copy"><span class="review-guide-kicker">今日复习</span><b>'+(dueMode?'到期复习':'自由复习')+'</b><small>先回想，再点卡片翻开</small></div><strong>'+f.graded+' / '+total+'</strong></div>';
   box.innerHTML='<div class="rv-wrap">'+stats+
+    reviewGuide+
     '<div class="rv-bar"><i style="width:'+pct+'%"></i></div>'+
     '<div class="flash-wrap">'+
       '<div class="flash-progress">'+(dueMode?'待复习':'自由复习')+'　'+pos+' / '+total+'</div>'+
