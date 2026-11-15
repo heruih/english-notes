@@ -1197,6 +1197,9 @@ function bindEvents(){
   $('#wmAi').addEventListener('click',openAiDialogue);
   $('#aiClose').addEventListener('click',closeAiModal);
   $('#aiClose2').addEventListener('click',closeAiModal);
+  $('#aiFavorite').addEventListener('click',aiFavoriteCurrent);
+  $('#aiFavoritesClose').addEventListener('click',()=>$('#aiFavoritesModal').classList.remove('show'));
+  $('#aiFavoritesModal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('show');});
   $('#aiAgain').addEventListener('click',aiAgainAction);
   $('#aiSend').addEventListener('click',submitAttempt);
   $('#aiInput').addEventListener('keydown',e=>{ if(e.key==='Enter') submitAttempt(); });
@@ -1418,9 +1421,11 @@ function openAiPackPractice(terms){
     definition:list.map(w=>(w.definition||'').split('\n')[0]).filter(Boolean).join('；'),
     examples:list.slice(0,4).reduce((a,w)=>a.concat((w.examples||[]).map(x=>x.en)),[]),
     scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+  if(typeof aiDialogueHistoryStart==='function') aiDialogueHistoryStart(list);
   $('#aiTitle').textContent='情景口语 · '+list.length+' 词';
   $('#aiSub').textContent='一次对话，尽量用上这些词';
   $('#aiScoreChip').classList.add('hidden');
+  const favorite=$('#aiFavorite');if(favorite){favorite.textContent='收藏对话';favorite.disabled=true;}
   $('#aiScene').innerHTML='';
   $('#aiModal').classList.add('show');
   const mySeq=++aiState.seq;

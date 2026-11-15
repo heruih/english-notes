@@ -1070,6 +1070,8 @@ function startScene(sc){
   aiCreateValidatedDialogue().then(lines=>{
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiState.lines=lines;
+    if(typeof aiDialogueHistoryScene==='function') aiDialogueHistoryScene(aiState.scene,lines,aiState.termIds||[]);
+    const favorite=$('#aiFavorite');if(favorite&&!aiState.dialogueFavorited)favorite.disabled=false;
     aiState.turnIndex=0;aiState.turnResults=[];aiState.currentTargetWord=aiState.multiTurn?((lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
     aiState.phase='practice';
     aiShowBody();
@@ -1124,6 +1126,7 @@ function saveSpeakLog(d,attempt){
   });
   if(state.aiLog.length>300) state.aiLog.length=300;
   save();
+  if(!aiState.multiTurn&&typeof aiDialogueHistoryTurn==='function') aiDialogueHistoryTurn({wordId:aiState.currentTargetWord||aiState.term,result:'reviewed',attempt:String(attempt||''),promptCn:aiState.attemptPromptCn||'',score});
   const chip=$('#aiScoreChip');
   if(chip){ chip.textContent=score+' 分'; chip.classList.remove('hidden'); }
   renderSidebar();
@@ -1172,12 +1175,14 @@ function openAiPractice(term,scene){
   const session=++aiSession;
   const w=state.words.find(x=>String(x.term).toLowerCase()===String(term).toLowerCase());
   const sc=scene&&scene.title?scene:{title:'自由练习',desc:'自然地把这个词用进一句话'};
-  aiState={seq:0,phase:'practice',term:String(term||''),termIds:w?[w.id]:[],terms:[],multiTurn:false,turnIndex:0,currentTargetWord:String(term||''),turnResults:[],definition:w?w.definition:'',
+  aiState={seq:0,phase:'practice',term:String(term||''),termIds:w?[w.id]:[],terms:[],multiTurn:false,sceneIndex:-1,turnIndex:0,currentTargetWord:String(term||''),turnResults:[],definition:w?w.definition:'',
     examples:w?(w.examples||[]).map(x=>x.en).slice(0,2):[],scenes:[],scene:sc,
     lines:[],attempt:'',attemptPromptCn:'',busy:false};
+  if(typeof aiDialogueHistoryStart==='function') aiDialogueHistoryStart(w?[w]:[]);
   $('#aiTitle').textContent='情景口语 · '+term;
   $('#aiSub').textContent=sc.title;
   $('#aiScoreChip').classList.add('hidden');
+  const favorite=$('#aiFavorite');if(favorite){favorite.textContent='收藏对话';favorite.disabled=true;}
   $('#aiScene').innerHTML='';
   $('#aiModal').classList.add('show');
   if(!aAiReady()){
@@ -1259,10 +1264,12 @@ function openAiDialogue(ev){
   const definition=(wmState&&($('#wmDefinition').value||'').trim())||(ex&&ex.definition)||aiState.definition||'';
   const examples=wmState?collectExamples().map(x=>x.en).filter(Boolean):(aiState.examples||[]).slice();
   if(!examples.length&&ex) examples.push(...(ex.examples||[]).map(x=>x.en).filter(Boolean));
-  aiState={seq:0,phase:'scenes',term,termIds:ex?[ex.id]:[],terms:[],multiTurn:false,turnIndex:0,currentTargetWord:term,turnResults:[],definition,examples,scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+  aiState={seq:0,phase:'scenes',term,termIds:ex?[ex.id]:[],terms:[],multiTurn:false,sceneIndex:-1,turnIndex:0,currentTargetWord:term,turnResults:[],definition,examples,scenes:[],scene:null,lines:[],attempt:'',attemptPromptCn:'',busy:false};
+  if(typeof aiDialogueHistoryStart==='function') aiDialogueHistoryStart(ex?[ex]:[]);
   $('#aiTitle').textContent='情景口语 · '+term;
   $('#aiSub').textContent='选情景 → 开口翻译 → AI 批改 → 跟读';
   $('#aiScoreChip').classList.add('hidden');
+  const favorite=$('#aiFavorite');if(favorite){favorite.textContent='收藏对话';favorite.disabled=true;}
   $('#aiScene').innerHTML='';
   $('#aiModal').classList.add('show');
   const mySeq=++aiState.seq;
@@ -1291,5 +1298,5 @@ function openAiDialogue(ev){
     const r=$('#aiRetry'); if(r) r.addEventListener('click',openAiDialogue);
   });
 }
-function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+function closeAiModal(){ if(aiState.dialogueSessionId&&typeof aiDialogueHistoryFinish==='function')aiDialogueHistoryFinish(aiState.phase==='review'?'completed':'interrupted'); stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 

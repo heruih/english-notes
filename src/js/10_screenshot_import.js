@@ -376,7 +376,39 @@ wordCardHTML=function(w){return '<div class="a-word-wrap"><div class="a-word-sta
 function aOutputLabel(w){const n=aData.attempts.filter(x=>x.wordId===w.id&&x.result==='independent').length;return n?'独立用出 '+n+' 次':'已入库 · 等待实际使用';}
 const BATCH_KEY='english-notes-dialogue-batch-v1';
 const DIALOGUE_PREF_KEY='english-notes-dialogue-preferences-v1';
+const AI_DIALOGUE_HISTORY_KEY='english-notes-dialogue-history-v1';
 let batchActiveGroup=-1,batchActiveSegment=null;
+function aiDialogueHistoryRead(){const v=aRead(AI_DIALOGUE_HISTORY_KEY,{sessions:[],favorites:[]});return {sessions:Array.isArray(v&&v.sessions)?v.sessions:[],favorites:Array.isArray(v&&v.favorites)?v.favorites:[]};}
+function aiDialogueHistoryWrite(v){v.sessions=v.sessions.slice(0,30);v.favorites=v.favorites.map(f=>{const s=v.sessions.find(x=>x.id===f.id);return s?Object.assign({},s,{favoriteAt:f.favoriteAt}):f;}).slice(0,30);aStore(AI_DIALOGUE_HISTORY_KEY,JSON.stringify(v));}
+function aiDialogueHistoryStart(words){
+  const list=Array.isArray(words)?words:[],id=uid(),v=aiDialogueHistoryRead();
+  v.sessions.unshift({id,createdAt:Date.now(),updatedAt:Date.now(),status:'active',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),scenes:[],turns:[]});
+  aiDialogueHistoryWrite(v); aiState.dialogueSessionId=id; return id;
+}
+function aiDialogueHistoryScene(scene,lines,words){
+  const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
+  s.updatedAt=Date.now();s.scenes=s.scenes||[];const entry={title:scene&&scene.title||'情景练习',desc:scene&&scene.desc||'',wordIds:(words||[]).map(w=>w.id||w),lines:(lines||[]).map(l=>({who:l.who,en:l.en||'',cn:l.cn||'',wordId:l.wordId||'',promptCn:l.promptCn||''}))};
+  const index=Number(aiState.sceneIndex)||0;s.scenes[index]=entry;aiDialogueHistoryWrite(v);
+}
+function aiDialogueHistoryTurn(data){
+  const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
+  s.updatedAt=Date.now();s.turns=s.turns||[];s.turns.push(Object.assign({createdAt:Date.now()},data||{}));
+  const scene=s.scenes&&s.scenes[Number(aiState.sceneIndex)||0];if(scene&&Array.isArray(scene.lines)){const line=scene.lines.find(l=>l.who==='YOU'&&l.wordId===(data&&data.wordId));if(line){line.attempt=data.attempt||'';line.result=data.result||'';line.score=data.score;}}
+  aiDialogueHistoryWrite(v);
+}
+function aiDialogueHistoryFinish(status){
+  const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;s.status=status||'completed';s.updatedAt=Date.now();aiDialogueHistoryWrite(v);
+}
+function aiFavoriteCurrent(){
+  const id=aiState.dialogueSessionId;if(!id){toast('当前还没有可收藏的对话','warn');return;}const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
+  const copy=JSON.parse(JSON.stringify(Object.assign({},s,{favoriteAt:Date.now()})));v.favorites=[copy].concat(v.favorites.filter(x=>x.id!==id));aiDialogueHistoryWrite(v);aiState.dialogueFavorited=true;const b=$('#aiFavorite');if(b){b.textContent='已收藏';b.disabled=true;}toast('已收藏这段对话');
+}
+function aiOpenFavorites(){
+  const v=aiDialogueHistoryRead(),box=$('#aiFavoritesBody');if(!box)return;
+  if(!v.favorites.length){box.innerHTML='<div class="empty-state">还没有收藏的对话。进入 AI 对话后，点“收藏对话”即可保存。</div>';}
+  else box.innerHTML=v.favorites.map(s=>'<div class="ai-favorite-item"><div class="ai-favorite-title">'+esc((s.terms||[]).join(' · ')||'情景对话')+'</div><div class="ai-favorite-meta">'+esc(aDate(s.favoriteAt||s.createdAt))+' · '+esc(s.status==='completed'?'已完成':'练习中')+'</div>'+((s.scenes||[]).filter(Boolean).map(sc=>'<div class="ai-favorite-scene"><div class="ai-favorite-scene-title">'+esc(sc.title||'情景练习')+'</div>'+((sc.lines||[]).map(l=>l.who==='YOU'?'<div class="ai-favorite-line you">你说：'+esc(l.promptCn||'')+(l.attempt?' → '+esc(l.attempt):'')+'</div>':'<div class="ai-favorite-line">'+esc(l.en||'')+(l.cn?' · '+esc(l.cn):'')+'</div>').join(''))+'</div>').join(''))+'</div>').join('');
+  $('#aiFavoritesModal').classList.add('show');
+}
 function dialoguePrefs(){const p=aRead(DIALOGUE_PREF_KEY,{});const n=Number(p&&p.threshold);return {threshold:Number.isFinite(n)?Math.max(3,Math.min(10,Math.round(n))):3};}
 function dialogueThreshold(){return dialoguePrefs().threshold;}
 function saveDialogueThreshold(value){const n=Math.max(3,Math.min(10,Math.round(Number(value)||3)));aStore(DIALOGUE_PREF_KEY,JSON.stringify({threshold:n}));return n;}
@@ -446,14 +478,14 @@ renderToday=function(){
     '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
     '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+batchEntry+
     '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+todayCard('pack','情景口语','选 2—3 个表达，自己开口使用',Math.min(3,packableWords().length))+'</div>'+
-    '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
+    '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayFavorites">收藏对话</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
     '<p class="a-note">普通日参考：视频与模仿 20 分钟 → 整理 8 分钟 → 回想 5 分钟 → 输出 7 分钟。每周 2 次情景练习、1 次写作，可替换当天部分任务。无需清空全部队列。</p>'+
     '<p class="a-note">AI：'+(aRoute()==='chatgpt'?'ChatGPT 往返模式；套餐和模型由 ChatGPT 账号决定。':'OpenAI API 模式；独立计费。')+' 新地址不会自动读取手机旧地址的数据。</p>'+
     (aRead(A_TASK_KEY,null)?'<div class="a-tools"><button class="btn" id="aResumeGpt">继续未完成的 ChatGPT 练习</button></div>':'')+
     (!state.words.length?'<div class="a-callout"><h3>先迁入手机旧词条</h3><p>在手机同一个浏览器打开旧站 → 设置 → 导出备份；回到这里点“完整备份／迁移”导入。旧站内容保留。</p><a class="btn" href="https://english-notes-82796.app.workbuddy.host/?sharecode=EIO75LBUTA" target="_blank" rel="noopener">打开你的旧站</a></div>':'');
   const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}if(g==='pack')openAiPackPractice(packableWords());};
   $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#aNext').onclick=()=>go(pending.length?'organize':due.length?'recall':'pack');
-  $('#aTodayWords').onclick=()=>aOpenWords('all');$('#aTodayWrite').onclick=()=>openWriteModal();$('#aTodayNew').onclick=aNewWord;$('#aTodayBackup').onclick=aOpenBackup;
+  $('#aTodayWords').onclick=()=>aOpenWords('all');$('#aTodayWrite').onclick=()=>openWriteModal();$('#aTodayFavorites').onclick=aiOpenFavorites;$('#aTodayNew').onclick=aNewWord;$('#aTodayBackup').onclick=aOpenBackup;
   if($('#aBatchOpen'))$('#aBatchOpen').onclick=batchOpen;
   if($('#aResumeGpt'))$('#aResumeGpt').onclick=()=>{const task=aRead(A_TASK_KEY,null);const words=state.words.filter(w=>task&&task.wordIds.includes(w.id));openAiPackPractice(words);};
 };
@@ -516,7 +548,7 @@ aiRenderReview=function(d,attempt){
     const target=aiState.currentTargetWord||aiState.term,w=state.words.find(x=>x.id===target||x.term===target),you=aiState.lines.filter(l=>l.who==='YOU'),last=aiState.turnIndex>=you.length-1;
     el.innerHTML='<p class="a-note">本回合目标词：<b>'+esc(w?w.term:target)+'</b>。确认这一句是否算独立用出。</p><div class="a-actions"><button class="btn" id="aTurnNeedsWork">还要再练</button><button class="btn primary" id="aTurnUsed">记为已用出</button></div>';
     $('#aiScene').append(el);
-    const finish=result=>{if(w)aRecord(w,result,attempt,'dialogue-turn');aiState.turnResults.push({wordId:target,result,attempt});if(last){if(batchAdvanceDialogueScene())return;batchMarkActiveGroup();batchMarkActiveSegment();toast('这一组对话完成了');closeAiModal();return;}aiState.turnIndex++;const next=you[aiState.turnIndex];aiState.currentTargetWord=next&&next.wordId||aiState.term;aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').focus();};
+    const finish=result=>{if(w)aRecord(w,result,attempt,'dialogue-turn');if(typeof aiDialogueHistoryTurn==='function')aiDialogueHistoryTurn({wordId:target,result,attempt,promptCn:aiState.attemptPromptCn||'',score:Number(d&&d.score)||0});aiState.turnResults.push({wordId:target,result,attempt});if(last){if(batchAdvanceDialogueScene())return;batchMarkActiveGroup();batchMarkActiveSegment();aiDialogueHistoryFinish('completed');toast('这一组对话完成了');closeAiModal();return;}aiState.turnIndex++;const next=you[aiState.turnIndex];aiState.currentTargetWord=next&&next.wordId||aiState.term;aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').focus();};
     $('#aTurnNeedsWork').onclick=()=>finish('forgot');$('#aTurnUsed').onclick=()=>finish('independent');
     return;
   }

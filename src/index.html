@@ -341,12 +341,17 @@
       </div>
       <div class="ai-foot">
         <div class="ai-actions">
+          <button class="btn" id="aiFavorite">收藏对话</button>
           <button class="btn" id="aiAgain">重置话题</button>
           <button class="btn primary" id="aiClose2">完成</button>
         </div>
       </div>
     </div>
   </div>
+</div>
+
+<div class="modal" id="aiFavoritesModal" role="dialog" aria-modal="true" aria-label="收藏的 AI 对话">
+  <div class="modal-card ai-favorites-card"><div class="wm-head"><b>收藏的对话</b><button class="modal-close" id="aiFavoritesClose" aria-label="关闭收藏">×</button></div><div class="wm-body" id="aiFavoritesBody"></div></div>
 </div>
 
 <!-- ============ 写作练习（选词 → 出题 → 写作 → AI 批改 → 存成笔记） ============ -->

@@ -929,6 +929,15 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 /* 口语页页脚：分隔线通栏，按钮限宽 */
 .ai-foot{border-top:1px solid var(--sep);background:var(--bar-bg);flex:none}
 #aiModal .ai-actions{border-top:none;margin:0 auto}
+.ai-favorites-card{max-width:820px;max-height:min(88vh,760px);display:flex;flex-direction:column}
+.ai-favorites-card .wm-body{overflow:auto}
+.ai-favorite-item{padding:14px;border:1px solid var(--s4);border-radius:12px;background:var(--s2);margin-bottom:10px}
+.ai-favorite-title{font-weight:700;color:var(--text-body);font-size:15px}
+.ai-favorite-meta{font-size:12px;color:var(--text3);margin-top:4px}
+.ai-favorite-scene{margin-top:12px;padding-top:10px;border-top:1px solid var(--sep)}
+.ai-favorite-scene-title{font-weight:700;color:var(--accent-fg);margin-bottom:6px}
+.ai-favorite-line{font-size:13px;line-height:1.65;margin:5px 0;color:var(--text2)}
+.ai-favorite-line.you{color:var(--warn)}
 /* 批量条：手机端单行横向滚动 */
 @media (max-width:767px){
   .batch-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
