@@ -1084,12 +1084,14 @@ function aiErrText(err){
     if(c[0]==='5') return '服务端异常（HTTP '+c+'），稍后再试';
   }
   if(/未配置/.test(raw)) return raw;
-  if(/parse|无法解析/i.test(raw)) return 'AI 返回格式异常，点「换一批」再试';
+  if(/parse|无法解析|返回内容/i.test(raw)) return '当前场景返回格式不符合要求，请重新生成本场对话';
   return raw.slice(0,80);
 }
 function parseAI(text){
   if(!text) return null;
-  let t=String(text).replace(/```[a-zA-Z]*/g,'').trim();
+  if(Array.isArray(text)) text=text.map(x=>typeof x==='string'?x:(x&&x.text)||'').join('');
+  if(text&&typeof text==='object') return text;
+  let t=String(text).replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/```[a-zA-Z]*/g,'').trim();
   const s=t.indexOf('{'),e=t.lastIndexOf('}');
   if(s>=0&&e>s){
     try{ return JSON.parse(t.slice(s,e+1)); }catch(_){}

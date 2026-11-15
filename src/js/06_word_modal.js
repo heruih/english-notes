@@ -808,7 +808,8 @@ async function aiCall(messages,opts){
         throw err;
       }
       const data=await res.json();
-      const content=data&&data.choices&&data.choices[0]&&data.choices[0].message?data.choices[0].message.content:'';
+      const message=data&&data.choices&&data.choices[0]&&data.choices[0].message||{};
+      const content=message.content||message.reasoning_content||'';
       const p=parseAI(content);
       if(!p) throw new Error('返回内容无法解析，请重试');
       return p;
@@ -846,6 +847,13 @@ function aiSceneTermsPayload(){
   return ids.map(id=>{
     const w=(state.words||[]).find(x=>x.id===id);
     return {wordId:id,term:w&&w.term||'',definition:w&&String(w.definition||'').split('\n')[0]||'',example:w&&w.examples&&w.examples[0]&&w.examples[0].en||''};
+  });
+}
+function aiDialogueTermsPayload(){
+  const ids=aiState.termIds||[];
+  return ids.map(id=>{
+    const w=(state.words||[]).find(x=>x.id===id);
+    return {wordId:id,term:w&&w.term||'',definition:w&&String(w.definition||'').split('\n')[0]||''};
   });
 }
 function aiNormalizeScenePlan(data){
@@ -903,13 +911,19 @@ function aiTextHasTerm(text,term){
   const escaped=word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   return new RegExp('(^|[^a-z])'+escaped+'($|[^a-z])','i').test(value);
 }
+function aiDialogueWordId(value){
+  const raw=String(value||'').trim(),ids=aiState.termIds||[];
+  if(ids.includes(raw)) return raw;
+  const w=(state.words||[]).find(x=>ids.includes(x.id)&&String(x.term||'').toLowerCase()===raw.toLowerCase());
+  return w?w.id:raw;
+}
 function aiDialogueProblem(lines){
   const list=Array.isArray(lines)?lines:[],you=list.filter(x=>x&&x.who==='YOU'),others=list.filter(x=>x&&x.who!=='YOU');
   if(!you.length) return '对话缺少练习句，请重试';
   if(you.some(x=>!/[\u3400-\u9fff]/.test(String(x.promptCn||'')))) return '每个练习句都需要中文提示，请重试';
   if(others.some(x=>!String(x.en||'').trim()||!String(x.cn||'').trim())) return 'AI 对话缺少英文或中文翻译，请重试';
   if(!aiState.multiTurn) return '';
-  const wanted=new Set(aiState.termIds||[]),used=you.map(x=>String(x.wordId||''));
+  const wanted=new Set(aiState.termIds||[]),used=you.map(x=>{const id=aiDialogueWordId(x.wordId);x.wordId=id;return id;});
   if(wanted.size!==used.length||used.some(id=>!wanted.has(id))||new Set(used).size!==used.length) return '每个目标词需要一个独立练习句，请重试';
   if(you.length>2||list.length>6) return '对话超过两轮，请重试';
   for(const line of others){
@@ -923,9 +937,10 @@ function aiDialogueProblem(lines){
 async function aiBuildDialogue(strictRetry){
   const multi=aiState.terms&&aiState.terms.length>1;
   const useTxt=multi?('自然使用这些单词：'+aiState.terms.join('、')):'自然使用该单词至少一次';
+  const targetTxt=multi?'当前场景目标词映射（wordId 必须从这里原样复制）：'+JSON.stringify(aiDialogueTermsPayload())+'。':'当前目标词为「'+aiState.term+'」。';
   const youTxt=multi?'每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn。这个场景最多 2 个目标词，最多 2 个来回，全部对话控制在 4—5 行。不要追加闲聊，不要把多个目标词塞进同一句。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
   const messages=[{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。'+youTxt+'。每个 promptCn 必须是包含中文的翻译提示，可以在中文中提到目标词，但不能直接给出完整英文答案。A/B 的 en 中禁止直接出现任何目标词。'+(strictRetry?'上一次结果不符合这些规则，请重新生成并严格检查每个 YOU 回合。':'')+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}];
+    {role:'user',content:targetTxt+'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。'+youTxt+'。每个 promptCn 必须是包含中文的翻译提示，可以在中文中提到目标词，但不能直接给出完整英文答案。A/B 的 en 中禁止直接出现任何目标词。'+(strictRetry?'上一次结果不符合这些规则，请重新生成并严格检查每个 YOU 回合。':'')+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}];
   try{ return await aiCall(messages,aiState.multiTurn?{maxTokens:520,timeout:20000}:undefined); }
   catch(err){
     if(!aiState.multiTurn||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
