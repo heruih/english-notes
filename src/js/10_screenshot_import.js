@@ -375,18 +375,23 @@ const aOriginalCard=wordCardHTML;
 wordCardHTML=function(w){return '<div class="a-word-wrap"><div class="a-word-status">'+(aPending(w)?'待整理':aOutputLabel(w))+'</div>'+aOriginalCard(w)+'</div>';};
 function aOutputLabel(w){const n=aData.attempts.filter(x=>x.wordId===w.id&&x.result==='independent').length;return n?'独立用出 '+n+' 次':'已入库 · 等待实际使用';}
 const BATCH_KEY='english-notes-dialogue-batch-v1';
+const DIALOGUE_PREF_KEY='english-notes-dialogue-preferences-v1';
 let batchActiveGroup=-1,batchActiveSegment=null;
+function dialoguePrefs(){const p=aRead(DIALOGUE_PREF_KEY,{});const n=Number(p&&p.threshold);return {threshold:Number.isFinite(n)?Math.max(3,Math.min(10,Math.round(n))):3};}
+function dialogueThreshold(){return dialoguePrefs().threshold;}
+function saveDialogueThreshold(value){const n=Math.max(3,Math.min(10,Math.round(Number(value)||3)));aStore(DIALOGUE_PREF_KEY,JSON.stringify({threshold:n}));return n;}
 function batchEmpty(){return {date:aDate(Date.now()),wordIds:[],recentIds:[],segmentHistory:[],activeSegment:null,plan:null,completed:[],active:-1};}
 function dialogueBatchState(){const d=aRead(BATCH_KEY,null);if(d&&d.date===aDate(Date.now())&&Array.isArray(d.wordIds))return Object.assign(batchEmpty(),d);const fresh=batchEmpty();aStore(BATCH_KEY,JSON.stringify(fresh));return fresh;}
 function batchSave(d){aStore(BATCH_KEY,JSON.stringify(d));}
 function batchReviewedWords(d){const ids=new Set((d||dialogueBatchState()).wordIds||[]);return state.words.filter(w=>ids.has(w.id)&&!aPending(w));}
 function batchReviewRecord(id){if(!id)return;const d=dialogueBatchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;}if(!d.recentIds.includes(id))d.recentIds.push(id);batchSave(d);}
 function batchRecentCount(){const d=dialogueBatchState();return Array.isArray(d.recentIds)?d.recentIds.length:0;}
+function batchContinueRecent(){const d=dialogueBatchState();d.recentIds=[];d.activeSegment=null;batchSave(d);if(typeof renderFlash==='function')renderFlash();}
 function batchPauseRecent(){
   const d=dialogueBatchState(),ids=(d.recentIds||[]).slice();
-  if(ids.length<3){toast('至少复习 3 个词后再暂停练习','warn');return;}
+  if(ids.length<dialogueThreshold()){toast('至少复习 '+dialogueThreshold()+' 个词后再暂停练习','warn');return;}
   const words=ids.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);
-  if(words.length<3){toast('最近复习的词条已发生变化，请继续复习','warn');return;}
+  if(words.length<dialogueThreshold()){toast('最近复习的词条已发生变化，请继续复习','warn');return;}
   d.activeSegment={ids:words.map(w=>w.id),startedAt:Date.now()};batchSave(d);batchActiveSegment=words.map(w=>w.id);openAiPackPractice(words);
 }
 function batchReady(d){const n=batchReviewedWords(d).length;return n>=20||(dueCount()===0&&n>=5);}
@@ -774,6 +779,7 @@ function aInit(){
   $('#aIllustrate').onclick=async()=>{try{const memo=await aiCall([{role:'user',content:'为英语表达 '+wmState.term+' 设计一个简单记忆画面。只输出 JSON：{"emoji":"一个emoji","scene":"一句中文画面提示"}'}]);if(!memo.scene)throw new Error('缺少画面描述');wmMemoPaint(memo,wmState.term);}catch(e){toast(e.message,'warn');}};
   const aiBody=$('#stgAi .st-g-body');const route=document.createElement('div');route.className='st-field';route.innerHTML='<label for="aRoute">AI 使用方式</label><select id="aRoute"><option value="api">API 自动（DeepSeek 默认）</option><option value="chatgpt">ChatGPT 往返（Plus 额度）</option></select><label for="aProvider" style="margin-top:10px">API 提供商</label><select id="aProvider"><option value="deepseek">DeepSeek（默认）</option><option value="openai">OpenAI GPT（备用）</option></select><p class="a-note">DeepSeek 默认使用 deepseek-flash。GPT 需要自己的 OpenAI API Key。ChatGPT Plus 只在复制往返模式里使用。</p>';
   aiBody.prepend(route);$('#aRoute').onchange=()=>{aStore(A_PREF_KEY,$('#aRoute').value);aRefreshSettings();};
+  const lookBody=$('#stgLook .st-g-body');if(lookBody&&!$('#stDialogueThreshold')){const pref=document.createElement('div');pref.className='st-field';pref.id='stDialogueThreshold';pref.innerHTML='<label for="stDialogueThresholdSelect">复习后 AI 对话频率</label><div class="st-inline"><select id="stDialogueThresholdSelect"><option value="3">每 3 个词询问</option><option value="5">每 5 个词询问</option><option value="10">每 10 个词询问</option><option value="custom">自定义</option></select><input id="stDialogueThresholdCustom" type="number" min="3" max="10" step="1" placeholder="3—10" style="max-width:92px"></div><p class="a-note">达到数量后由你选择继续复习，或用刚刚的词练 AI 对话。</p>';lookBody.append(pref);const select=$('#stDialogueThresholdSelect'),custom=$('#stDialogueThresholdCustom'),sync=()=>{const n=dialogueThreshold(),preset=[3,5,10].includes(n)?String(n):'custom';select.value=preset;custom.value=preset==='custom'?String(n):'';custom.hidden=preset!=='custom';};select.onchange=()=>{if(select.value!=='custom'){saveDialogueThreshold(select.value);sync();toast('已设置为每 '+dialogueThreshold()+' 个词询问');}else{custom.hidden=false;custom.focus();}};custom.onchange=()=>{saveDialogueThreshold(custom.value);sync();toast('已设置为每 '+dialogueThreshold()+' 个词询问');};sync();}
   $('#aProvider').onchange=()=>{aiProviderSaveFields();aiProviderSave({name:$('#aProvider').value});aRefreshSettings();};
   ['stBase','stKey','stModel'].forEach(id=>$('#'+id).addEventListener('input',aiProviderSaveFields));
   $('#stSave').addEventListener('click',aiProviderSaveFields,{capture:true});
