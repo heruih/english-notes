@@ -851,8 +851,18 @@ async function aiJudge(attempt){
 }
 function aiShowLoading(t){ $('#aiBody').classList.add('hidden'); $('#aiLoading').classList.remove('hidden'); $('#aiLoadStatus').textContent=t; }
 function aiShowBody(){ $('#aiLoading').classList.add('hidden'); $('#aiBody').classList.remove('hidden'); }
+function aiSyncContext(phase){
+  const strip=$('#aiContextStrip'),word=$('#aiTargetWord'),hint=$('#aiRoundHint');
+  if(!strip)return;
+  const term=String(aiState&&aiState.term||'').trim();
+  if(!term){ strip.classList.add('hidden'); return; }
+  if(word)word.textContent=term;
+  if(hint)hint.textContent=phase==='practice'?'把目标词用进你的句子':(phase==='review'?'看反馈，再试一次':'选一个场景开始 · 1—2 个来回');
+  strip.classList.remove('hidden');
+}
 function aiSetChatbar(phase){
   const bar=$('#aiChatbar'),input=$('#aiInput'),send=$('#aiSend'),again=$('#aiAgain');
+  aiSyncContext(phase);
   if(phase==='scenes'){ bar.classList.add('hidden'); again.textContent='换一批情景'; }
   else if(phase==='practice'){ bar.classList.remove('hidden'); input.placeholder='把上面中文提示说成英文（尽量用 '+aiState.term+'）…'; send.textContent='提交答案'; again.textContent='换个场景'; }
   else if(phase==='review'){ bar.classList.add('hidden'); again.textContent='再来一轮'; }
@@ -1124,5 +1134,5 @@ function openAiDialogue(ev){
     const r=$('#aiRetry'); if(r) r.addEventListener('click',openAiDialogue);
   });
 }
-function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+function closeAiModal(){ stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 
