@@ -658,8 +658,8 @@
  <div class="wm-body a-guide-body">
   <div class="a-guide-step"><b>1. 看与收集</b><span>看喜欢的全英视频，点右下角相机按钮，从相册选字幕截图。</span></div>
   <div class="a-guide-step"><b>2. 自己整理</b><span>写清中文功能、原句和自己的句子；确认后再加入学习。</span></div>
-  <div class="a-guide-step"><b>3. 回想</b><span>每天回想一小轮，最多 10 个。先自己说，再看答案。</span></div>
-  <div class="a-guide-step"><b>4. 开口</b><span>选 2—3 个表达说一段，记录自己是否独立用出来。</span></div>
+  <div class="a-guide-step"><b>3. 回想</b><span>每天先完成 20—30 个复习词。先自己说，再看答案。</span></div>
+  <div class="a-guide-step"><b>4. 开口</b><span>完成复习后，按每组约 5 个词进入批量情景对话；单词页仍可单独练。</span></div>
   <div class="a-guide-step"><b>5. 请 ChatGPT 帮忙</b><span>复制练习任务到 ChatGPT，完成对话后把最终 JSON 粘回来。</span></div>
   <div class="a-guide-tip">切换设备前等右上角显示“已同步”。离线文件请定期导出完整备份。</div>
  </div></div>
@@ -673,6 +673,10 @@
 <div class="modal" id="aRecall" role="dialog" aria-modal="true" aria-label="场景回想">
  <div class="modal-card"><div class="wm-head"><b id="aRecallTitle">场景回想</b><button class="modal-close" id="aRecallClose" aria-label="关闭场景回想">×</button></div>
  <div class="wm-body a-stack" id="aRecallBody"></div></div>
+</div>
+<div class="modal" id="aBatch" role="dialog" aria-modal="true" aria-label="今日批量情景对话">
+ <div class="modal-card"><div class="wm-head"><div><b>今日批量情景对话</b><div class="a-note">把今天复习过的表达分成几组，每组约 5 个，逐组练完。</div></div><button class="modal-close" id="aBatchClose" aria-label="关闭今日批量对话">×</button></div>
+ <div class="wm-body a-stack" id="aBatchBody"></div></div>
 </div>
 <div class="modal" id="aBackup" role="dialog" aria-modal="true" aria-label="完整备份与迁移">
  <div class="modal-card"><div class="wm-head"><b>完整备份与迁移</b><button class="modal-close" id="aBackupClose" aria-label="关闭备份">×</button></div>

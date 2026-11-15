@@ -374,14 +374,54 @@ function aNewWord(){showConfirm({title:'添加完整表达',msg:'',okText:'继�
 const aOriginalCard=wordCardHTML;
 wordCardHTML=function(w){return '<div class="a-word-wrap"><div class="a-word-status">'+(aPending(w)?'待整理':aOutputLabel(w))+'</div>'+aOriginalCard(w)+'</div>';};
 function aOutputLabel(w){const n=aData.attempts.filter(x=>x.wordId===w.id&&x.result==='independent').length;return n?'独立用出 '+n+' 次':'已入库 · 等待实际使用';}
+const BATCH_KEY='english-notes-dialogue-batch-v1';
+let batchActiveGroup=-1;
+function batchEmpty(){return {date:aDate(Date.now()),wordIds:[],plan:null,completed:[],active:-1};}
+function batchState(){const d=aRead(BATCH_KEY,null);if(d&&d.date===aDate(Date.now())&&Array.isArray(d.wordIds))return Object.assign(batchEmpty(),d);const fresh=batchEmpty();aStore(BATCH_KEY,JSON.stringify(fresh));return fresh;}
+function batchSave(d){aStore(BATCH_KEY,JSON.stringify(d));}
+function batchReviewedWords(d){const ids=new Set((d||batchState()).wordIds||[]);return state.words.filter(w=>ids.has(w.id)&&!aPending(w));}
+function batchReviewRecord(id){if(!id)return;const d=batchState();if(!d.wordIds.includes(id)){d.wordIds.push(id);d.plan=null;d.completed=[];d.active=-1;batchSave(d);}}
+function batchReady(d){const n=batchReviewedWords(d).length;return n>=20||(dueCount()===0&&n>=5);}
+function batchFallbackPlan(words){const groups=[];for(let i=0;i<words.length;i+=5){const part=words.slice(i,i+5);groups.push({title:'情景对话 '+(groups.length+1),desc:'把这组表达自然用进同一个场景',wordIds:part.map(w=>w.id)});}return {groups};}
+function batchPlanValid(plan,words){
+  if(!plan||!Array.isArray(plan.groups)||!plan.groups.length)return false;
+  const allowed=new Set(words.map(w=>w.id)),seen=[];
+  for(const g of plan.groups){if(!g||typeof g.title!=='string'||typeof g.desc!=='string'||!Array.isArray(g.wordIds)||!g.wordIds.length||g.wordIds.length>6)return false;for(const id of g.wordIds){if(!allowed.has(id)||seen.includes(id))return false;seen.push(id);}}
+  return seen.length===allowed.size&&seen.every(id=>allowed.has(id));
+}
+async function batchPlanToday(){
+  const d=batchState(),words=batchReviewedWords(d);
+  if(words.length<5){toast('至少完成 5 个复习词后再规划情景','warn');return;}
+  const fallback=()=>{d.plan=batchFallbackPlan(words);d.completed=[];d.active=-1;batchSave(d);batchRender();};
+  if(!aAiReady()){fallback();toast('未配置自动 AI，已按每组 5 个词生成练习分组','warn');return;}
+  const body=words.map(w=>({wordId:w.id,term:w.term,definition:(w.definition||'').split('\n')[0],example:(w.examples&&w.examples[0]&&w.examples[0].en)||''}));
+  const prompt='今天已经复习了这些英语表达：'+JSON.stringify(body)+'。请按真实使用场景把它们分成若干组，每组 4—6 个，尽量每组约 5 个。每个词必须且只能出现一次，场景之间不要重复。优先按语境和用途分组，不要为了凑数制造奇怪场景。严格输出 JSON：{"groups":[{"title":"6字以内的中文场景名","desc":"20字以内说明","wordIds":["原样保留的词条ID"]}]}';
+  const box=$('#aBatchBody');if(box)box.innerHTML='<div class="empty-state"><div class="spinner"></div><div>正在按真实语境分组…</div></div>';
+  try{const r=await aiCall([{role:'system',content:'你是英语学习计划设计者。只输出 JSON 对象，不要 markdown，不要解释。'},{role:'user',content:prompt}],{maxTokens:900,timeout:30000});if(!batchPlanValid(r,words))throw new Error('分组结果不完整');d.plan={groups:r.groups.map(g=>({title:g.title.trim(),desc:g.desc.trim(),wordIds:g.wordIds.slice()}))};d.completed=[];d.active=-1;batchSave(d);batchRender();toast('今日情景已规划完成');}catch(e){fallback();toast('AI 分组失败，已按每组 5 个词生成备用分组','warn');}
+}
+function batchOpen(){const el=$('#aBatch');if(!el)return;el.classList.add('show');batchRender();}
+function batchClose(){const el=$('#aBatch');if(el)el.classList.remove('show');}
+function batchRender(){
+  const box=$('#aBatchBody');if(!box)return;const d=batchState(),words=batchReviewedWords(d),done=new Set(d.completed||[]);
+  if(!words.length){box.innerHTML='<div class="empty-state"><b>今天还没有完成的复习词</b><div>先完成今日复习，再统一练情景对话。</div></div>';return;}
+  let h='<p class="a-note">今天已复习 '+words.length+' 个表达。AI 会把它们分成每组约 5 个的场景，完成后逐词记录是否独立用出。</p>';
+  if(!d.plan)h+='<button class="btn primary batch-plan-btn" id="aBatchPlan">规划今日场景</button>';
+  else h+='<div class="batch-group-list">'+d.plan.groups.map((g,i)=>'<div class="batch-group '+(done.has(i)?'done':'')+'"><div class="batch-group-top"><div><b>场景 '+(i+1)+' · '+esc(g.title)+'</b><small>'+esc(g.desc)+'</small></div><span>'+((done.has(i))?'已完成':g.wordIds.length+' 个词')+'</span></div><div class="batch-word-chips">'+g.wordIds.map(id=>{const w=state.words.find(x=>x.id===id);return w?'<span>'+esc(w.term)+'</span>':'';}).join('')+'</div><button class="btn '+(done.has(i)?'':'primary')+'" data-batch-group="'+i+'">'+(done.has(i)?'再练一遍':'开始这一组')+'</button></div>').join('')+'</div>';
+  box.innerHTML=h;
+  const plan=$('#aBatchPlan');if(plan)plan.onclick=batchPlanToday;
+  $$('[data-batch-group]').forEach(b=>b.onclick=()=>batchStartGroup(Number(b.dataset.batchGroup)));
+}
+function batchStartGroup(index){const d=batchState(),g=d.plan&&d.plan.groups&&d.plan.groups[index];if(!g)return;const words=g.wordIds.map(id=>state.words.find(w=>w.id===id)).filter(Boolean);if(!words.length)return;d.active=index;batchSave(d);batchActiveGroup=index;batchClose();openAiPackPractice(words);}
+function batchMarkActiveGroup(){if(batchActiveGroup<0)return;const d=batchState();if(!d.completed.includes(batchActiveGroup))d.completed.push(batchActiveGroup);d.active=-1;batchSave(d);batchActiveGroup=-1;}
 renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
   const next=pending.length?'整理 '+pending.length+' 个待加工表达':due.length?'回想今天到期的表达':'用 2—3 个表达说一段';
   const quote=todayDailyQuote(),encouragement=todayEncouragement(pending.length,due.length,weak.length);
+  const batch=batchState(),reviewed=batchReviewedWords(batch).length,batchEntry=(batchReady(batch)||batch.plan)?'<div class="a-batch-entry"><div><b>今日批量情景对话</b><small>已完成复习 '+reviewed+' 个表达 · 每组约 5 个</small></div><button class="btn primary" id="aBatchOpen">'+(batch.plan?'继续场景练习':'规划今日场景')+'</button></div>':'';
   box.innerHTML='<div class="a-callout"><h3>'+next+'</h3><p>一次做好一小步。先自己回想和表达，再查看答案或请 ChatGPT 帮忙。</p><button class="btn primary" id="aNext">开始这一步</button></div>'+
     '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
-    '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+
+    '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+batchEntry+
     '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+todayCard('pack','情景口语','选 2—3 个表达，自己开口使用',Math.min(3,packableWords().length))+'</div>'+
     '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
     '<p class="a-note">普通日参考：视频与模仿 20 分钟 → 整理 8 分钟 → 回想 5 分钟 → 输出 7 分钟。每周 2 次情景练习、1 次写作，可替换当天部分任务。无需清空全部队列。</p>'+
@@ -391,6 +431,7 @@ renderToday=function(){
   const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}if(g==='pack')openAiPackPractice(packableWords());};
   $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#aNext').onclick=()=>go(pending.length?'organize':due.length?'recall':'pack');
   $('#aTodayWords').onclick=()=>aOpenWords('all');$('#aTodayWrite').onclick=()=>openWriteModal();$('#aTodayNew').onclick=aNewWord;$('#aTodayBackup').onclick=aOpenBackup;
+  if($('#aBatchOpen'))$('#aBatchOpen').onclick=batchOpen;
   if($('#aResumeGpt'))$('#aResumeGpt').onclick=()=>{const task=aRead(A_TASK_KEY,null);const words=state.words.filter(w=>task&&task.wordIds.includes(w.id));openAiPackPractice(words);};
 };
 function aWeakWords(){return state.words.filter(w=>!aPending(w)&&aMeta(w).outputDue&&aMeta(w).outputDue<=Date.now());}
@@ -434,7 +475,7 @@ function aRenderRecall(){
 function aOpenWriteWith(words){openWriteModal();writeState={step:'pick',seq:writeState.seq+1,words,picked:words.map(w=>w.id),topic:'',promptCn:'',minWords:80,attempt:'',review:null};writeRender();}
 const aLegacyPack=openAiPackPractice;
 openAiPackPractice=function(words){
-  const list=(words&&words.length?words:packableWords()).filter(w=>!aPending(w)).slice(0,3);
+  const list=(words&&words.length?words:packableWords()).filter(w=>!aPending(w)).slice(0,5);
   if(!list.length){toast('先整理至少一个表达，再练习','warn');return;}
   if(aRoute()==='api'){aLegacyPack(list);return;}
   const ctx=list.map(w=>({wordId:w.id,term:w.term,definition:w.definition,function:aMeta(w).purpose||'',original:aMeta(w).original||'',mySentence:aMeta(w).ownSentence||'',collocations:w.collocations||[]}));
@@ -442,7 +483,7 @@ openAiPackPractice=function(words){
   aStore(A_TASK_KEY,JSON.stringify({wordIds:list.map(w=>w.id),createdAt:Date.now()}));
   aBridge([{role:'user',content:prompt}]).then(result=>{
     if(!Array.isArray(result.feedback))throw new Error('缺少逐表达反馈');
-    result.feedback.forEach(f=>{const w=list.find(x=>x.id===f.wordId);if(!w)return;aRecord(w,f.used===true&&String(f.attempt||'').trim()?'independent':'forgot',String(f.attempt||''),'chatgpt-session');const rec=aData.attempts[0];rec.comment=String(f.comment||'');rec.revision=String(f.revision||'');});aFlush();localStorage.removeItem(A_TASK_KEY);render();toast('练习反馈已按表达保存；可在表达详情回看');
+    result.feedback.forEach(f=>{const w=list.find(x=>x.id===f.wordId);if(!w)return;aRecord(w,f.used===true&&String(f.attempt||'').trim()?'independent':'forgot',String(f.attempt||''),'chatgpt-session');const rec=aData.attempts[0];rec.comment=String(f.comment||'');rec.revision=String(f.revision||'');});aFlush();localStorage.removeItem(A_TASK_KEY);batchMarkActiveGroup();render();toast('练习反馈已按表达保存；可在表达详情回看');
   }).catch(e=>toast(e.message,'warn'));
 };
 const aOriginalAiReview=aiRenderReview;
@@ -450,7 +491,7 @@ aiRenderReview=function(d,attempt){
   aOriginalAiReview(d,attempt);const el=document.createElement('div');el.className='a-date-pack';
   const terms=aiState.terms||[aiState.term];const words=state.words.filter(w=>terms.includes(w.term));
   el.innerHTML='<p class="a-note">哪些表达是你自己实际用出的？逐个确认，不把 AI 说出的算作你的使用。</p>'+words.map(w=>'<label class="a-check"><input type="checkbox" data-a-used="'+esc(w.id)+'">'+esc(w.term)+'</label>').join('')+'<div class="a-actions"><button class="btn primary" id="aSaveUsage">记录本次使用</button><button class="btn" id="aRetryOwn">改进后再说一次</button></div>';
-  $('#aiScene').append(el);$('#aSaveUsage').onclick=()=>{const used=new Set($$('#aiScene [data-a-used]:checked').map(x=>x.dataset.aUsed));words.forEach(w=>aRecord(w,used.has(w.id)?'independent':'forgot',attempt,'dialogue'));$('#aSaveUsage').disabled=true;toast('已逐个记录，下次优先练还没用出的表达');};
+  $('#aiScene').append(el);$('#aSaveUsage').onclick=()=>{const used=new Set($$('#aiScene [data-a-used]:checked').map(x=>x.dataset.aUsed));words.forEach(w=>aRecord(w,used.has(w.id)?'independent':'forgot',attempt,'dialogue'));batchMarkActiveGroup();$('#aSaveUsage').disabled=true;toast('已逐个记录，下次优先练还没用出的表达');};
   $('#aRetryOwn').onclick=()=>{aiState.phase='practice';aiShowBody();aiSetChatbar('practice');aiRenderDialogue();$('#aiInput').value=attempt;$('#aiInput').focus();};
 };
 const aOriginalWriteReview=writeRenderReview;
@@ -704,7 +745,7 @@ function aInit(){
   $('#aBridgeClose').onclick=()=>{const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');if(job)job.reject(new Error('已取消本次 ChatGPT 任务，内容没有改动'));};
   $('#aCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#aPrompt').value);toast('任务已复制，打开 ChatGPT 粘贴');}catch(_){$('#aPrompt').focus();$('#aPrompt').select();toast('请长按任务框复制','warn');}};
   $('#aApply').onclick=()=>{if(!aBridgeJob)return;try{const value=aValidateResult(aParseResult($('#aResult').value),aBridgeJob.prompt);const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');job.resolve(value);}catch(e){$('#aBridgeError').textContent='还不能使用：'+e.message;}};
-  $('#aRecallClose').onclick=()=>{$('#aRecall').classList.remove('show');render();};$('#aBackupClose').onclick=()=>$('#aBackup').classList.remove('show');$('#aExport').onclick=aDownloadBackup;$('#aImport').onchange=e=>{aImportFile(e.target.files[0]);e.target.value='';};
+  $('#aRecallClose').onclick=()=>{$('#aRecall').classList.remove('show');render();};$('#aBatchClose').onclick=()=>batchClose();$('#aBatch').addEventListener('click',e=>{if(e.target.id==='aBatch')batchClose();});$('#aBackupClose').onclick=()=>$('#aBackup').classList.remove('show');$('#aExport').onclick=aDownloadBackup;$('#aImport').onchange=e=>{aImportFile(e.target.files[0]);e.target.value='';};
   ['aPurpose','aOwn','aOriginal','aSource','aTime'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(wmState&&wmState.aMetaKey)aPut(wmState.aMetaKey,aFieldValues());}));
   const cap=$('#wmIllusCap');if(cap&&!$('#aImageSwipeNote')){const note=document.createElement('span');note.id='aImageSwipeNote';note.className='illus-swipe-note';note.textContent='右滑查看截图';cap.append(note);}
   const confirm=$('#wmIllusConfirm');if(confirm){confirm.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(!wmState)return;const rec=aImageRecord(wmState.term),c=aImageCurrent(wmState.term);if(!c)return;rec.term=wmState.term;rec.confirmed=true;wmImgStore(wmState.term,rec);aImageSetConfirm(rec);toast('图片已确定，之后打开会保持这一张','ok');},{capture:true});}

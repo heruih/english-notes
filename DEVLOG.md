@@ -4,6 +4,7 @@
 
 | 日期 | 做了什么 | 怎么验的 | 结果 | 下一步 |
 |---|---|---|---|---|
+| 2026-11-15 | 主线调整为“复习后批量情景对话”：每日到期复习轮次上限调整为 25 个并独立记录当天完成词；新增批量场景规划面板，AI 按语境分成每组 4—6 个，复用现有多词对话和逐词记录；单词页单独对话保留 | `node --check` 检查复习、批量、AI 和首页模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查批量状态 key、入口、分组面板、复习上限和既有 AI 标记；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机批量复习、AI 分组和续接尚未验收，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-今日批量情景对话.html`，完成至少 20 个复习词后检查批量入口、场景规划和每组约 5 个词 |
 | 2026-11-15 | AI 对话中文层级：除“你说”的中文提示外，其他 AI 句子的中文默认隐藏，点中文提示展开；不改对话请求和批改流程 | `node --check` 检查 AI、编辑器和首页模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查 `data-aicn`、中文展开提示和既有页面标记；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机 AI 对话验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-AI中文折叠.html`，确认 AI 句子中文默认收起，点一下可展开 |
 | 2026-11-15 | AI 对话页增加目标表达提示条：显示目标词，并在选情景、练习、反馈阶段切换操作提示；不改 DeepSeek/GPT 路由、会话序号、取消请求和失败重试 | `node --check` 检查 AI、首页和编辑器模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查 AI 提示条、复习进度层、笔记整理入口、每日一句和主题选项；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机 AI 对话验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-AI对话提示层.html`，从词卡点 AI 对话，确认目标表达、阶段提示和关闭后状态清理 |
 | 2026-11-15 | 今日复习页增加进度提示层：显示到期/自由复习、已完成数量和“先回想，再点卡片翻开”的操作提示；不改 SRS 算法、评分和复习进度保存 | `node --check` 检查复习、首页和设置模块；`node scripts/build.mjs`；`node scripts/build.mjs --pages`；静态检查复习进度层、笔记整理入口、每日一句和主题选项；`git diff --check` | 源码与 Sitecase、Pages 候选构建通过；真实手机复习页验收未完成，线上版本未改 | 手机打开 `英语学习笔记-Sitecase-20261115-复习进度层.html`，完成一张到期卡并确认进度提示、翻卡、评分和重开续接 |

@@ -19,13 +19,14 @@ function nextReviewIndex(round,start=0){
   return idx<0?round.length:idx;
 }
 function buildReview(mode='due'){
-  const round=reviewQueue(mode).filter(w=>!aPending(w)).slice(0,10).map(w=>({id:w.id,reps:w.srs?.reps||0}));
+  const limit=mode==='free'?10:25;
+  const round=reviewQueue(mode).filter(w=>!aPending(w)).slice(0,limit).map(w=>({id:w.id,reps:w.srs?.reps||0}));
   if(mode==='due') aStore(REVIEW_ROUND_KEY,JSON.stringify(round));
   return setReview(mode,round);
 }
 function resumeReview(){
   const stored=aRead(REVIEW_ROUND_KEY,null);
-  if(Array.isArray(stored)&&stored.length<=10){
+  if(Array.isArray(stored)&&stored.length<=25){
     const activeIds=new Set(state.words.filter(w=>!aPending(w)).map(w=>w.id));
     const round=stored.filter(card=>card&&activeIds.has(card.id)&&Number.isInteger(card.reps)&&card.reps>=0);
     // Reconstruct the cursor from the same saved rating that increments reps.
@@ -57,6 +58,7 @@ function gradeCurrent(g){
   const s=srsGrade(w,g);
   try{ save(); }
   catch(_){ Object.assign(w,before); return; }
+  if(typeof batchReviewRecord==='function')batchReviewRecord(w.id);
   const tip={0:'已记为「忘了」，10 分钟后再练',1:'记为「有点难」',2:'记为「记住了」'}[g]+' · '+SRS_LABEL[s.box];
   f.idx=nextReviewIndex(f.round,f.idx+1); f.flipped=false; f.graded++;
   renderFlash();
