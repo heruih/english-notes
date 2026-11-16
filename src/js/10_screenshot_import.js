@@ -381,6 +381,15 @@ let batchActiveGroup=-1,batchActiveSegment=null;
 function aiDialogueHistoryRead(){const v=aRead(AI_DIALOGUE_HISTORY_KEY,{sessions:[],favorites:[]});return {sessions:[],favorites:Array.isArray(v&&v.favorites)?v.favorites:[]};}
 function aiDialogueHistoryWrite(v){v.sessions=[];v.favorites=(v.favorites||[]).slice(0,30);aStore(AI_DIALOGUE_HISTORY_KEY,JSON.stringify(v));}
 let aiSessionDoc=null;
+function aiDialogueHistoryMigrate(){
+  /* 旧版本会自动存 30 段会话；现在只保留收藏，启动时顺手清掉旧的自动记录 */
+  try{
+    const raw=aRead(AI_DIALOGUE_HISTORY_KEY,null);
+    if(raw&&Array.isArray(raw.sessions)&&raw.sessions.length){
+      aStore(AI_DIALOGUE_HISTORY_KEY,JSON.stringify({sessions:[],favorites:(raw.favorites||[]).slice(0,30)}));
+    }
+  }catch(e){}
+}
 function aiDialogueHistoryStart(words){
   const list=Array.isArray(words)?words:[];
   aiSessionDoc={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),status:'active',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),scenes:[],turns:[]};
