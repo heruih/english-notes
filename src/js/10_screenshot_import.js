@@ -378,30 +378,42 @@ const BATCH_KEY='english-notes-dialogue-batch-v1';
 const DIALOGUE_PREF_KEY='english-notes-dialogue-preferences-v1';
 const AI_DIALOGUE_HISTORY_KEY='english-notes-dialogue-history-v1';
 let batchActiveGroup=-1,batchActiveSegment=null;
-function aiDialogueHistoryRead(){const v=aRead(AI_DIALOGUE_HISTORY_KEY,{sessions:[],favorites:[]});return {sessions:Array.isArray(v&&v.sessions)?v.sessions:[],favorites:Array.isArray(v&&v.favorites)?v.favorites:[]};}
-function aiDialogueHistoryWrite(v){v.sessions=v.sessions.slice(0,30);v.favorites=v.favorites.map(f=>{const s=v.sessions.find(x=>x.id===f.id);return s?Object.assign({},s,{favoriteAt:f.favoriteAt}):f;}).slice(0,30);aStore(AI_DIALOGUE_HISTORY_KEY,JSON.stringify(v));}
+function aiDialogueHistoryRead(){const v=aRead(AI_DIALOGUE_HISTORY_KEY,{sessions:[],favorites:[]});return {sessions:[],favorites:Array.isArray(v&&v.favorites)?v.favorites:[]};}
+function aiDialogueHistoryWrite(v){v.sessions=[];v.favorites=(v.favorites||[]).slice(0,30);aStore(AI_DIALOGUE_HISTORY_KEY,JSON.stringify(v));}
+let aiSessionDoc=null;
 function aiDialogueHistoryStart(words){
-  const list=Array.isArray(words)?words:[],id=uid(),v=aiDialogueHistoryRead();
-  v.sessions.unshift({id,createdAt:Date.now(),updatedAt:Date.now(),status:'active',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),scenes:[],turns:[]});
-  aiDialogueHistoryWrite(v); aiState.dialogueSessionId=id; return id;
+  const list=Array.isArray(words)?words:[];
+  aiSessionDoc={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),status:'active',terms:list.map(w=>w.term),termIds:list.map(w=>w.id),scenes:[],turns:[]};
+  aiState.dialogueSessionId=aiSessionDoc.id; return aiSessionDoc.id;
 }
 function aiDialogueHistoryScene(scene,lines,words){
-  const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
-  s.updatedAt=Date.now();s.scenes=s.scenes||[];const entry={title:scene&&scene.title||'情景练习',desc:scene&&scene.desc||'',wordIds:(words||[]).map(w=>w.id||w),lines:(lines||[]).map(l=>({who:l.who,en:l.en||'',cn:l.cn||'',wordId:l.wordId||'',promptCn:l.promptCn||''}))};
-  const index=Math.max(0,Number(aiState.sceneIndex)||0);s.scenes[index]=entry;aiDialogueHistoryWrite(v);
+  if(!aiSessionDoc) return;
+  aiSessionDoc.updatedAt=Date.now();
+  aiSessionDoc.scenes=aiSessionDoc.scenes||[];
+  aiSessionDoc.scenes[Math.max(0,Number(aiState.sceneIndex)||0)]={title:scene&&scene.title||'情景练习',desc:scene&&scene.desc||'',wordIds:(words||[]).map(w=>w.id||w),lines:(lines||[]).map(l=>({who:l.who,en:l.en||'',cn:l.cn||'',wordId:l.wordId||'',promptCn:l.promptCn||''}))};
 }
 function aiDialogueHistoryTurn(data){
-  const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
-  s.updatedAt=Date.now();s.turns=s.turns||[];s.turns.push(Object.assign({createdAt:Date.now()},data||{}));
-  const scene=s.scenes&&s.scenes[Number(aiState.sceneIndex)||0];if(scene&&Array.isArray(scene.lines)){const line=scene.lines.find(l=>l.who==='YOU'&&l.wordId===(data&&data.wordId));if(line){line.attempt=data.attempt||'';line.result=data.result||'';line.score=data.score;}}
-  aiDialogueHistoryWrite(v);
+  if(!aiSessionDoc) return;
+  aiSessionDoc.updatedAt=Date.now();
+  aiSessionDoc.turns=aiSessionDoc.turns||[];
+  aiSessionDoc.turns.push(Object.assign({createdAt:Date.now()},data||{}));
+  const scene=aiSessionDoc.scenes&&aiSessionDoc.scenes[Number(aiState.sceneIndex)||0];
+  if(scene&&Array.isArray(scene.lines)){const line=scene.lines.find(l=>l.who==='YOU'&&l.wordId===(data&&data.wordId));if(line){line.attempt=data.attempt||'';line.result=data.result||'';}}
 }
 function aiDialogueHistoryFinish(status){
-  const id=aiState.dialogueSessionId;if(!id)return;const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;s.status=status||'completed';s.updatedAt=Date.now();aiDialogueHistoryWrite(v);
+  if(!aiSessionDoc) return;
+  aiSessionDoc.status=status||'completed';
+  aiSessionDoc.updatedAt=Date.now();
 }
 function aiFavoriteCurrent(){
-  const id=aiState.dialogueSessionId;if(!id){toast('当前还没有可收藏的对话','warn');return;}const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
-  const copy=JSON.parse(JSON.stringify(Object.assign({},s,{favoriteAt:Date.now()})));v.favorites=[copy].concat(v.favorites.filter(x=>x.id!==id));aiDialogueHistoryWrite(v);aiState.dialogueFavorited=true;const b=$('#aiFavorite');if(b){b.textContent='已收藏';b.disabled=true;}toast('已收藏这段对话');
+  if(!aiSessionDoc){toast('当前还没有可收藏的对话','warn');return;}
+  const v=aiDialogueHistoryRead();
+  const copy=JSON.parse(JSON.stringify(Object.assign({},aiSessionDoc,{favoriteAt:Date.now()})));
+  v.favorites=[copy].concat(v.favorites.filter(x=>x.id!==copy.id));
+  aiDialogueHistoryWrite(v);
+  aiState.dialogueFavorited=true;
+  const b=$('#aiFavorite');if(b){b.textContent='已收藏';b.disabled=true;}
+  toast('已收藏这段对话');
 }
 function aiFavListView(){
   const v=aiDialogueHistoryRead(),box=$('#aiFavoritesBody');if(!box)return;
