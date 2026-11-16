@@ -723,7 +723,7 @@ function openFollow(text,term,cn){
   cnEl.onclick=e=>{ e.stopPropagation(); if(followState.cn) cnEl.classList.toggle('hided'); };
   $('#followOut').classList.remove('hasrec');
   const b=$('#followBest');
-  if(b){ b.textContent=followState.best?'最佳 '+followState.best+' 分':''; b.classList.toggle('hidden',!followState.best); }
+  if(b){ b.textContent=''; b.classList.add('hidden'); }
   const sc=$('#followScore'); if(sc){ sc.innerHTML=''; sc.classList.remove('show'); }
   initWave();
   $('#followPage').classList.add('show');
@@ -1031,7 +1031,7 @@ function scoreFollow(){
         const w=(state.words||[]).find(x=>String(x.term||'').toLowerCase()===followState.term.toLowerCase());
         if(w&&total>(w.followBest||0)){ w.followBest=total; w.followAt=Date.now(); w.updatedAt=Date.now(); save(); }
         const b=$('#followBest');
-        if(b&&w&&w.followBest){ b.textContent='最佳 '+w.followBest+' 分'; b.classList.remove('hidden'); }
+        
       }catch(_){}
     }
   }).catch(()=>{ setFollowStatus('评分失败，可以再录一次试试'); })
@@ -1040,26 +1040,22 @@ function scoreFollow(){
 function renderFollowScore(r){
   const box=$('#followScore');
   if(!box) return;
-  const dim=(label,v)=>'<div class="fs-dim"><span>'+label+'</span><i><b style="width:'+v+'%"></b></i><em>'+v+'</em></div>';
   const diff=r.tgt.map((t,i)=>{
     const raw=esc(t.raw);
     return r.usedAsr?(r.matched[i]?'<span class="fs-ok">'+raw+'</span>':'<span class="fs-miss">'+raw+'</span>'):raw;
   }).join(' ');
   box.innerHTML=
     '<div class="fs-head">'+
-      '<div class="fs-ring" style="--p:'+r.all+'"><i>'+r.all+'</i></div>'+
       '<div class="fs-hd">'+
-        '<div class="fs-grade">'+esc(r.grade[0])+'</div>'+
-        '<div class="fs-sub">'+esc(r.grade[1])+'</div>'+
+        '<div class="fs-grade">读完了</div>'+
+        '<div class="fs-sub">回听原音和你的录音，注意下面几点</div>'+
         '<div class="fs-tag">'+(r.usedAsr?'逐词识别比对':'节奏 + 音量估算')+' · '+r.dur.toFixed(1)+' 秒 · '+r.wpm+' 词/分</div>'+
       '</div>'+
     '</div>'+
-    '<div class="fs-dims">'+(r.usedAsr?dim('准确',r.acc):'')+dim('流利',r.flu)+dim('音量',r.vol)+'</div>'+
     (r.usedAsr?'<div class="fs-diff">'+diff+'</div><div class="fs-legend"><i class="ok"></i>读到<i class="miss"></i>没读清</div>':'')+
     '<div class="fs-tips">'+r.tips.map(t=>'<div>· '+esc(t)+'</div>').join('')+'</div>';
   box.classList.add('show');
 }
-
 /* ============ AI：例句自动挑选（不用手写） ============ */
 const PACK_PROMPT=term=>'你是资深英汉词典编纂者，正在为中文学习者的个人表达库挑例句。词条："'+term+'"。\n'+
   '请挑选 2-3 句最典型、最常用的英文例句（3 句最佳），并给出准确自然的中文翻译。\n'+

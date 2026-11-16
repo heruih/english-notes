@@ -110,16 +110,12 @@ function writeRenderTopic(){
 }
 function writeRenderReview(){
   const r=writeState.review||{};
-  const score=Math.max(0,Math.min(100,parseInt(r.score,10)||0));
   const issues=(r.issues||[]).filter(x=>x&&x.en);
   $('#writeNext').textContent='存成笔记';
   $('#writeBack').classList.remove('hidden');
   $('#writeContent').innerHTML=
-    '<div class="wj-step-t">③ 批改结果</div>'+
-    '<div class="ai-fb">'+
-      '<div class="ai-fb-top"><span class="ai-score big">'+score+' 分</span>'+(r.verdict?'<span class="ai-verdict">'+esc(String(r.verdict))+'</span>':'')+'</div>'+
-      (r.comment?'<div class="ai-comment">'+esc(String(r.comment))+'</div>':'')+
-    '</div>'+
+    '<div class="wj-step-t">③ 修改建议</div>'+
+    (r.summary?'<div class="ai-why"><span class="ai-why-label">改写思路</span>'+esc(String(r.summary))+'</div>':'')+
     (issues.length?'<div class="wj-issues"><div class="wj-sec-t">逐句修改</div>'+
       issues.map(x=>'<div class="wj-issue"><div class="wj-i-en">'+esc(x.en)+'</div><div class="wj-i-fix">→ '+esc(x.fix||'')+'</div>'+(x.note?'<div class="wj-i-note">'+esc(x.note)+'</div>':'')+'</div>').join('')+'</div>':'')+
     (r.standard?'<div class="wj-standard"><div class="wj-sec-t">范文参考</div><div class="wj-standard-txt">'+esc(String(r.standard))+'</div></div>':'');
@@ -133,8 +129,8 @@ function writeGenTopic(){
 function writeJudge(){
   const words=writeState.words.filter(w=>(writeState.picked||[]).includes(w.id));
   const ctx=words.map(w=>'"'+w.term+'"').join('、');
-  return aiCall([{role:'system',content:'你是严格的英语写作批改老师。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'题目："'+(writeState.topic||'')+'"\n写作要求：'+(writeState.promptCn||'')+'\n要求用到的词：'+ctx+'\n学习者作文：\n'+(writeState.attempt||'')+'\n请批改。严格输出 JSON：{"score":0-100,"verdict":"很好/不错/需要改进/问题较多","comment":"中文总评：先肯定亮点再指出主要问题，150字内","issues":[{"en":"原文有问题的句子","fix":"修改后的地道表达","note":"中文说明为什么"},{"en":"","fix":"","note":""}],"standard":"一篇更好的完整范文（120词左右，自然用上这些词）"}'}],{timeout:60000});
+  return aiCall([{role:'system',content:'你是英语写作教练。只输出一个 JSON 对象，不要 markdown、不要解释。'},
+    {role:'user',content:'题目："'+(writeState.topic||'')+'\n写作要求：'+(writeState.promptCn||'')+'\n要求用到的词：'+ctx+'\n学习者作文：\n'+(writeState.attempt||'')+'\n不要打分、不要评价好坏。只输出三样：①逐句修改（只列需要改的句子，说明为什么改）②一句改写思路（30 字内）③一篇更自然的范文（120 词左右，自然用上这些词）。严格输出 JSON：{"issues":[{"en":"原文句子","fix":"修改后的表达","note":"为什么这样改"}],"summary":"一句话改写思路","standard":"范文"}'}],{maxTokens:1600,timeout:60000});
 }
 function writeGenAndShow(){
   const picked=writeState.picked||[];
