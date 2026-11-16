@@ -972,16 +972,22 @@ function aiNormalizeDialogue(rawLines){
   return {lines:keep,reason:''};
 }
 async function aiBuildDialogue(strictRetry){
+  /* B1：输出越短越快。行数固定、字数控死、不写人设长文案 */
   const multi=aiState.terms&&aiState.terms.length>1;
-  const useTxt=multi?('自然使用这些单词：'+aiState.terms.join('、')):'自然使用该单词至少一次';
-  const targetTxt=multi?'当前场景目标词映射（wordId 必须从这里原样复制）：'+JSON.stringify(aiDialogueTermsPayload())+'。':'当前目标词为「'+aiState.term+'」。';
-  const youTxt=multi?'每个目标词安排一个独立的 YOU 回合。每个 YOU 回合只对应一个目标词，带 wordId 和 promptCn。这个场景最多 2 个目标词，最多 2 个来回，全部对话控制在 4—5 行。不要追加闲聊，不要把多个目标词塞进同一句。':'其中恰好一句是「由学习者口译说出」，用 who:"YOU" 表示，只给 promptCn（中文提示他要说的话，翻译成英文后应自然用到该单词）';
-  const messages=[{role:'system',content:'你是英语口语教练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:targetTxt+'单词 '+aiWordCtx()+'，场景「'+aiState.scene.title+'」：'+aiState.scene.desc+'。'+useTxt+'。'+youTxt+'。每个 promptCn 必须是包含中文的翻译提示，可以在中文中提到目标词，但不能直接给出完整英文答案。A/B 的 en 中禁止直接出现任何目标词。'+(strictRetry?'上一次结果不符合这些规则，请重新生成并严格检查每个 YOU 回合。':'')+'；其余行 who 为 A/B，带 en（英文原句）和 cn（中文翻译）。严格输出 JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"目标词ID","promptCn":"…"}]}'}];
-  try{ return await aiCall(messages,aiState.multiTurn?{maxTokens:1200,timeout:30000}:undefined); }
+  const termList=multi?aiDialogueTermsPayload():[{wordId:(aiState.termIds||[])[0]||'',term:aiState.term||'',definition:aiState.definition||''}];
+  const shape=multi
+    ?('只写 '+(aiState.terms.length+2)+' 行：'+(aiState.terms.length>1?'A、YOU、A、YOU':'A、YOU、A')+'。每个 YOU 只对应一个目标词，带 wordId 和 promptCn，不要多写回合。')
+    :'只写 3 行：A、YOU、A，只有一个 YOU 回合。';
+  const brief='A/B 的 en 最多 12 个词，cn 是中文翻译最多 12 个字；YOU 的 promptCn 是中文提示最多 14 个字，能指向目标词但不能给出整句英文。不要寒暄、不要解释、不要多余行。A/B 的 en 里禁止出现任何目标词。';
+  const messages=[
+    {role:'system',content:'你是英语口语教练。只输出一个 JSON 对象 {"lines":[...]}，不要 markdown、不要解释。'},
+    {role:'user',content:'场景「'+(aiState.scene.title||'')+'」：'+(aiState.scene.desc||'')+'。目标词：'+JSON.stringify(termList)+'。'+shape+brief+(strictRetry?'上一版行数或字数超了，请严格重写。':'')+' JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"…","promptCn":"…"}]}'}
+  ];
+  const opt=aiState.multiTurn?{maxTokens:1600,timeout:25000}:{maxTokens:1200,timeout:20000};
+  try{ return await aiCall(messages,opt); }
   catch(err){
     if(!aiState.multiTurn||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
-    return aiCall(messages.concat({role:'user',content:'上一次返回格式无效。请只返回可解析的 JSON，必须包含 lines 数组，且每个目标词只对应一个 YOU 回合。'}),{maxTokens:1200,timeout:20000});
+    return aiCall(messages.concat({role:'user',content:'只返回可解析 JSON，行数和字数按上面要求。'}),opt);
   }
 }
 async function aiCreateValidatedDialogue(){
@@ -1104,8 +1110,21 @@ function startScene(sc){
   aiState.attempt=''; aiState.attemptPromptCn='';
   const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
   aiShowLoading('正在生成对话…');
-  aiCreateValidatedDialogue().then(lines=>{
+  let fallbackShown=false;
+  const slowTimer=setTimeout(()=>{
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
+    if(aiState.phase!=='practice'||(aiState.lines||[]).length||aiState.attempt) return;
+    const fb=aiFallbackDialogue();
+    aiState.lines=fb.lines; aiState.turnIndex=0; aiState.turnResults=[];
+    aiState.currentTargetWord=aiState.multiTurn?((fb.lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
+    aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
+    fallbackShown=true;
+    toast('AI 还没回，先用快速练习开始；它回来会自动替换','warn');
+  },8000);
+  aiCreateValidatedDialogue().then(lines=>{
+    clearTimeout(slowTimer);
+    if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
+    if(fallbackShown&&(aiState.attempt||aiState.turnIndex>0)) return;
     aiState.lines=lines;
     if(typeof aiDialogueHistoryScene==='function') aiDialogueHistoryScene(aiState.scene,lines,aiState.termIds||[]);
     const favorite=$('#aiFavorite');if(favorite&&!aiState.dialogueFavorited)favorite.disabled=false;
@@ -1115,7 +1134,9 @@ function startScene(sc){
     aiSetChatbar('practice');
     aiRenderDialogue();
   }).catch(err=>{
+    clearTimeout(slowTimer);
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
+    if(fallbackShown){ toast('AI 生成失败，继续用快速练习','warn'); return; }
     aiState.phase='error';
     aiShowBody();
     aiSetChatbar('review');
