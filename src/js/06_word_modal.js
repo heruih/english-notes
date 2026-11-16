@@ -1006,12 +1006,11 @@ async function aiCreateValidatedDialogue(){
   throw last||new Error('对话内容为空，请重试');
 }
 async function aiJudge(attempt){
+  /* 不打分、不评价学习者句子：只给标准答案、为什么这样说、容易错在哪 */
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
-  const multi=aiState.terms&&aiState.terms.length>1;
   const target=aiTargetTerm(aiState.currentTargetWord||aiState.term);
-  const stdTxt=multi?'标准地道的英文句子（必须自然使用目标词「'+target+'」）':'标准地道的英文句子（必须使用该单词）';
-  return aiCall([{role:'system',content:'你是严格的英语口语陪练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'目标词「'+target+'」。对话语境：\n'+ctx+'\n学习者口译的句子："'+attempt+'"（中文提示：'+aiState.attemptPromptCn+'）。判断语法是否正确、表达是否地道，并确认是否自然使用了目标词。严格输出 JSON：{"score":0-100,"verdict":"很地道/基本正确/需要改进/不太对","comment":"中文点评，指出具体问题并解释","standard":"'+stdTxt+'"}'}]);
+  return aiCall([{role:'system',content:'你是英语口语教练。只输出一个 JSON 对象，不要 markdown、不要解释。'},
+    {role:'user',content:'目标词「'+target+'」。对话：\n'+ctx+'\n学习者说的是："'+attempt+'"（提示：'+(aiState.attemptPromptCn||'')+'）。不要评价学习者这句话的好坏，也不要打分；只给三样：一句最自然的标准答案；为什么这样说更自然（一句话，20 字内）；最容易错的地方 1—2 条（每条 15 字内）。严格输出 JSON：{"standard":"…","fit":"…","pitfalls":["…","…"]}'}],{maxTokens:400,timeout:20000});
 }
 function aiShowLoading(t){ $('#aiBody').classList.add('hidden'); $('#aiLoading').classList.remove('hidden'); $('#aiLoadStatus').textContent=t; }
 function aiShowBody(){ $('#aiLoading').classList.add('hidden'); $('#aiBody').classList.remove('hidden'); }
@@ -1034,7 +1033,7 @@ function aiSetChatbar(phase){
 }
 function aiRenderScenes(){
   const prev=(state.aiLog||[]).filter(x=>String(x.term).toLowerCase()===String(aiState.term).toLowerCase());
-  const best=prev.length?Math.max.apply(null,prev.map(x=>x.score||0)):null;
+  const scored=prev.filter(x=>Number(x.score)>0);const best=scored.length?Math.max.apply(null,scored.map(x=>Number(x.score)||0)):null;
   const tip=aiState.scenePlanFallback?'AI 场景暂时不可用，下面是快速分组。点击“换一批情景”会重新请求 AI'
     :(aiState.terms&&aiState.terms.length>1)?('一次对话练 '+aiState.terms.length+' 个词，选一个情景开始')
     :(prev.length?('这个词练过 '+prev.length+' 次'+(best!=null?'，最高 '+best+' 分':'')+'，选一个情景继续'):'选择一个情景，开始今天的开口练习');
@@ -1058,13 +1057,13 @@ function aiRenderDialogue(){
   $('#aiScene').scrollTop=$('#aiScene').scrollHeight;
 }
 function aiRenderReview(d,attempt){
-  const score=Math.max(0,Math.min(100,parseInt(d.score,10)||0));
+  const pitfalls=Array.isArray(d.pitfalls)?d.pitfalls.filter(Boolean).slice(0,2):[];
   $('#aiScene').innerHTML=
     '<div class="ai-line ai-user"><div class="ai-text"><div class="ai-en">'+esc(attempt)+speakBtn(attempt,'en-US')+'</div></div></div>'+
     '<div class="ai-fb">'+
-      '<div class="ai-fb-top"><span class="ai-score big">'+score+' 分</span>'+(d.verdict?'<span class="ai-verdict">'+esc(String(d.verdict))+'</span>':'')+'</div>'+
-      (d.comment?'<div class="ai-comment">'+esc(String(d.comment))+'</div>':'')+
       (d.standard?'<div class="ai-corrected"><span class="ai-corr-label">标准答案 · 点喇叭跟读</span><span class="ai-corr-en">'+esc(String(d.standard))+speakBtn(String(d.standard),'en-US')+'</span></div>':'')+
+      (d.fit?'<div class="ai-why"><span class="ai-why-label">为什么这样说</span>'+esc(String(d.fit))+'</div>':'')+
+      (pitfalls.length?'<div class="ai-pitfall"><span class="ai-why-label">容易错在</span>'+pitfalls.map(x=>'<span class="ai-pitfall-item">'+esc(String(x))+'</span>').join('')+'</div>':'')+
       '<div class="ai-fb-actions"><button class="mini-btn" id="aiGotoScenes">换个场景</button></div>'+
     '</div>';
   $('#aiScene').scrollTop=$('#aiScene').scrollHeight;
@@ -1174,19 +1173,17 @@ async function submitAttempt(){
   }).finally(()=>{ aiState.busy=false; });
 }
 function saveSpeakLog(d,attempt){
-  const score=Math.max(0,Math.min(100,parseInt(d.score,10)||0));
   const sc=aiState.scene||{};
   state.aiLog.unshift({
     id:uid(),term:aiTargetTerm(aiState.currentTargetWord||aiState.term),scene:sc.title||'',sceneDesc:sc.desc||'',
     promptCn:aiState.attemptPromptCn||'',attempt:String(attempt||''),
-    score,verdict:String(d.verdict||''),comment:String(d.comment||''),
-    standard:String(d.standard||''),createdAt:Date.now()
+    standard:String(d.standard||''),fit:String(d.fit||''),
+    pitfalls:Array.isArray(d.pitfalls)?d.pitfalls.filter(Boolean).slice(0,2):[],
+    createdAt:Date.now()
   });
   if(state.aiLog.length>300) state.aiLog.length=300;
   save();
-  if(!aiState.multiTurn&&typeof aiDialogueHistoryTurn==='function') aiDialogueHistoryTurn({wordId:aiState.currentTargetWord||aiState.term,result:'reviewed',attempt:String(attempt||''),promptCn:aiState.attemptPromptCn||'',score});
-  const chip=$('#aiScoreChip');
-  if(chip){ chip.textContent=score+' 分'; chip.classList.remove('hidden'); }
+  if(!aiState.multiTurn&&typeof aiDialogueHistoryTurn==='function') aiDialogueHistoryTurn({wordId:aiState.currentTargetWord||aiState.term,result:'reviewed',attempt:String(attempt||''),promptCn:aiState.attemptPromptCn||''});
   renderSidebar();
 }
 function scoreClass(s){ return s>=80?'good':(s>=60?'mid':'bad'); }
@@ -1198,35 +1195,28 @@ function renderSpeakLog(){
   if(!log.length){
     box.innerHTML='<div class="empty-state">'+
       '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L4 21l1.2-3.7A8.4 8.4 0 1 1 21 11.5z"/></svg>'+
-      '<div><b>还没有练习记录</b><br>在单词卡片里点「AI 对话」，选一个情景开口翻译，成绩会自动存在这里。</div></div>';
+      '<div><b>还没有练习记录</b><br>在单词卡片里点「AI 对话」，选一个情景开口翻译，记录会自动存在这里。</div></div>';
     return;
   }
-  const avg=Math.round(log.reduce((s,x)=>s+(x.score||0),0)/log.length);
-  const weak=log.filter(x=>x.score<80).slice(0,12);
-  const weakIds=new Set(weak.map(x=>x.id));
-  const rest=log.filter(x=>!weakIds.has(x.id)).slice(0,60);
+  const today=fmtDate(Date.now());
+  const todayCount=log.filter(x=>fmtDate(x.createdAt)===today).length;
+  const terms=new Set(log.map(x=>x.term)).size;
   const itemHTML=x=>'<div class="log-item" data-log="'+x.id+'">'+
     '<div class="log-top"><span class="log-term">'+esc(x.term)+'</span>'+
-      '<span class="log-scene">'+esc(x.scene||'情景练习')+'</span>'+
-      '<span class="log-score '+scoreClass(x.score)+'">'+x.score+'</span></div>'+
+      '<span class="log-scene">'+esc(x.scene||'情景练习')+'</span></div>'+
     (x.attempt?'<div class="log-line">你：<b>'+esc(x.attempt)+'</b></div>':'')+
     (x.standard?'<div class="log-line">标准：'+esc(x.standard)+'</div>':'')+
+    (x.fit?'<div class="log-line">为什么：'+esc(x.fit)+'</div>':'')+
+    ((x.pitfalls&&x.pitfalls.length)?'<div class="log-line">易错：'+esc(x.pitfalls.join('；'))+'</div>':'')+
     '<div class="log-meta">'+fmtDate(x.createdAt)+' · 点一下再练一次</div>'+
   '</div>';
   let h='<div class="rv-stats" style="padding:14px 14px 6px">'+
     '<div class="rv-stat"><div class="n">'+log.length+'</div><div class="l">练习次数</div></div>'+
-    '<div class="rv-stat '+(avg>=80?'ok':'hot')+'"><div class="n">'+avg+'</div><div class="l">平均分</div></div>'+
-    '<div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待加强</div></div>'+
+    '<div class="rv-stat"><div class="n">'+todayCount+'</div><div class="l">今天</div></div>'+
+    '<div class="rv-stat"><div class="n">'+terms+'</div><div class="l">涉及词条</div></div>'+
   '</div>';
-  if(weak.length){
-    h+='<div class="sr-group"><div class="sr-group-title">错题重练 <span>低于 80 分</span></div><div class="log-list" style="padding:0 0 6px">'+
-      weak.map(itemHTML).join('')+'</div></div>';
-  }
-  if(rest.length){
-    h+='<div class="sr-group"><div class="sr-group-title">'+(weak.length?'其余记录':'全部记录')+
-      ' <span>'+rest.length+'</span></div><div class="log-list" style="padding:0 0 20px">'+
-      rest.map(itemHTML).join('')+'</div></div>';
-  }
+  h+='<div class="sr-group"><div class="sr-group-title">最近记录 <span>'+Math.min(log.length,60)+'</span></div><div class="log-list" style="padding:0 0 20px">'+
+    log.slice(0,60).map(itemHTML).join('')+'</div></div>';
   box.innerHTML=h;
 }
 function openAiPractice(term,scene){
