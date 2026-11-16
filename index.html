@@ -1252,6 +1252,20 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .ai-favorite-item .fav-more,.ai-favorite-item .fav-extra{display:none}
 .ai-favorite-item.expanded .fav-more,.ai-favorite-item.expanded .fav-extra{display:block}
 .ai-favorite-item .fav-toggle{margin-top:10px}
+
+/* 收藏列表：一行一项，点进详情 */
+.fav-row{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:var(--s2);border:1px solid var(--s4);border-radius:12px;padding:12px 14px;margin:0 0 8px;color:inherit;font:inherit}
+.fav-row:active{background:var(--s3)}
+.fav-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.fav-row-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav-row-meta{font-size:12px;color:var(--text2)}
+.fav-row-arrow{color:var(--text2);font-size:18px;line-height:1}
+.fav-detail-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fav-detail-head b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 复盘：标准答案 + 为什么 + 易错点 */
+.ai-why,.ai-pitfall{margin-top:8px;font-size:13.5px;line-height:1.7;color:var(--text)}
+.ai-why-label{display:inline-block;font-weight:600;color:var(--text2);margin-right:6px}
+.ai-pitfall-item{display:block;color:var(--text2);font-size:13px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -5714,12 +5728,11 @@ async function aiCreateValidatedDialogue(){
   throw last||new Error('对话内容为空，请重试');
 }
 async function aiJudge(attempt){
+  /* 不打分、不评价学习者句子：只给标准答案、为什么这样说、容易错在哪 */
   const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
-  const multi=aiState.terms&&aiState.terms.length>1;
   const target=aiTargetTerm(aiState.currentTargetWord||aiState.term);
-  const stdTxt=multi?'标准地道的英文句子（必须自然使用目标词「'+target+'」）':'标准地道的英文句子（必须使用该单词）';
-  return aiCall([{role:'system',content:'你是严格的英语口语陪练。'+toneSystem()+'直接输出一个 JSON 对象本身：不要 markdown、不要 ```json 代码块、不要任何解释或前后缀文字。'},
-    {role:'user',content:'目标词「'+target+'」。对话语境：\n'+ctx+'\n学习者口译的句子："'+attempt+'"（中文提示：'+aiState.attemptPromptCn+'）。判断语法是否正确、表达是否地道，并确认是否自然使用了目标词。严格输出 JSON：{"score":0-100,"verdict":"很地道/基本正确/需要改进/不太对","comment":"中文点评，指出具体问题并解释","standard":"'+stdTxt+'"}'}]);
+  return aiCall([{role:'system',content:'你是英语口语教练。只输出一个 JSON 对象，不要 markdown、不要解释。'},
+    {role:'user',content:'目标词「'+target+'」。对话：\n'+ctx+'\n学习者说的是："'+attempt+'"（提示：'+(aiState.attemptPromptCn||'')+'）。不要评价学习者这句话的好坏，也不要打分；只给三样：一句最自然的标准答案；为什么这样说更自然（一句话，20 字内）；最容易错的地方 1—2 条（每条 15 字内）。严格输出 JSON：{"standard":"…","fit":"…","pitfalls":["…","…"]}'}],{maxTokens:400,timeout:20000});
 }
 function aiShowLoading(t){ $('#aiBody').classList.add('hidden'); $('#aiLoading').classList.remove('hidden'); $('#aiLoadStatus').textContent=t; }
 function aiShowBody(){ $('#aiLoading').classList.add('hidden'); $('#aiBody').classList.remove('hidden'); }
@@ -5742,7 +5755,7 @@ function aiSetChatbar(phase){
 }
 function aiRenderScenes(){
   const prev=(state.aiLog||[]).filter(x=>String(x.term).toLowerCase()===String(aiState.term).toLowerCase());
-  const best=prev.length?Math.max.apply(null,prev.map(x=>x.score||0)):null;
+  const scored=prev.filter(x=>Number(x.score)>0);const best=scored.length?Math.max.apply(null,scored.map(x=>Number(x.score)||0)):null;
   const tip=aiState.scenePlanFallback?'AI 场景暂时不可用，下面是快速分组。点击“换一批情景”会重新请求 AI'
     :(aiState.terms&&aiState.terms.length>1)?('一次对话练 '+aiState.terms.length+' 个词，选一个情景开始')
     :(prev.length?('这个词练过 '+prev.length+' 次'+(best!=null?'，最高 '+best+' 分':'')+'，选一个情景继续'):'选择一个情景，开始今天的开口练习');
@@ -5766,13 +5779,13 @@ function aiRenderDialogue(){
   $('#aiScene').scrollTop=$('#aiScene').scrollHeight;
 }
 function aiRenderReview(d,attempt){
-  const score=Math.max(0,Math.min(100,parseInt(d.score,10)||0));
+  const pitfalls=Array.isArray(d.pitfalls)?d.pitfalls.filter(Boolean).slice(0,2):[];
   $('#aiScene').innerHTML=
     '<div class="ai-line ai-user"><div class="ai-text"><div class="ai-en">'+esc(attempt)+speakBtn(attempt,'en-US')+'</div></div></div>'+
     '<div class="ai-fb">'+
-      '<div class="ai-fb-top"><span class="ai-score big">'+score+' 分</span>'+(d.verdict?'<span class="ai-verdict">'+esc(String(d.verdict))+'</span>':'')+'</div>'+
-      (d.comment?'<div class="ai-comment">'+esc(String(d.comment))+'</div>':'')+
       (d.standard?'<div class="ai-corrected"><span class="ai-corr-label">标准答案 · 点喇叭跟读</span><span class="ai-corr-en">'+esc(String(d.standard))+speakBtn(String(d.standard),'en-US')+'</span></div>':'')+
+      (d.fit?'<div class="ai-why"><span class="ai-why-label">为什么这样说</span>'+esc(String(d.fit))+'</div>':'')+
+      (pitfalls.length?'<div class="ai-pitfall"><span class="ai-why-label">容易错在</span>'+pitfalls.map(x=>'<span class="ai-pitfall-item">'+esc(String(x))+'</span>').join('')+'</div>':'')+
       '<div class="ai-fb-actions"><button class="mini-btn" id="aiGotoScenes">换个场景</button></div>'+
     '</div>';
   $('#aiScene').scrollTop=$('#aiScene').scrollHeight;
@@ -5882,19 +5895,17 @@ async function submitAttempt(){
   }).finally(()=>{ aiState.busy=false; });
 }
 function saveSpeakLog(d,attempt){
-  const score=Math.max(0,Math.min(100,parseInt(d.score,10)||0));
   const sc=aiState.scene||{};
   state.aiLog.unshift({
     id:uid(),term:aiTargetTerm(aiState.currentTargetWord||aiState.term),scene:sc.title||'',sceneDesc:sc.desc||'',
     promptCn:aiState.attemptPromptCn||'',attempt:String(attempt||''),
-    score,verdict:String(d.verdict||''),comment:String(d.comment||''),
-    standard:String(d.standard||''),createdAt:Date.now()
+    standard:String(d.standard||''),fit:String(d.fit||''),
+    pitfalls:Array.isArray(d.pitfalls)?d.pitfalls.filter(Boolean).slice(0,2):[],
+    createdAt:Date.now()
   });
   if(state.aiLog.length>300) state.aiLog.length=300;
   save();
-  if(!aiState.multiTurn&&typeof aiDialogueHistoryTurn==='function') aiDialogueHistoryTurn({wordId:aiState.currentTargetWord||aiState.term,result:'reviewed',attempt:String(attempt||''),promptCn:aiState.attemptPromptCn||'',score});
-  const chip=$('#aiScoreChip');
-  if(chip){ chip.textContent=score+' 分'; chip.classList.remove('hidden'); }
+  if(!aiState.multiTurn&&typeof aiDialogueHistoryTurn==='function') aiDialogueHistoryTurn({wordId:aiState.currentTargetWord||aiState.term,result:'reviewed',attempt:String(attempt||''),promptCn:aiState.attemptPromptCn||''});
   renderSidebar();
 }
 function scoreClass(s){ return s>=80?'good':(s>=60?'mid':'bad'); }
@@ -5906,35 +5917,28 @@ function renderSpeakLog(){
   if(!log.length){
     box.innerHTML='<div class="empty-state">'+
       '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L4 21l1.2-3.7A8.4 8.4 0 1 1 21 11.5z"/></svg>'+
-      '<div><b>还没有练习记录</b><br>在单词卡片里点「AI 对话」，选一个情景开口翻译，成绩会自动存在这里。</div></div>';
+      '<div><b>还没有练习记录</b><br>在单词卡片里点「AI 对话」，选一个情景开口翻译，记录会自动存在这里。</div></div>';
     return;
   }
-  const avg=Math.round(log.reduce((s,x)=>s+(x.score||0),0)/log.length);
-  const weak=log.filter(x=>x.score<80).slice(0,12);
-  const weakIds=new Set(weak.map(x=>x.id));
-  const rest=log.filter(x=>!weakIds.has(x.id)).slice(0,60);
+  const today=fmtDate(Date.now());
+  const todayCount=log.filter(x=>fmtDate(x.createdAt)===today).length;
+  const terms=new Set(log.map(x=>x.term)).size;
   const itemHTML=x=>'<div class="log-item" data-log="'+x.id+'">'+
     '<div class="log-top"><span class="log-term">'+esc(x.term)+'</span>'+
-      '<span class="log-scene">'+esc(x.scene||'情景练习')+'</span>'+
-      '<span class="log-score '+scoreClass(x.score)+'">'+x.score+'</span></div>'+
+      '<span class="log-scene">'+esc(x.scene||'情景练习')+'</span></div>'+
     (x.attempt?'<div class="log-line">你：<b>'+esc(x.attempt)+'</b></div>':'')+
     (x.standard?'<div class="log-line">标准：'+esc(x.standard)+'</div>':'')+
+    (x.fit?'<div class="log-line">为什么：'+esc(x.fit)+'</div>':'')+
+    ((x.pitfalls&&x.pitfalls.length)?'<div class="log-line">易错：'+esc(x.pitfalls.join('；'))+'</div>':'')+
     '<div class="log-meta">'+fmtDate(x.createdAt)+' · 点一下再练一次</div>'+
   '</div>';
   let h='<div class="rv-stats" style="padding:14px 14px 6px">'+
     '<div class="rv-stat"><div class="n">'+log.length+'</div><div class="l">练习次数</div></div>'+
-    '<div class="rv-stat '+(avg>=80?'ok':'hot')+'"><div class="n">'+avg+'</div><div class="l">平均分</div></div>'+
-    '<div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待加强</div></div>'+
+    '<div class="rv-stat"><div class="n">'+todayCount+'</div><div class="l">今天</div></div>'+
+    '<div class="rv-stat"><div class="n">'+terms+'</div><div class="l">涉及词条</div></div>'+
   '</div>';
-  if(weak.length){
-    h+='<div class="sr-group"><div class="sr-group-title">错题重练 <span>低于 80 分</span></div><div class="log-list" style="padding:0 0 6px">'+
-      weak.map(itemHTML).join('')+'</div></div>';
-  }
-  if(rest.length){
-    h+='<div class="sr-group"><div class="sr-group-title">'+(weak.length?'其余记录':'全部记录')+
-      ' <span>'+rest.length+'</span></div><div class="log-list" style="padding:0 0 20px">'+
-      rest.map(itemHTML).join('')+'</div></div>';
-  }
+  h+='<div class="sr-group"><div class="sr-group-title">最近记录 <span>'+Math.min(log.length,60)+'</span></div><div class="log-list" style="padding:0 0 20px">'+
+    log.slice(0,60).map(itemHTML).join('')+'</div></div>';
   box.innerHTML=h;
 }
 function openAiPractice(term,scene){
@@ -8278,31 +8282,27 @@ function aiFavoriteCurrent(){
   const id=aiState.dialogueSessionId;if(!id){toast('当前还没有可收藏的对话','warn');return;}const v=aiDialogueHistoryRead(),s=v.sessions.find(x=>x.id===id);if(!s)return;
   const copy=JSON.parse(JSON.stringify(Object.assign({},s,{favoriteAt:Date.now()})));v.favorites=[copy].concat(v.favorites.filter(x=>x.id!==id));aiDialogueHistoryWrite(v);aiState.dialogueFavorited=true;const b=$('#aiFavorite');if(b){b.textContent='已收藏';b.disabled=true;}toast('已收藏这段对话');
 }
-function aiOpenFavorites(){
+function aiFavListView(){
   const v=aiDialogueHistoryRead(),box=$('#aiFavoritesBody');if(!box)return;
-  if(!v.favorites.length){
-    box.innerHTML='<div class="empty-state">还没有收藏的对话。进入 AI 对话后，点“收藏对话”即可保存。</div>';
-  }else{
-    box.innerHTML=v.favorites.map((s,i)=>{
-      const scs=(s.scenes||[]).filter(Boolean);
-      const lineTotal=scs.reduce((n,sc)=>n+((sc.lines||[]).length),0);
-      const body=scs.map((sc,si)=>{
-        const rows=(sc.lines||[]).map((l,li)=>{
-          const extra=(si>0||li>3)?' fav-more':'';
-          return l.who==='YOU'
-            ?'<div class="ai-favorite-line you'+extra+'">你说：'+esc(l.promptCn||'')+(l.attempt?' → '+esc(l.attempt):'')+'</div>'
-            :'<div class="ai-favorite-line'+extra+'">'+esc(l.en||'')+(l.cn?' · '+esc(l.cn):'')+'</div>';
-        }).join('');
-        return '<div class="ai-favorite-scene'+(si>0?' fav-extra':'')+'"><div class="ai-favorite-scene-title">'+esc(sc.title||'情景练习')+'</div>'+rows+'</div>';
-      }).join('');
-      return '<div class="ai-favorite-item" data-fav-item="'+i+'"><div class="ai-favorite-title">'+esc((s.terms||[]).join(' · ')||'情景对话')+'</div><div class="ai-favorite-meta">'+esc(aDate(s.favoriteAt||s.createdAt))+' · '+esc(s.status==='completed'?'已完成':'练习中')+' · '+scs.length+' 个场景 '+lineTotal+' 行</div>'+body+'<button class="btn fav-toggle" data-fav="'+i+'">展开全文</button></div>';
-    }).join('');
-    $$('#aiFavoritesBody .fav-toggle').forEach(b=>b.onclick=()=>{
-      const item=b.closest('.ai-favorite-item');if(!item)return;
-      item.classList.toggle('expanded');
-      b.textContent=item.classList.contains('expanded')?'收起':'展开全文';
-    });
-  }
+  if(!v.favorites.length){box.innerHTML='<div class="empty-state">还没有收藏的对话。进入 AI 对话后，点“收藏对话”即可保存。</div>';return;}
+  box.innerHTML=v.favorites.map((s,i)=>{
+    const scs=(s.scenes||[]).filter(Boolean);
+    const lines=scs.reduce((n,sc)=>n+((sc.lines||[]).length),0);
+    return '<button class="fav-row" data-fav="'+i+'"><span class="fav-row-main"><span class="fav-row-title">'+esc((s.terms||[]).join(' · ')||'情景对话')+'</span><span class="fav-row-meta">'+esc(aDate(s.favoriteAt||s.createdAt))+' · '+esc(s.status==='completed'?'已完成':'练习中')+' · '+scs.length+' 个场景 '+lines+' 行</span></span><span class="fav-row-arrow">›</span></button>';
+  }).join('');
+  $$('#aiFavoritesBody [data-fav]').forEach(b=>b.onclick=()=>aiFavDetailView(Number(b.dataset.fav)));
+}
+function aiFavDetailView(idx){
+  const v=aiDialogueHistoryRead(),s=v.favorites[idx],box=$('#aiFavoritesBody');if(!s||!box)return;
+  const scs=(s.scenes||[]).filter(Boolean);
+  box.innerHTML='<div class="fav-detail-head"><button class="btn" id="favBack">‹ 返回</button><b>'+esc((s.terms||[]).join(' · ')||'情景对话')+'</b></div>'+
+    '<div class="ai-favorite-meta">'+esc(aDate(s.favoriteAt||s.createdAt))+' · '+esc(s.status==='completed'?'已完成':'练习中')+'</div>'+
+    scs.map(sc=>'<div class="ai-favorite-scene"><div class="ai-favorite-scene-title">'+esc(sc.title||'情景练习')+'</div>'+
+      ((sc.lines||[]).map(l=>l.who==='YOU'?'<div class="ai-favorite-line you">你说：'+esc(l.promptCn||'')+(l.attempt?' → '+esc(l.attempt):'')+'</div>':'<div class="ai-favorite-line">'+esc(l.en||'')+(l.cn?' · '+esc(l.cn):'')+'</div>').join(''))+'</div>').join('');
+  const back=$('#favBack'); if(back) back.onclick=aiFavListView;
+}
+function aiOpenFavorites(){
+  aiFavListView();
   $('#aiFavoritesModal').classList.add('show');
 }
 function dialoguePrefs(){const p=aRead(DIALOGUE_PREF_KEY,{});const n=Number(p&&p.threshold);return {threshold:Number.isFinite(n)?Math.max(3,Math.min(10,Math.round(n))):3};}
