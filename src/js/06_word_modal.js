@@ -1099,8 +1099,9 @@ function aiRefreshScenes(){
   });
 }
 let aiPrefetch={};
+let aiPrefetchTimer=null;
 function aiSceneKey(sc){ return String((sc&&sc.title)||'')+'|'+((sc&&sc.wordIds)||[]).join(','); }
-function aiResetPrefetch(){ aiPrefetch={}; }
+function aiResetPrefetch(){ aiPrefetch={}; if(aiPrefetchTimer){clearTimeout(aiPrefetchTimer);aiPrefetchTimer=null;} }
 function aiApplyDialogue(lines){
   aiState.lines=lines;
   if(typeof aiDialogueHistoryScene==='function') aiDialogueHistoryScene(aiState.scene,lines,aiState.termIds||[]);
@@ -1109,6 +1110,13 @@ function aiApplyDialogue(lines){
   aiState.currentTargetWord=aiState.multiTurn?((lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
   aiState.phase='practice';
   aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
+}
+function aiSchedulePrefetch(delay){
+  if(aiPrefetchTimer){ clearTimeout(aiPrefetchTimer); aiPrefetchTimer=null; }
+  aiPrefetchTimer=setTimeout(()=>{
+    aiPrefetchTimer=null;
+    if(aiState.phase==='practice'&&!aiState.busy) aiPrefetchNextScene();
+  },delay||6000);
 }
 function aiPrefetchNextScene(){
   if(!aiState.multiTurn||!Array.isArray(aiState.scenes)) return;
@@ -1145,7 +1153,7 @@ function startScene(sc){
   const key=aiSceneKey(sc);
   if(aiState.multiTurn&&Array.isArray(aiPrefetch[key])&&aiPrefetch[key].length){
     aiApplyDialogue(aiPrefetch[key]);
-    aiPrefetchNextScene();
+    aiSchedulePrefetch(6000);
     return;
   }
   aiShowLoading('正在生成对话…');
@@ -1163,7 +1171,7 @@ function startScene(sc){
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     if(fallbackShown&&(aiState.attempt||aiState.turnIndex>0)) return;
     aiApplyDialogue(lines);
-    aiPrefetchNextScene();
+    aiSchedulePrefetch(6000);
   }).catch(err=>{
     clearTimeout(slowTimer);
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
@@ -1177,6 +1185,7 @@ function startScene(sc){
 }
 async function submitAttempt(){
   if(aiState.phase!=='practice'||aiState.busy) return;
+  if(aiPrefetchTimer){clearTimeout(aiPrefetchTimer);aiPrefetchTimer=null;}
   const input=$('#aiInput');
   const text=input.value.trim();
   if(!text){ toast('先把你的翻译说出来或写下来','warn'); return; }
@@ -1197,6 +1206,7 @@ async function submitAttempt(){
     aiSetChatbar('review');
     aiRenderReview(d,text);
     saveSpeakLog(d,text);
+    aiSchedulePrefetch(4000);
   }).catch(err=>{
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     aiShowBody();
