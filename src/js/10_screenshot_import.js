@@ -405,8 +405,29 @@ function aiFavoriteCurrent(){
 }
 function aiOpenFavorites(){
   const v=aiDialogueHistoryRead(),box=$('#aiFavoritesBody');if(!box)return;
-  if(!v.favorites.length){box.innerHTML='<div class="empty-state">还没有收藏的对话。进入 AI 对话后，点“收藏对话”即可保存。</div>';}
-  else box.innerHTML=v.favorites.map(s=>'<div class="ai-favorite-item"><div class="ai-favorite-title">'+esc((s.terms||[]).join(' · ')||'情景对话')+'</div><div class="ai-favorite-meta">'+esc(aDate(s.favoriteAt||s.createdAt))+' · '+esc(s.status==='completed'?'已完成':'练习中')+'</div>'+((s.scenes||[]).filter(Boolean).map(sc=>'<div class="ai-favorite-scene"><div class="ai-favorite-scene-title">'+esc(sc.title||'情景练习')+'</div>'+((sc.lines||[]).map(l=>l.who==='YOU'?'<div class="ai-favorite-line you">你说：'+esc(l.promptCn||'')+(l.attempt?' → '+esc(l.attempt):'')+'</div>':'<div class="ai-favorite-line">'+esc(l.en||'')+(l.cn?' · '+esc(l.cn):'')+'</div>').join(''))+'</div>').join(''))+'</div>').join('');
+  if(!v.favorites.length){
+    box.innerHTML='<div class="empty-state">还没有收藏的对话。进入 AI 对话后，点“收藏对话”即可保存。</div>';
+  }else{
+    box.innerHTML=v.favorites.map((s,i)=>{
+      const scs=(s.scenes||[]).filter(Boolean);
+      const lineTotal=scs.reduce((n,sc)=>n+((sc.lines||[]).length),0);
+      const body=scs.map((sc,si)=>{
+        const rows=(sc.lines||[]).map((l,li)=>{
+          const extra=(si>0||li>3)?' fav-more':'';
+          return l.who==='YOU'
+            ?'<div class="ai-favorite-line you'+extra+'">你说：'+esc(l.promptCn||'')+(l.attempt?' → '+esc(l.attempt):'')+'</div>'
+            :'<div class="ai-favorite-line'+extra+'">'+esc(l.en||'')+(l.cn?' · '+esc(l.cn):'')+'</div>';
+        }).join('');
+        return '<div class="ai-favorite-scene'+(si>0?' fav-extra':'')+'"><div class="ai-favorite-scene-title">'+esc(sc.title||'情景练习')+'</div>'+rows+'</div>';
+      }).join('');
+      return '<div class="ai-favorite-item" data-fav-item="'+i+'"><div class="ai-favorite-title">'+esc((s.terms||[]).join(' · ')||'情景对话')+'</div><div class="ai-favorite-meta">'+esc(aDate(s.favoriteAt||s.createdAt))+' · '+esc(s.status==='completed'?'已完成':'练习中')+' · '+scs.length+' 个场景 '+lineTotal+' 行</div>'+body+'<button class="btn fav-toggle" data-fav="'+i+'">展开全文</button></div>';
+    }).join('');
+    $$('#aiFavoritesBody .fav-toggle').forEach(b=>b.onclick=()=>{
+      const item=b.closest('.ai-favorite-item');if(!item)return;
+      item.classList.toggle('expanded');
+      b.textContent=item.classList.contains('expanded')?'收起':'展开全文';
+    });
+  }
   $('#aiFavoritesModal').classList.add('show');
 }
 function dialoguePrefs(){const p=aRead(DIALOGUE_PREF_KEY,{});const n=Number(p&&p.threshold);return {threshold:Number.isFinite(n)?Math.max(3,Math.min(10,Math.round(n))):3};}

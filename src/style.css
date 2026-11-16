@@ -1238,3 +1238,7 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 @media(max-width:480px){.a-tools{gap:6px}.a-tools .btn{padding:8px 10px;font-size:13px}.a-callout{padding:14px}}
 
 @media(min-width:768px){body.mode-today #noteListPane{width:auto;flex:1;border-right:none}body.mode-today #noteList{padding:16px 24px;max-width:1000px;width:100%;margin:0 auto}}
+/* 收藏对话折叠：默认只看第一个场景的前 4 行 */
+.ai-favorite-item .fav-more,.ai-favorite-item .fav-extra{display:none}
+.ai-favorite-item.expanded .fav-more,.ai-favorite-item.expanded .fav-extra{display:block}
+.ai-favorite-item .fav-toggle{margin-top:10px}

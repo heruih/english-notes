@@ -1015,7 +1015,8 @@ function aiSyncContext(phase){
   const term=aiTargetTerm(String(aiState&&aiState.multiTurn&&aiState.currentTargetWord?aiState.currentTargetWord:aiState&&aiState.term||'').trim());
   if(!term){ strip.classList.add('hidden'); return; }
   if(word)word.textContent=term;
-  if(hint)hint.textContent=phase==='practice'?(aiState.multiTurn?'第 '+(aiState.turnIndex+1)+' / '+((aiState.lines||[]).filter(l=>l.who==='YOU').length||aiState.terms.length)+' 句 · 把这个词用进句子':'把目标词用进你的句子'):(phase==='review'?'看反馈，再试一次':'选一个场景开始 · 1—2 个来回');
+  const sceneTxt=(aiState.multiTurn&&Array.isArray(aiState.scenes)&&aiState.scenes.length>1)?('场景 '+((aiState.sceneIndex>=0?aiState.sceneIndex:0)+1)+'/'+aiState.scenes.length+' · '):'';
+  if(hint)hint.textContent=phase==='practice'?(aiState.multiTurn?sceneTxt+'第 '+(aiState.turnIndex+1)+' / '+((aiState.lines||[]).filter(l=>l.who==='YOU').length||aiState.terms.length)+' 句 · 把这个词用进句子':'把目标词用进你的句子'):(phase==='review'?(sceneTxt+'看反馈，再试一次'):'选一个场景开始 · 1—2 个来回');
   strip.classList.remove('hidden');
 }
 function aiSetChatbar(phase){
@@ -1334,5 +1335,16 @@ function openAiDialogue(ev){
     const r=$('#aiRetry'); if(r) r.addEventListener('click',openAiDialogue);
   });
 }
-function closeAiModal(){ if(aiState.dialogueSessionId&&typeof aiDialogueHistoryFinish==='function')aiDialogueHistoryFinish(aiState.phase==='review'?'completed':'interrupted'); stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+function aiFinishAction(){
+  /* 批量对话：有下一个场景就自动进入，全部练完才关闭并回到分组列表 */
+  if(aiState&&aiState.multiTurn){
+    if(typeof batchAdvanceDialogueScene==='function'&&batchAdvanceDialogueScene()) return;
+    if(typeof batchMarkActiveGroup==='function') batchMarkActiveGroup();
+    if(typeof batchMarkActiveSegment==='function') batchMarkActiveSegment();
+    closeAiModal();
+    if(typeof batchOpen==='function') setTimeout(batchOpen,120);
+    return;
+  }
+  closeAiModal();
+}function closeAiModal(){ if(aiState.dialogueSessionId&&typeof aiDialogueHistoryFinish==='function')aiDialogueHistoryFinish(aiState.phase==='review'?'completed':'interrupted'); stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 

@@ -1196,7 +1196,7 @@ function bindEvents(){
   $('#wmMaster').addEventListener('click',()=>{ wmState.mastered=!wmState.mastered; renderWmMaster(); scheduleWmDraft(200); });
   $('#wmAi').addEventListener('click',openAiDialogue);
   $('#aiClose').addEventListener('click',closeAiModal);
-  $('#aiClose2').addEventListener('click',closeAiModal);
+  $('#aiClose2').addEventListener('click',aiFinishAction);
   $('#aiFavorite').addEventListener('click',aiFavoriteCurrent);
   $('#aiFavoritesClose').addEventListener('click',()=>$('#aiFavoritesModal').classList.remove('show'));
   $('#aiFavoritesModal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('show');});
