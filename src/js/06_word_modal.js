@@ -931,14 +931,24 @@ function aiMaskClause(text,terms){
   }).join('').trim();
   return masked.replace(/[\s_.]/g,'').length>=4?masked:'';
 }
-function aiNormalizeDialogue(rawLines){
+function aiCtxFromState(){
+  return {scene:aiState.scene||{},ids:(aiState.termIds||[]).slice(),multi:!!(aiState.terms&&aiState.terms.length>1)};
+}
+function aiCtxForScene(sc){
+  const source=aiState.allTermIds||aiState.termIds||[];
+  const ids=(Array.isArray(sc&&sc.wordIds)?sc.wordIds:[]).filter(id=>source.includes(id)).slice(0,2);
+  return {scene:sc||{},ids,multi:ids.length>1};
+}
+function aiWordTerm(id){ const w=(state.words||[]).find(x=>x.id===id); return w?w.term:aiTargetTerm(id); }
+function aiWordDef(id){ const w=(state.words||[]).find(x=>x.id===id); return w?String(w.definition||'').split('\n')[0]:''; }
+function aiPromptOf(ctx,id){
+  return '用「'+aiWordTerm(id)+'」说一句符合「'+((ctx.scene&&ctx.scene.title)||'这个场景')+'」的话。';
+}
+function aiNormalizeDialogue(rawLines,ctx){
   /* 不再因为格式判死刑：截断、补齐、挖空、归一化 who，保证有几个词就能练几个 */
-  const scene=aiState.scene||{};
-  const multi=!!(aiState.terms&&aiState.terms.length>1);
-  const ids=(aiState.termIds||[]).slice();
-  const termOf=id=>aiTargetTerm(id);
-  const allTerms=ids.map(termOf).filter(Boolean);
-  const promptOf=id=>'用「'+termOf(id)+'」说一句符合「'+(scene.title||'这个场景')+'」的话。';
+  ctx=ctx||aiCtxFromState();
+  const scene=ctx.scene||{},multi=!!ctx.multi,ids=(ctx.ids||[]).slice();
+  const allTerms=ids.map(aiWordTerm).filter(Boolean);
   const list=(Array.isArray(rawLines)?rawLines:[]).map(x=>{
     if(!x) return null;
     const who=String(x.who||'').trim();
@@ -946,8 +956,8 @@ function aiNormalizeDialogue(rawLines){
   }).filter(x=>x&&(x.who==='YOU'?!!x.promptCn:!!(x.en||x.cn)));
   if(!list.length) return {lines:[],reason:'返回内容为空，请重试'};
   if(!multi){
-    list.forEach(l=>{ if(l.who==='YOU'&&!/[\u3400-\u9fff]/.test(l.promptCn)) l.promptCn=promptOf(ids[0]); });
-    if(!list.some(l=>l.who==='YOU')) list.push({who:'YOU',wordId:ids[0]||'',en:'',cn:'',promptCn:promptOf(ids[0])});
+    list.forEach(l=>{ if(l.who==='YOU'&&!/[\u3400-\u9fff]/.test(l.promptCn)) l.promptCn=aiPromptOf(ctx,ids[0]); });
+    if(!list.some(l=>l.who==='YOU')) list.push({who:'YOU',wordId:ids[0]||'',en:'',cn:'',promptCn:aiPromptOf(ctx,ids[0])});
     return {lines:list.slice(0,6),reason:''};
   }
   const used={},keep=[];
@@ -957,7 +967,7 @@ function aiNormalizeDialogue(rawLines){
       if(!ids.includes(id)) id=ids.find(x=>!used[x])||'';
       if(!id||used[id]) return;
       used[id]=1; line.wordId=id;
-      if(!/[\u3400-\u9fff]/.test(line.promptCn)) line.promptCn=promptOf(id);
+      if(!/[\u3400-\u9fff]/.test(line.promptCn)) line.promptCn=aiPromptOf(ctx,id);
       keep.push(line); return;
     }
     const en=aiMaskClause(line.en,allTerms);
@@ -967,35 +977,35 @@ function aiNormalizeDialogue(rawLines){
     if(keep.filter(x=>x.who!=='YOU').length>=ids.length+2) return;
     keep.push(line);
   });
-  ids.forEach(id=>{ if(!used[id]) keep.push({who:'YOU',wordId:id,en:'',cn:'',promptCn:promptOf(id)}); });
+  ids.forEach(id=>{ if(!used[id]) keep.push({who:'YOU',wordId:id,en:'',cn:'',promptCn:aiPromptOf(ctx,id)}); });
   if(!keep.some(l=>l.who==='YOU')) return {lines:[],reason:'对话缺少练习句，请重试'};
   return {lines:keep,reason:''};
 }
-async function aiBuildDialogue(strictRetry){
+async function aiBuildDialogueFor(ctx,strictRetry){
   /* 定档：4–5 行、英文 ≤18 词、中文只给方向和关键词；字数只是提示，超了本地截断，不判失败 */
-  const multi=aiState.terms&&aiState.terms.length>1;
-  const termList=multi?aiDialogueTermsPayload():[{wordId:(aiState.termIds||[])[0]||'',term:aiState.term||'',definition:aiState.definition||''}];
+  const multi=!!ctx.multi;
+  const termList=ctx.ids.map(id=>({wordId:id,term:aiWordTerm(id),definition:aiWordDef(id)}));
   const shape=multi
     ?'只写 5 行，顺序固定：A、YOU、A、YOU、A。每个 YOU 对应一个目标词，带 wordId 和 promptCn。'
     :'只写 4 行，顺序固定：A、YOU、A、A。只有 1 个 YOU 回合。';
   const brief='A/B 的 en 每行最多 18 个词，要像真实对话里的自然句子。A/B 的 cn 不写整句翻译，只写「这句话在做什么 + 一个关键词英文」，12 字以内，例：他说该结账了，问你那份怎么付（settle the bill）。YOU 的 promptCn 只写方向，14 字以内，例：把信用卡递给他，顺便问返现。不要寒暄套话，不要解释，不要多余行。A/B 的 en 里禁止出现任何目标词。';
   const messages=[
     {role:'system',content:'你是英语口语教练。只输出一个 JSON 对象 {"lines":[...]}，不要 markdown、不要解释。'},
-    {role:'user',content:'场景「'+(aiState.scene.title||'')+'」：'+(aiState.scene.desc||'')+'。目标词：'+JSON.stringify(termList)+'。'+shape+brief+(strictRetry?'上一版行数不对，请严格按顺序和行数重写。':'')+' JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"…","promptCn":"…"}]}'}
+    {role:'user',content:'场景「'+((ctx.scene&&ctx.scene.title)||'')+'」：'+((ctx.scene&&ctx.scene.desc)||'')+'。目标词：'+JSON.stringify(termList)+'。'+shape+brief+(strictRetry?'上一版行数不对，请严格按顺序和行数重写。':'')+' JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"…","promptCn":"…"}]}'}
   ];
-  const opt=aiState.multiTurn?{maxTokens:2000,timeout:25000}:{maxTokens:1200,timeout:20000};
+  const opt=multi?{maxTokens:2000,timeout:25000}:{maxTokens:1200,timeout:20000};
   try{ return await aiCall(messages,opt); }
   catch(err){
-    if(!aiState.multiTurn||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
+    if(!multi||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
     return aiCall(messages.concat({role:'user',content:'只返回可解析 JSON，行数按上面要求。'}),opt);
   }
 }
-async function aiCreateValidatedDialogue(){
+async function aiCreateDialogueFor(ctx){
   let last=null;
   for(let attempt=0;attempt<2;attempt++){
     try{
-      const result=await aiBuildDialogue(attempt>0);
-      const norm=aiNormalizeDialogue(result&&result.lines);
+      const result=await aiBuildDialogueFor(ctx,attempt>0);
+      const norm=aiNormalizeDialogue(result&&result.lines,ctx);
       if(norm.lines.length) return norm.lines;
       last=new Error(norm.reason||'对话内容为空，请重试');
     }catch(err){
@@ -1005,12 +1015,8 @@ async function aiCreateValidatedDialogue(){
   }
   throw last||new Error('对话内容为空，请重试');
 }
-async function aiJudge(attempt){
-  /* 不打分、不评价学习者句子：只给标准答案、为什么这样说、容易错在哪 */
-  const ctx=aiState.lines.filter(l=>l.who!=='YOU').map(l=>l.who+': '+(l.en||'')).join('\n');
-  const target=aiTargetTerm(aiState.currentTargetWord||aiState.term);
-  return aiCall([{role:'system',content:'你是英语口语教练。只输出一个 JSON 对象，不要 markdown、不要解释。'},
-    {role:'user',content:'目标词「'+target+'」。对话：\n'+ctx+'\n学习者说的是："'+attempt+'"（提示：'+(aiState.attemptPromptCn||'')+'）。不要评价学习者这句话的好坏，也不要打分；只给三样：一句最自然的标准答案；为什么这样说更自然（一句话，20 字内）；最容易错的地方 1—2 条（每条 15 字内）。严格输出 JSON：{"standard":"…","fit":"…","pitfalls":["…","…"]}'}],{maxTokens:400,timeout:20000});
+async function aiCreateValidatedDialogue(){
+  return aiCreateDialogueFor(aiCtxFromState());
 }
 function aiShowLoading(t){ $('#aiBody').classList.add('hidden'); $('#aiLoading').classList.remove('hidden'); $('#aiLoadStatus').textContent=t; }
 function aiShowBody(){ $('#aiLoading').classList.add('hidden'); $('#aiBody').classList.remove('hidden'); }
@@ -1078,6 +1084,7 @@ function aiGotoScenes(){
 }
 function aiRefreshScenes(){
   const mySeq=++aiState.seq;
+  aiResetPrefetch();
   aiState.phase='scenes'; aiState.scene=null; aiState.scenePlanFallback=false;
   aiShowLoading('正在重新规划场景…');
   aiSuggestScenes(true).then(r=>{
@@ -1091,6 +1098,33 @@ function aiRefreshScenes(){
     toast(/abort|超时/i.test(String(err&&err.message||''))?'AI 场景请求超时，已显示快速分组':'AI 场景请求失败，已显示快速分组','warn');
   });
 }
+let aiPrefetch={};
+function aiSceneKey(sc){ return String((sc&&sc.title)||'')+'|'+((sc&&sc.wordIds)||[]).join(','); }
+function aiResetPrefetch(){ aiPrefetch={}; }
+function aiApplyDialogue(lines){
+  aiState.lines=lines;
+  if(typeof aiDialogueHistoryScene==='function') aiDialogueHistoryScene(aiState.scene,lines,aiState.termIds||[]);
+  const favorite=$('#aiFavorite');if(favorite&&!aiState.dialogueFavorited)favorite.disabled=false;
+  aiState.turnIndex=0;aiState.turnResults=[];
+  aiState.currentTargetWord=aiState.multiTurn?((lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
+  aiState.phase='practice';
+  aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
+}
+function aiPrefetchNextScene(){
+  if(!aiState.multiTurn||!Array.isArray(aiState.scenes)) return;
+  const nextIdx=(Number(aiState.sceneIndex)||0)+1;
+  if(nextIdx>=aiState.scenes.length) return;
+  const sc=aiState.scenes[nextIdx];
+  if(!sc) return;
+  const key=aiSceneKey(sc);
+  if(aiPrefetch[key]) return;
+  const ctx=aiCtxForScene(sc);
+  if(!ctx.ids.length) return;
+  aiPrefetch[key]='pending';
+  aiCreateDialogueFor(ctx).then(lines=>{
+    if(lines&&lines.length) aiPrefetch[key]=lines; else delete aiPrefetch[key];
+  }).catch(()=>{ delete aiPrefetch[key]; });
+}
 function startScene(sc){
   if(!sc) return;
   if(aiState.multiTurn) aiState.sceneIndex=Math.max(0,aiState.scenes.indexOf(sc));
@@ -1099,24 +1133,28 @@ function startScene(sc){
     const ids=(Array.isArray(sc.wordIds)?sc.wordIds:[]).filter(id=>sourceIds.includes(id)).slice(0,2);
     if(!ids.length){ toast('这个情景没有对应词条，请换一个情景','warn'); return; }
     aiState.termIds=ids;
-    aiState.terms=ids.map(id=>{const w=(state.words||[]).find(x=>x.id===id);return w&&w.term;}).filter(Boolean);
+    aiState.terms=ids.map(id=>aiWordTerm(id)).filter(Boolean);
     aiState.term=aiState.terms.join(' · ');
-    aiState.definition=ids.map(id=>{const w=(state.words||[]).find(x=>x.id===id);return w&&String(w.definition||'').split('\n')[0];}).filter(Boolean).join('；');
+    aiState.definition=ids.map(id=>aiWordDef(id)).filter(Boolean).join('；');
     aiState.examples=ids.reduce((out,id)=>{const w=(state.words||[]).find(x=>x.id===id);return out.concat(w&&w.examples?w.examples.map(x=>x.en).filter(Boolean):[]);},[]).slice(0,4);
   }
   aiState.scene=sc;
   aiState.phase='practice';
   aiState.attempt=''; aiState.attemptPromptCn='';
   const session=aiSession,term=aiState.term,mySeq=++aiState.seq;
+  const key=aiSceneKey(sc);
+  if(aiState.multiTurn&&Array.isArray(aiPrefetch[key])&&aiPrefetch[key].length){
+    aiApplyDialogue(aiPrefetch[key]);
+    aiPrefetchNextScene();
+    return;
+  }
   aiShowLoading('正在生成对话…');
   let fallbackShown=false;
   const slowTimer=setTimeout(()=>{
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     if(aiState.phase!=='practice'||(aiState.lines||[]).length||aiState.attempt) return;
     const fb=aiFallbackDialogue();
-    aiState.lines=fb.lines; aiState.turnIndex=0; aiState.turnResults=[];
-    aiState.currentTargetWord=aiState.multiTurn?((fb.lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
-    aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
+    aiApplyDialogue(fb.lines);
     fallbackShown=true;
     toast('AI 还没回，先用快速练习开始；它回来会自动替换','warn');
   },10000);
@@ -1124,14 +1162,8 @@ function startScene(sc){
     clearTimeout(slowTimer);
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
     if(fallbackShown&&(aiState.attempt||aiState.turnIndex>0)) return;
-    aiState.lines=lines;
-    if(typeof aiDialogueHistoryScene==='function') aiDialogueHistoryScene(aiState.scene,lines,aiState.termIds||[]);
-    const favorite=$('#aiFavorite');if(favorite&&!aiState.dialogueFavorited)favorite.disabled=false;
-    aiState.turnIndex=0;aiState.turnResults=[];aiState.currentTargetWord=aiState.multiTurn?((lines.find(x=>x.who==='YOU')||{}).wordId||aiState.terms[0]):aiState.term;
-    aiState.phase='practice';
-    aiShowBody();
-    aiSetChatbar('practice');
-    aiRenderDialogue();
+    aiApplyDialogue(lines);
+    aiPrefetchNextScene();
   }).catch(err=>{
     clearTimeout(slowTimer);
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
@@ -1357,5 +1389,5 @@ function aiFinishAction(){
     return;
   }
   closeAiModal();
-}function closeAiModal(){ if(aiState.dialogueSessionId&&typeof aiDialogueHistoryFinish==='function')aiDialogueHistoryFinish(aiState.phase==='review'?'completed':'interrupted'); stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
+}function closeAiModal(){ aiResetPrefetch(); if(aiState.dialogueSessionId&&typeof aiDialogueHistoryFinish==='function')aiDialogueHistoryFinish(aiState.phase==='review'?'completed':'interrupted'); stopAiDictation(); $('#aiModal').classList.remove('show'); $('#aiContextStrip').classList.add('hidden'); aiSession++; aiState.seq++; try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){} }
 

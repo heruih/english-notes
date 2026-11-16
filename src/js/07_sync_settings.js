@@ -1364,8 +1364,8 @@ function jumpToNote(noteId){
 function dayStart(ts){ const d=new Date(ts||Date.now()); d.setHours(0,0,0,0); return d.getTime(); }
 function isToday(ts){ const s=dayStart(Date.now()); return !!(ts&&ts>=s&&ts<s+DAY); }
 function todayNewWords(){ return state.words.filter(w=>isToday(w.createdAt)); }
-function weakSpeakLogs(){ return (state.aiLog||[]).filter(x=>x.score<80); }
-function weakSpeakLogsToday(){ return (state.aiLog||[]).filter(x=>x.score<80&&isToday(x.createdAt)); }
+function weakSpeakLogs(){ return (state.aiLog||[]).filter(x=>x.score<80||(Array.isArray(x.pitfalls)&&x.pitfalls.length)); }
+function weakSpeakLogsToday(){ return (state.aiLog||[]).filter(x=>(x.score<80||(Array.isArray(x.pitfalls)&&x.pitfalls.length))&&isToday(x.createdAt)); }
 function todayCard(go,title,desc,num){
   return '<div class="today-card" data-go="'+go+'">'+
     '<div class="tc-num">'+num+'</div>'+
