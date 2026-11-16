@@ -5680,22 +5680,22 @@ function aiNormalizeDialogue(rawLines){
   return {lines:keep,reason:''};
 }
 async function aiBuildDialogue(strictRetry){
-  /* B1：输出越短越快。行数固定、字数控死、不写人设长文案 */
+  /* 定档：4–5 行、英文 ≤18 词、中文只给方向和关键词；字数只是提示，超了本地截断，不判失败 */
   const multi=aiState.terms&&aiState.terms.length>1;
   const termList=multi?aiDialogueTermsPayload():[{wordId:(aiState.termIds||[])[0]||'',term:aiState.term||'',definition:aiState.definition||''}];
   const shape=multi
-    ?('只写 '+(aiState.terms.length+2)+' 行：'+(aiState.terms.length>1?'A、YOU、A、YOU':'A、YOU、A')+'。每个 YOU 只对应一个目标词，带 wordId 和 promptCn，不要多写回合。')
-    :'只写 3 行：A、YOU、A，只有一个 YOU 回合。';
-  const brief='A/B 的 en 最多 12 个词，cn 是中文翻译最多 12 个字；YOU 的 promptCn 是中文提示最多 14 个字，能指向目标词但不能给出整句英文。不要寒暄、不要解释、不要多余行。A/B 的 en 里禁止出现任何目标词。';
+    ?'只写 5 行，顺序固定：A、YOU、A、YOU、A。每个 YOU 对应一个目标词，带 wordId 和 promptCn。'
+    :'只写 4 行，顺序固定：A、YOU、A、A。只有 1 个 YOU 回合。';
+  const brief='A/B 的 en 每行最多 18 个词，要像真实对话里的自然句子。A/B 的 cn 不写整句翻译，只写「这句话在做什么 + 一个关键词英文」，12 字以内，例：他说该结账了，问你那份怎么付（settle the bill）。YOU 的 promptCn 只写方向，14 字以内，例：把信用卡递给他，顺便问返现。不要寒暄套话，不要解释，不要多余行。A/B 的 en 里禁止出现任何目标词。';
   const messages=[
     {role:'system',content:'你是英语口语教练。只输出一个 JSON 对象 {"lines":[...]}，不要 markdown、不要解释。'},
-    {role:'user',content:'场景「'+(aiState.scene.title||'')+'」：'+(aiState.scene.desc||'')+'。目标词：'+JSON.stringify(termList)+'。'+shape+brief+(strictRetry?'上一版行数或字数超了，请严格重写。':'')+' JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"…","promptCn":"…"}]}'}
+    {role:'user',content:'场景「'+(aiState.scene.title||'')+'」：'+(aiState.scene.desc||'')+'。目标词：'+JSON.stringify(termList)+'。'+shape+brief+(strictRetry?'上一版行数不对，请严格按顺序和行数重写。':'')+' JSON：{"lines":[{"who":"A","en":"…","cn":"…"},{"who":"YOU","wordId":"…","promptCn":"…"}]}'}
   ];
-  const opt=aiState.multiTurn?{maxTokens:1600,timeout:25000}:{maxTokens:1200,timeout:20000};
+  const opt=aiState.multiTurn?{maxTokens:2000,timeout:25000}:{maxTokens:1200,timeout:20000};
   try{ return await aiCall(messages,opt); }
   catch(err){
     if(!aiState.multiTurn||!/解析|格式|JSON|返回内容/i.test(String(err&&err.message||''))) throw err;
-    return aiCall(messages.concat({role:'user',content:'只返回可解析 JSON，行数和字数按上面要求。'}),opt);
+    return aiCall(messages.concat({role:'user',content:'只返回可解析 JSON，行数按上面要求。'}),opt);
   }
 }
 async function aiCreateValidatedDialogue(){
@@ -5828,7 +5828,7 @@ function startScene(sc){
     aiShowBody(); aiSetChatbar('practice'); aiRenderDialogue();
     fallbackShown=true;
     toast('AI 还没回，先用快速练习开始；它回来会自动替换','warn');
-  },8000);
+  },10000);
   aiCreateValidatedDialogue().then(lines=>{
     clearTimeout(slowTimer);
     if(session!==aiSession||term!==aiState.term||mySeq!==aiState.seq) return;
