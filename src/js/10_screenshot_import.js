@@ -59,7 +59,7 @@ function ocrInboxRender(){
   const list=ocrInboxRead();
   box.innerHTML=list.length?list.map(item=>{
     const opts=(item.candidates||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.term)+'（'+c.score+'%）</option>').join('');
-    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn" data-inbox-skip>跳过</button></div></div></div>';
+    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn danger" data-inbox-delete>删除</button></div></div></div>';
   }).join(''):'<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';
 }
 function ocrInboxShow(){
@@ -84,7 +84,7 @@ function ocrInboxConfirm(id){
   const next=list.filter(x=>x.id!==id);if(!ocrInboxFlush(next)){toast('收件箱更新失败，当前项保留','warn');return;}
   if(created)aPut(w.id,{stage:'pending'});save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();toast('已匹配「'+term+'」并保存截图','ok');
 }
-function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();}
+function ocrInboxDelete(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();toast('已删除这张截图','ok');}
 /* 识别专用图：放大2倍 + 灰度 + 提对比度，只喂给 Tesseract，彩色存档图不变 */
 function ocrLoadImage(dataUrl){
   return new Promise((resolve,reject)=>{

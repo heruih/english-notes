@@ -1327,7 +1327,7 @@ function bindEvents(){
     const row=e.target.closest('[data-inbox-id]');if(!row)return;
     const id=row.dataset.inboxId;
     if(e.target.closest('[data-inbox-confirm]'))ocrInboxConfirm(id);
-    if(e.target.closest('[data-inbox-skip]'))ocrInboxSkip(id);
+    if(e.target.closest('[data-inbox-delete]'))ocrInboxDelete(id);
   });
   /* 识别文本手动修改后：更新文本、重算候选词并保存，再刷新该行下拉 */
   $('#ocrBatchList').addEventListener('change',e=>{

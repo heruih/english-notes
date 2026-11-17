@@ -730,6 +730,8 @@ body.side-open #scrim{display:block}
 .mini-btn:hover{background:var(--s4)}
 .mini-btn:active{transform:scale(.96)}
 .mini-btn:disabled{opacity:.55}
+.mini-btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent);background:color-mix(in srgb,var(--danger) 10%,var(--s1))}
+.mini-btn.danger:hover{background:color-mix(in srgb,var(--danger) 18%,var(--s1))}
 .wm-label .mini-btn{border:none;background:none;min-height:36px;padding:8px 10px;margin-left:auto}
 .wm-label .mini-btn:hover{background:var(--accent-soft)}
 .wm-actions .btn.grow{flex:1}
