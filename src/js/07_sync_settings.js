@@ -1329,6 +1329,17 @@ function bindEvents(){
     if(e.target.closest('[data-inbox-confirm]'))ocrInboxConfirm(id);
     if(e.target.closest('[data-inbox-skip]'))ocrInboxSkip(id);
   });
+  /* 识别文本手动修改后：更新文本、重算候选词并保存，再刷新该行下拉 */
+  $('#ocrBatchList').addEventListener('change',e=>{
+    const ta=e.target.closest('[data-inbox-text]');if(!ta)return;
+    const row=e.target.closest('[data-inbox-id]');if(!row)return;
+    const id=row.dataset.inboxId;
+    const list=ocrInboxRead(),item=list.find(x=>x.id===id);if(!item)return;
+    item.text=ta.value;
+    item.candidates=ocrCandidates(item.text);
+    ocrInboxFlush(list);
+    ocrInboxRender();
+  });
   $('#ocrBoxes').addEventListener('click',e=>{
     const b=e.target.closest('.ocr-box'); if(!b) return;
     b.classList.toggle('on');

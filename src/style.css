@@ -737,7 +737,7 @@ body.side-open #scrim{display:block}
 .ex-card .ex-en-text .t{font-size:16px}
 .st-field .btn{white-space:nowrap}
 .wc-ex-more{font-size:11.5px;color:var(--text3);margin-top:3px}
-.ocr-inbox-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--sep)}.ocr-inbox-item img{width:82px;height:62px;object-fit:cover;border-radius:8px;background:var(--s3);flex:none}.ocr-inbox-main{min-width:0;flex:1}.ocr-inbox-text{font-size:13px;color:var(--text2);line-height:1.4;margin-bottom:6px;word-break:break-word}.ocr-inbox-main select,.ocr-inbox-main input{width:100%;min-height:34px;margin-bottom:6px}.ocr-inbox-actions{display:flex;gap:8px}.ocr-inbox-actions .mini-btn{padding:6px 11px}
+.ocr-inbox-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--sep)}.ocr-inbox-item img{width:82px;height:62px;object-fit:cover;border-radius:8px;background:var(--s3);flex:none}.ocr-inbox-main{min-width:0;flex:1}.ocr-inbox-text{width:100%;display:block;font-size:13px;color:var(--text);line-height:1.4;margin-bottom:6px;padding:7px 9px;border:1px solid var(--sep);border-radius:9px;background:var(--s1);resize:vertical;min-height:42px;font-family:inherit}.ocr-inbox-main select,.ocr-inbox-main input{width:100%;min-height:34px;margin-bottom:6px}.ocr-inbox-actions{display:flex;gap:8px}.ocr-inbox-actions .mini-btn{padding:6px 11px}
 
 /* 桌面端：表达库 / 标签 / 闪卡 占满内容区（原来被挤在 330px 里） */
 @media (min-width:768px){

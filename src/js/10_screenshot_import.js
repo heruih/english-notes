@@ -59,7 +59,7 @@ function ocrInboxRender(){
   const list=ocrInboxRead();
   box.innerHTML=list.length?list.map(item=>{
     const opts=(item.candidates||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.term)+'（'+c.score+'%）</option>').join('');
-    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><div class="ocr-inbox-text">'+esc(item.text||'未识别到英文词')+'</div><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn" data-inbox-skip>跳过</button></div></div></div>';
+    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn" data-inbox-skip>跳过</button></div></div></div>';
   }).join(''):'<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';
 }
 function ocrInboxShow(){
@@ -85,6 +85,36 @@ function ocrInboxConfirm(id){
   if(created)aPut(w.id,{stage:'pending'});save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();toast('已匹配「'+term+'」并保存截图','ok');
 }
 function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();}
+/* 识别专用图：放大2倍 + 灰度 + 提对比度，只喂给 Tesseract，彩色存档图不变 */
+function ocrLoadImage(dataUrl){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('预处理图读取失败'));
+    img.src=dataUrl;
+  });
+}
+async function ocrPreprocess(dataUrl){
+  const img=await ocrLoadImage(dataUrl);
+  let w=img.width*2,h=img.height*2;
+  const MAXE=2000; /* 限制最大边，避免 canvas 过大 */
+  if(Math.max(w,h)>MAXE){ const k=MAXE/Math.max(w,h); w=Math.round(w*k); h=Math.round(h*k); }
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(img,0,0,w,h);
+  let imgData;
+  try{ imgData=ctx.getImageData(0,0,w,h); }catch(e){ return cv.toDataURL('image/png'); }
+  const d=imgData.data,contrast=1.4,intercept=128*(1-contrast);
+  for(let i=0;i<d.length;i+=4){
+    let g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    g=g*contrast+intercept;
+    if(g<0)g=0;else if(g>255)g=255;
+    d[i]=d[i+1]=d[i+2]=g;
+  }
+  ctx.putImageData(imgData,0,0);
+  return cv.toDataURL('image/png');
+}
 async function ocrImportBatch(files){
   $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
   const st=$('#ocrStatus');
@@ -107,7 +137,9 @@ async function ocrImportBatch(files){
       dataUrl=await shotCompress(files[i]);
       if(ocrReady){
         try{
-          const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}}),data=(res&&res.data)||{};
+          let recogSrc=dataUrl;
+          try{ recogSrc=await ocrPreprocess(dataUrl); }catch(__){ recogSrc=dataUrl; }
+          const res=await Tesseract.recognize(recogSrc,'eng',{logger:()=>{}}),data=(res&&res.data)||{};
           text=String(data.text||'').replace(/\s+/g,' ').trim();
           candidates=ocrCandidates(text);
         }catch(_){text='';candidates=[];}
