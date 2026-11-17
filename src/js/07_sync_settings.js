@@ -1288,8 +1288,22 @@ function bindEvents(){
   $('#wmShotsBtn').addEventListener('click',()=>{
     const t=wmState&&wmState.term; if(!t) return;
     const list=shotsGet(t);
-    if(!list.length){ toast('还没有截图，点右下角「+」导入','warn'); return; }
+    if(!list.length){ toast('还没有截图，点旁边「＋ 截图」直接添加','warn'); return; }
     openShotViewerFor(t,0);
+  });
+  $('#wmShotAdd').addEventListener('click',()=>{ $('#wmShotFile').click(); });
+  $('#wmShotFile').addEventListener('change',async (e)=>{
+    const t=wmState&&wmState.term;
+    const files=Array.prototype.slice.call(e.target.files||[]);
+    if(!t||!files.length) return;
+    toast('正在处理图片…','info');
+    try{
+      const r=await wmShotsAdd(t,files);
+      wmShotsBtnUpdate();
+      if(r.added) toast('已添加 '+r.added+' 张截图'+(r.failed?'，'+r.failed+' 张因每词上限未加':''),'ok');
+      else toast('这个词已有 '+SHOT_MAX_PER_WORD+' 张，未添加','warn');
+    }catch(err){ toast('添加失败，请重试','warn'); }
+    e.target.value='';
   });
   $('#shotViewer').addEventListener('click',e=>{
     if(e.target.closest('#svPrev')||e.target.closest('#svNext')||e.target.closest('#svDel')) return;

@@ -1,11 +1,82 @@
 /* ============ 我的截图：单词关联截图（独立 key，不碰 words 数据） ============ */
+/* ---- IndexedDB 大对象存储：把截图/收件箱从 localStorage 5MB 挪到 IDB ---- */
+const IDB_NAME='english-notes-blob-v1';
+const IDB_VERSION=1;
+const IDB_STORE_SHOTS='shots';
+const IDB_STORE_INBOX='inbox';
+let idbPromise=null;
+function idbOpen(){
+  if(idbPromise)return idbPromise;
+  idbPromise=new Promise((resolve,reject)=>{
+    if(typeof indexedDB==='undefined'){ reject(new Error('no-idb')); return; }
+    let req;
+    try{ req=indexedDB.open(IDB_NAME,IDB_VERSION); }catch(e){ reject(e); return; }
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE_SHOTS))db.createObjectStore(IDB_STORE_SHOTS);
+      if(!db.objectStoreNames.contains(IDB_STORE_INBOX))db.createObjectStore(IDB_STORE_INBOX);
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('idb-open-failed'));
+    req.onblocked=()=>reject(new Error('idb-blocked'));
+  });
+  return idbPromise;
+}
+function idbGet(store,key){
+  return idbOpen().then(db=>new Promise((resolve,reject)=>{
+    const rq=db.transaction(store,'readonly').objectStore(store).get(key);
+    rq.onsuccess=()=>resolve(rq.result);
+    rq.onerror=()=>reject(rq.error);
+  }));
+}
+function idbSet(store,key,val){
+  return idbOpen().then(db=>new Promise((resolve,reject)=>{
+    const rq=db.transaction(store,'readwrite').objectStore(store).put(val,key);
+    rq.onsuccess=()=>resolve(true);
+    rq.onerror=()=>reject(rq.error);
+  }));
+}
 const SHOTS_KEY='english-notes-shots-v1';
 const SHOT_MAX_PER_WORD=4;
-const SHOT_MAX_TOTAL=80;
-function shotsAll(){
+/* 总上限放宽：IDB 容量足够大，不再用 80 的硬限制，保留一个大值做兜底 */
+const SHOT_MAX_TOTAL=2000;
+function shotsReadLocal(){
   try{ const o=JSON.parse(localStorage.getItem(SHOTS_KEY)||'{}'); return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }catch(_){ return {}; }
 }
-function shotsFlush(all){ return aStore(SHOTS_KEY,JSON.stringify(all)); }
+let shotCache=null;
+let shotReady=false;
+let shotUseIdb=false;
+/* 启动时调用：可用 IDB 就用 IDB，并把 LS 旧数据一次性搬过去；不可用则回退 LS */
+async function shotsInit(){
+  if(shotReady)return;
+  try{
+    await idbOpen();
+    shotUseIdb=true;
+    let data=await idbGet(IDB_STORE_SHOTS,'all');
+    if(!data||typeof data!=='object'||Array.isArray(data)){
+      const legacy=shotsReadLocal();
+      data=shotsTotal(legacy)>0?legacy:{};
+      if(shotsTotal(data)>0)await idbSet(IDB_STORE_SHOTS,'all',data);
+    }
+    shotCache=data;
+  }catch(e){
+    shotUseIdb=false;
+    shotCache=shotsReadLocal();
+  }
+  shotReady=true;
+}
+function shotsAll(){
+  if(shotReady)return shotCache;
+  return shotsReadLocal();
+}
+function shotsFlush(all){
+  if(shotUseIdb){
+    shotCache=all;
+    idbSet(IDB_STORE_SHOTS,'all',all).catch(()=>{ try{ aStore(SHOTS_KEY,JSON.stringify(all)); }catch(_){ } });
+    return true;
+  }
+  return aStore(SHOTS_KEY,JSON.stringify(all));
+}
 function shotsKeyOf(t){ return String(t||'').trim().toLowerCase(); }
 function shotsGet(t){ const all=shotsAll(); return all[shotsKeyOf(t)]||[]; }
 function shotsTotal(all){ return Object.keys(all).reduce((s,k)=>s+(Array.isArray(all[k])?all[k].length:0),0); }
@@ -48,6 +119,22 @@ function wmShotsBtnUpdate(){
   const b=$('#wmShotsN'); if(!b) return;
   const t=wmState&&wmState.term;
   b.textContent=String(t?shotsGet(t).length:0);
+}
+/* 单词弹窗里直接选图：逐张压缩后挂到当前词，返回成功/失败数 */
+async function wmShotsAdd(term,files){
+  const all=shotsAll(),k=shotsKeyOf(term);
+  let list=Array.isArray(all[k])?all[k].slice():[];
+  let added=0,failed=0;
+  for(const file of files){
+    if(list.length>=SHOT_MAX_PER_WORD){ failed++; continue; }
+    try{
+      const dataUrl=await shotCompress(file);
+      list.push({id:uid(),dataUrl,at:Date.now()});
+      added++;
+    }catch(e){ failed++; }
+  }
+  if(added){ all[k]=list; shotsFlush(all); }
+  return {added,failed};
 }
 /* 大图查看器：多张可左右切换，点任意位置返回 */
 function openShotViewerFor(term,i){

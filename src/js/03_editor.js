@@ -91,11 +91,13 @@ function renderFlash(){
         '<b>'+(f.graded?'本轮复习完成了':'现在没有到期的单词')+'</b>'+
         '<div style="font-size:13px;color:var(--text2);line-height:1.7">'+(f.graded?('本轮复习 '+f.graded+' 个单词，已按记忆强度安排下次时间。'):nxtTxt)+'</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">'+
-          '<button class="btn primary" id="rvFree">自由复习一轮（最多 10 个）</button>'+
+          '<button class="btn primary" id="rvHome">返回首页</button>'+
+          '<button class="btn" id="rvFree">自由复习一轮（最多 10 个）</button>'+
           '<button class="btn" id="rvReset">重来今日</button>'+
         '</div>'+
         '<div style="font-size:12px;color:var(--text3)">记忆曲线：1 → 3 → 7 → 15 → 30 天</div>'+
       '</div>';
+    const rh=$('#rvHome'); if(rh) rh.addEventListener('click',()=>{ ui.mode='today'; ui.sideOpen=false; render(); });
     const fb=$('#rvFree'); if(fb) fb.addEventListener('click',()=>{ buildReview('free'); renderFlash(); });
     const rb=$('#rvReset'); if(rb) rb.addEventListener('click',()=>{ buildReview('due'); renderFlash(); });
     return;
@@ -147,7 +149,8 @@ function renderFlash(){
           '<button class="grade-btn again" data-grade="0">忘了<small>10 分钟后再练</small></button>'+
           '<button class="grade-btn hard" data-grade="1">有点难<small>缩短间隔</small></button>'+
           '<button class="grade-btn good" data-grade="2">记住了<small>拉长间隔</small></button>'+
-        '</div>':'<div style="font-size:12.5px;color:var(--text3);height:52px;display:flex;align-items:center">先回想，再点卡片翻开</div>')+
+        '</div>':'<div class="flash-hint-row">先回想，再点卡片翻开</div>')+
+      '<div class="review-exit-row"><button class="btn" id="reviewExit" type="button">结束复习，返回首页</button></div>'+
       (dueMode&&recentCount>=recentThreshold?'<div class="review-pause-choice"><span>已完成 '+recentCount+' 个词，下一步？</span><div><button class="btn" id="reviewContinue">继续复习</button><button class="btn primary" id="reviewPause">AI 对话这组</button></div></div>':'')
         :'<div class="flash-actions">'+
           '<button class="btn" id="flashPrev"'+(f.idx===0?' disabled':'')+'>上一张</button>'+
@@ -190,6 +193,7 @@ function renderFlash(){
   $$('.grade-btn').forEach(b=>b.addEventListener('click',()=>gradeCurrent(Number(b.dataset.grade))));
   const pause=$('#reviewPause');if(pause)pause.addEventListener('click',()=>{if(typeof batchPauseRecent==='function')batchPauseRecent();});
   const cont=$('#reviewContinue');if(cont)cont.addEventListener('click',()=>{if(typeof batchContinueRecent==='function')batchContinueRecent();});
+  const rex=$('#reviewExit');if(rex)rex.addEventListener('click',()=>{ ui.mode='today'; ui.sideOpen=false; render(); });
   const pv=$('#flashPrev'), nx=$('#flashNext'), ex=$('#flashExit');
   if(pv) pv.addEventListener('click',()=>stepFlash(-1));
   if(nx) nx.addEventListener('click',()=>stepFlash(1));

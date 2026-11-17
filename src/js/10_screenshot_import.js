@@ -4,8 +4,38 @@ let ocrDataUrl='';
 let tesseractReady=false;
 let ocrWords=[];
 const SHOT_INBOX_KEY='en-shot-inbox-v1';
-function ocrInboxRead(){try{const v=JSON.parse(localStorage.getItem(SHOT_INBOX_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
-function ocrInboxFlush(list){return aStore(SHOT_INBOX_KEY,JSON.stringify(list));}
+function inboxReadLocal(){try{const v=JSON.parse(localStorage.getItem(SHOT_INBOX_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
+let inboxCache=null,inboxReady=false,inboxUseIdb=false;
+async function inboxInit(){
+  if(inboxReady)return;
+  try{
+    await idbOpen();
+    inboxUseIdb=true;
+    let data=await idbGet(IDB_STORE_INBOX,'all');
+    if(!Array.isArray(data)){
+      const legacy=inboxReadLocal();
+      data=legacy;
+      if(legacy.length)await idbSet(IDB_STORE_INBOX,'all',data);
+    }
+    inboxCache=data;
+  }catch(e){
+    inboxUseIdb=false;
+    inboxCache=inboxReadLocal();
+  }
+  inboxReady=true;
+}
+function ocrInboxRead(){
+  if(inboxReady)return inboxCache;
+  return inboxReadLocal();
+}
+function ocrInboxFlush(list){
+  if(inboxUseIdb){
+    inboxCache=list;
+    idbSet(IDB_STORE_INBOX,'all',list).catch(()=>{ try{ aStore(SHOT_INBOX_KEY,JSON.stringify(list)); }catch(_){ } });
+    return true;
+  }
+  return aStore(SHOT_INBOX_KEY,JSON.stringify(list));
+}
 function ocrNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
 function ocrCandidates(text){
   const hay=ocrNorm(text);if(!hay)return [];
@@ -251,6 +281,13 @@ function storageUsedBytes(){
   }
   return bytes;
 }
+/* IndexedDB 截图库占用：用内存数据估算（http 下 navigator.storage 不可用） */
+function idbUsedBytes(){
+  let b=0;
+  if(shotReady&&shotCache) b+=byteLen(JSON.stringify(shotCache));
+  if(inboxReady&&inboxCache) b+=byteLen(JSON.stringify(inboxCache));
+  return b;
+}
 /* 逐个 key 统计占用，返回 [{key,bytes}] 从大到小 */
 function storageBreakdown(){
   const out=[];
@@ -296,6 +333,13 @@ function storageRender(){
   }else{warn.hidden=true;}
   const rows=storageBreakdown().slice(0,6);
   br.innerHTML=rows.map(r=>'<div class="sb-row"><span class="sb-label">'+esc(storageKeyLabel(r.key))+'</span><span class="sb-bytes">'+fmtBytes(r.bytes)+'</span></div>').join('');
+  const idbEl=$('#stStoreIdb');
+  if(idbEl){
+    const idbOn=shotUseIdb||inboxUseIdb;
+    const shotsN=shotReady?shotsTotal(shotCache):0;
+    if(idbOn) idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库（大容量）· '+shotsN+' 张</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
+    else idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库未启用，仍占本地存储</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
+  }
 }
 function aRead(key,fallback){try{return JSON.parse(localStorage.getItem(key))||fallback;}catch(_){return fallback;}}
 function aFlush(){if(!aStore(A_KEY,JSON.stringify(aData)))throw new Error('学习信息没有保存成功');}
@@ -366,7 +410,14 @@ function aImageStatsFromStorage(storage){
   return aImageCacheStats(all,words);
 }
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
-function aBackupObject(){const image=aImageCacheStats(wmImgAll(),state.words);return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:image.records,imageCacheWords:image.cachedWords,imageCacheConfirmed:image.confirmedWords,imageCacheMissing:image.missingWords},storage:aBackupKeys()};}
+function aBackupObject(){
+  const image=aImageCacheStats(wmImgAll(),state.words);
+  const storage=aBackupKeys();
+  /* 截图/收件箱已迁到 IDB，导出时用内存里的最新数据覆盖，避免漏掉新图 */
+  if(shotReady) storage[SHOTS_KEY]=JSON.stringify(shotCache);
+  if(inboxReady) storage[SHOT_INBOX_KEY]=JSON.stringify(inboxCache);
+  return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:image.records,imageCacheWords:image.cachedWords,imageCacheConfirmed:image.confirmedWords,imageCacheMissing:image.missingWords},storage:storage};
+}
 function aDownloadBackup(){
   try{if(ui.mode==='edit')persistEditor();if(wmState&&!wmState.saved)wmDraftSave();writeDraftSave();const pack=aBackupObject();const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download='英语学习完整备份-'+aDate(Date.now())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);$('#aBackupStatus').textContent='已请求下载：'+pack.counts.words+' 个表达、'+pack.counts.shots+' 张截图、'+pack.counts.writing+' 篇写作。请在下载列表确认文件已保存。';}
   catch(e){toast('备份失败：'+e.message,'warn');}
@@ -428,6 +479,8 @@ function aPrepareImport(pack){
   const incoming=JSON.parse(storage[LS_KEY]);
   const merged=aMergeState(base,incoming),plan={[LS_KEY]:JSON.stringify(merged)};
   Object.keys(storage).forEach(k=>{if(k===LS_KEY||!k.startsWith('english-notes-')||typeof storage[k]!=='string')return;plan[k]=aMergeExtra(k,localStorage.getItem(k),storage[k]);});
+  /* 收件箱 key 不以 english-notes- 开头，单独合并 */
+  if(typeof storage[SHOT_INBOX_KEY]==='string') plan[SHOT_INBOX_KEY]=aMergeExtra(SHOT_INBOX_KEY,localStorage.getItem(SHOT_INBOX_KEY),storage[SHOT_INBOX_KEY]);
   return {plan,merged,added:merged.words.length-(base.words||[]).length,imageStats:aImageStatsFromStorage(storage)};
 }
 function aCommitImport(prepared){
@@ -435,8 +488,23 @@ function aCommitImport(prepared){
   try{Object.keys(prepared.plan).forEach(k=>localStorage.setItem(k,prepared.plan[k]));}
   catch(e){Object.keys(before).forEach(k=>{if(before[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,before[k]);});throw new Error('空间不足，导入已撤回，请先备份并释放空间');}
   state=migrate(prepared.merged);aData=aRead(A_KEY,{words:{},attempts:[]});ui.mode='today';ui.note=null;ui.wordDate='';applyTheme();render();
+  syncImportedBlobs(prepared);
   const image=aImageCacheStats(wmImgAll(),state.words);
   $('#aBackupStatus').textContent='已补充 '+prepared.added+' 个表达；备份带来 '+(prepared.imageStats?prepared.imageStats.records:0)+' 条配图记录。当前共 '+state.words.length+' 个表达、'+shotsTotal(shotsAll())+' 张截图、'+image.records+' 条配图记录，已确认 '+image.confirmedWords+' 条。';
+}
+/* 导入后把合并的截图/收件箱同步到 IDB，并刷新内存缓存（IDB 不可用时它们已在 localStorage） */
+async function syncImportedBlobs(prepared){
+  try{
+    await shotsInit(); await inboxInit();
+    if(typeof prepared.plan[SHOTS_KEY]==='string'){
+      const shots=JSON.parse(prepared.plan[SHOTS_KEY]);
+      if(shotUseIdb){ shotCache=shots; await idbSet(IDB_STORE_SHOTS,'all',shots); }
+    }
+    if(typeof prepared.plan[SHOT_INBOX_KEY]==='string'){
+      const inbox=JSON.parse(prepared.plan[SHOT_INBOX_KEY]);
+      if(inboxUseIdb){ inboxCache=inbox; await idbSet(IDB_STORE_INBOX,'all',inbox); }
+    }
+  }catch(e){ console.error('导入截图同步失败',e); }
 }
 function aImportFile(file){
   if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const p=aPrepareImport(JSON.parse(fr.result)),img=p.imageStats||{};showConfirm({title:'补充导入备份？',msg:'将补充 '+p.added+' 个表达，并带来 '+(img.records||0)+' 条配图记录，其中已确认 '+(img.confirmedWords||0)+' 条。同 ID／同表达的本机内容不覆盖。',okText:'补充导入',onOk(){try{aCommitImport(p);}catch(e){toast(e.message,'warn');}}});}catch(e){toast('导入失败：'+e.message,'warn');}};fr.readAsText(file);
@@ -550,6 +618,9 @@ function pfWrap(){
   /* 每天一小轮卡片：含 #bAudioOpen 的 a-callout */
   const smallRound=[...list.querySelectorAll('.a-callout')].find(c=>c.querySelector('#bAudioOpen'));
   if(smallRound)targets.push(smallRound);
+  /* 工具按钮组、说明文字也一并收进折叠区，保持首页干净 */
+  list.querySelectorAll('.a-tools').forEach(el=>targets.push(el));
+  list.querySelectorAll('.a-note').forEach(el=>targets.push(el));
   if(!targets.length)return;
   const head=document.createElement('button');
   head.type='button';head.className='practice-fold-head';head.id='practiceFoldHead';
@@ -704,23 +775,44 @@ function batchAdvanceDialogueScene(){
   startScene(aiState.scenes[next]);
   return true;
 }
+/* 首页 AI 对话：优先用刚复习的词，不够就回退到期可练的词 */
+function todayAiDialogue(){
+  const d=dialogueBatchState();
+  const recent=(d.recentIds||[]).map(id=>state.words.find(w=>w.id===id)).filter(Boolean);
+  if(recent.length>=dialogueThreshold()){ batchPauseRecent(); return; }
+  const fb=packableWords();
+  if(fb&&fb.length){ openAiPackPractice(fb); }
+  else toast('还没有可练的词，先去攒几个表达','warn');
+}
 renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
-  const next=pending.length?'整理 '+pending.length+' 个待加工表达':due.length?'回想今天到期的表达':'用 2—3 个表达说一段';
   const quote=todayDailyQuote(),encouragement=todayEncouragement(pending.length,due.length,weak.length);
   const batch=dialogueBatchState(),reviewed=batchReviewedWords(batch).length,batchEntry=(batchReady(batch)||batch.plan)?'<div class="a-batch-entry"><div><b>今日批量情景对话</b><small>已完成复习 '+reviewed+' 个表达 · 每组约 5 个</small></div><button class="btn primary" id="aBatchOpen">'+(batch.plan?'继续场景练习':'规划今日场景')+'</button></div>':'';
-  box.innerHTML='<div class="a-callout"><h3>'+next+'</h3><p>一次做好一小步。先自己回想和表达，再查看答案或请 ChatGPT 帮忙。</p><button class="btn primary" id="aNext">开始这一步</button></div>'+
+  box.innerHTML=
     '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
+    '<div class="home-quick">'+
+      '<button class="home-quick-item" data-hq="recall" type="button"><span class="hq-t">场景回想</span><span class="hq-d">看场景说英文 · 先回忆</span></button>'+
+      '<button class="home-quick-item" data-hq="note" type="button"><span class="hq-t">加入笔记</span><span class="hq-d">写英文 · 选中 empower</span></button>'+
+      '<button class="home-quick-item" data-hq="flash" type="button"><span class="hq-t">英文闪卡</span><span class="hq-d">到期回想练习</span></button>'+
+      '<button class="home-quick-item primary" data-hq="ai" type="button"><span class="hq-t">AI 对话</span><span class="hq-d">基于刚复习的词开口</span></button>'+
+    '</div>'+
     '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+batchEntry+
-    '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+todayCard('pack','情景口语','选 2—3 个表达，自己开口使用',Math.min(3,packableWords().length))+'</div>'+
+    '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+'</div>'+
     '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayFavorites">收藏对话</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
     '<p class="a-note">普通日参考：视频与模仿 20 分钟 → 整理 8 分钟 → 回想 5 分钟 → 输出 7 分钟。每周 2 次情景练习、1 次写作，可替换当天部分任务。无需清空全部队列。</p>'+
     '<p class="a-note">AI：'+(aRoute()==='chatgpt'?'ChatGPT 往返模式；套餐和模型由 ChatGPT 账号决定。':'OpenAI API 模式；独立计费。')+' 新地址不会自动读取手机旧地址的数据。</p>'+
     (aRead(A_TASK_KEY,null)?'<div class="a-tools"><button class="btn" id="aResumeGpt">继续未完成的 ChatGPT 练习</button></div>':'')+
     (!state.words.length?'<div class="a-callout"><h3>先迁入手机旧词条</h3><p>在手机同一个浏览器打开旧站 → 设置 → 导出备份；回到这里点“完整备份／迁移”导入。旧站内容保留。</p><a class="btn" href="https://english-notes-82796.app.workbuddy.host/?sharecode=EIO75LBUTA" target="_blank" rel="noopener">打开你的旧站</a></div>':'');
-  const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}if(g==='pack')openAiPackPractice(packableWords());};
-  $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#aNext').onclick=()=>go(pending.length?'organize':due.length?'recall':'pack');
+  box.querySelectorAll('[data-hq]').forEach(b=>b.onclick=()=>{
+    const g=b.dataset.hq;
+    if(g==='recall')aStartRecall();
+    else if(g==='note')newNote();
+    else if(g==='flash'){ui.mode='flash';ui.flash=null;render();}
+    else if(g==='ai')todayAiDialogue();
+  });
+  const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}};
+  $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
   $('#aTodayWords').onclick=()=>aOpenWords('all');$('#aTodayWrite').onclick=()=>openWriteModal();$('#aTodayFavorites').onclick=aiOpenFavorites;$('#aTodayNew').onclick=aNewWord;$('#aTodayBackup').onclick=aOpenBackup;
   if($('#aBatchOpen'))$('#aBatchOpen').onclick=batchOpen;
   if($('#aResumeGpt'))$('#aResumeGpt').onclick=()=>{const task=aRead(A_TASK_KEY,null);const words=state.words.filter(w=>task&&task.wordIds.includes(w.id));openAiPackPractice(words);};

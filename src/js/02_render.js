@@ -212,7 +212,10 @@ function renderNoteList(){
   if(!notes.length){
     box.innerHTML='<div class="empty-state">'+
       '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
-      '<div><b>'+(ui.folder==='all'?'还没有笔记':'这个文件夹还没有笔记')+'</b><br>点右上角 ＋ 新建一篇笔记，开始积累你的英语表达。<br><span style="font-size:12px;color:var(--text3)">如果这是新候选文件，请从旧文件导出完整备份，再到设置中导入。</span></div></div>';
+      '<div><b>'+(ui.folder==='all'?'还没有笔记':'这个文件夹还没有笔记')+'</b><br>点下面按钮或右上角 ＋ 新建一篇笔记，开始积累你的英语表达。<br><span style="font-size:12px;color:var(--text3)">如果这是新候选文件，请从旧文件导出完整备份，再到设置中导入。</span></div>'+
+      '<button class="btn primary" id="emptyNewNote" type="button" style="margin-top:18px;min-height:48px;padding:0 28px">＋ 新建一篇笔记</button>'+
+    '</div>';
+    const en=$('#emptyNewNote'); if(en) en.addEventListener('click',newNote);
     return;
   }
   box.innerHTML=notes.map(n=>{

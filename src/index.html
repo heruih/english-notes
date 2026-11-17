@@ -267,7 +267,8 @@
         </div>
       </div>
       <div class="wm-section">
-        <div class="wm-label">释义 <button class="mini-btn" id="wmUseAiDef">用 AI 释义</button><span style="flex:1"></span><button class="mini-btn" id="wmShotsBtn" aria-label="查看该词截图">截图 <span id="wmShotsN">0</span></button></div>
+        <div class="wm-label">释义 <button class="mini-btn" id="wmUseAiDef">用 AI 释义</button><span style="flex:1"></span><button class="mini-btn" id="wmShotAdd" aria-label="给这个词添加截图">＋ 截图</button><button class="mini-btn" id="wmShotsBtn" aria-label="查看该词截图">截图 <span id="wmShotsN">0</span></button></div>
+        <input type="file" id="wmShotFile" accept="image/*" multiple style="display:none" aria-label="给这个词选择截图">
         <textarea id="wmDefinition" placeholder="写你自己的中文释义（可含词性）；或点右上角「用 AI 释义」"></textarea>
       </div>
       <div class="wm-section a-fields">
@@ -480,6 +481,7 @@
             <span id="stStoreWarn" class="storage-warn" hidden></span>
           </div>
           <div class="storage-breakdown" id="stStoreBreak"></div>
+          <div class="storage-idb" id="stStoreIdb"></div>
         </div>
       </div>
       <div class="st-field">
