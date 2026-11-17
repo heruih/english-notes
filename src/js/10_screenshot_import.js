@@ -1148,7 +1148,7 @@ exportData=aDownloadBackup;
 importData=aImportFile;
 function aInit(){
   aData=aRead(A_KEY,{words:{},attempts:[]});if(!aData.words||typeof aData.words!=='object')aData.words={};if(!Array.isArray(aData.attempts))aData.attempts=[];
-  const guideButton=document.createElement('button');guideButton.id='aGuideOpen';guideButton.className='btn a-guide-open';guideButton.type='button';guideButton.textContent='使用小手册';guideButton.onclick=()=>$('#aGuide').classList.add('show');const footer=$('.side-footer');if(footer&&!$('#aGuideOpen'))footer.insertBefore(guideButton,footer.firstChild);
+  const guideButton=document.createElement('button');guideButton.id='aGuideOpen';guideButton.type='button';guideButton.className='a-guide-hero';guideButton.innerHTML='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg><span class="agh-copy"><b>使用小手册</b><small>5 步上手，不知道点哪就看它</small></span>';guideButton.onclick=()=>$('#aGuide').classList.add('show');const sideNav=$('#sideNav');if(sideNav&&!$('#aGuideOpen'))sideNav.insertBefore(guideButton,sideNav.firstChild);
   $('#aGuideClose').onclick=()=>$('#aGuide').classList.remove('show');$('#aGuide').addEventListener('click',e=>{if(e.target.id==='aGuide')$('#aGuide').classList.remove('show');});
   /* 手机端表达库筛选抽屉：触发、遮罩、关闭 */
   $('#wordFilterTrigger').onclick=wfOpenSheet;

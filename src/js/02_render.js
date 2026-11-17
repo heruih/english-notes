@@ -281,7 +281,7 @@ function renderTagsPane(){
   let wordsHtml='';
   if(ui.tag){
     const words=state.words.filter(w=>(w.tags||[]).includes(ui.tag)).sort((a,b)=>b.updatedAt-a.updatedAt);
-    wordsHtml=words.length?'<div class="words-grid">'+words.map(wordCardHTML).join('')+'</div>':'<div class="empty-state" style="padding:40px 24px">该标签下暂无单词</div>';
+    wordsHtml=words.length?'<div class="words-grid">'+words.map(wordCardHTML).join('')+'</div>':'<div class="empty-state" style="padding:40px 24px"><b>该标签下暂无单词</b><br>回笔记选中英文词点「empower」收集，再给它打上这个标签。</div>';
   }else if(names.length){
     wordsHtml='<div class="empty-state" style="padding:40px 24px">点击上方标签，查看该标签下的所有单词</div>';
   }else{
@@ -423,7 +423,7 @@ function renderWordsPane(){
     .map(([v,l])=>'<option value="'+v+'"'+(ui.wordSort===v?' selected':'')+'>'+l+'</option>').join('');
   let words=filteredWords();
   const grid=words.length?'<div class="words-grid">'+words.map(wordCardHTML).join('')+'</div>'
-    :'<div class="empty-state" style="padding:40px 24px">这里没有符合条件的单词</div>';
+    :'<div class="empty-state" style="padding:40px 24px"><b>没有符合条件的单词</b><br>换个筛选条件，或点上方「全部」看所有词。</div>';
   const batch=ui.selMode?'<div class="batch-bar">'+
       '<span class="batch-info">已选 <b>'+(ui.sel.length)+'</b> / '+words.length+'</span>'+
       '<button class="btn" data-batch="all">全选</button>'+
