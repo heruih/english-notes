@@ -58,8 +58,9 @@ function ocrInboxRender(){
   const box=$('#ocrBatchList');if(!box)return;
   const list=ocrInboxRead();
   box.innerHTML=list.length?list.map(item=>{
-    const opts=(item.candidates||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.term)+'（'+c.score+'%）</option>').join('');
-    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn danger" data-inbox-delete>删除</button></div></div></div>';
+    const cands=(item.candidates||[]);
+    const chipsHtml=cands.length?cands.map(c=>'<button type="button" class="cand-chip" data-cand="'+esc(c.id)+'">'+esc(c.term)+'</button>').join(''):'<span class="cand-empty">没有候选词，在下面手动输入</span>';
+    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><div class="cand-chips">'+chipsHtml+'</div><input data-inbox-term placeholder="手动输入新词，多个用逗号分隔"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn danger" data-inbox-delete>删除</button></div></div></div>';
   }).join(''):'<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';
 }
 function ocrInboxShow(){
@@ -74,15 +75,33 @@ function ocrAttachShot(w,dataUrl){
 function ocrInboxConfirm(id){
   const list=ocrInboxRead(),item=list.find(x=>x.id===id);if(!item)return;
   const row=Array.from(document.querySelectorAll('[data-inbox-id]')).find(el=>el.dataset.inboxId===id);
-  const choice=row&&row.querySelector('[data-inbox-choice]')?.value||'';
-  const manual=row&&row.querySelector('[data-inbox-term]')?.value.trim()||'';
-  const picked=(item.candidates||[]).find(x=>x.id===choice);
-  const term=manual||(picked&&picked.term)||'';if(!term){toast('先选候选词，或输入一个词／短语','warn');return;}
-  let w=state.words.find(x=>x.id===choice)||state.words.find(x=>ocrNorm(x.term)===ocrNorm(term));
-  let created=false;if(!w){w=upsertWord({term,definition:'',examples:[],collocations:[],tags:[],source:'shot',notes:[],mastered:false});created=true;}
-  if(!ocrAttachShot(w,item.dataUrl)){toast('截图空间已满，当前项保留在收件箱','warn');return;}
+  if(!row)return;
+  /* 选中的候选词（可多个）+ 手动输入（逗号/顿号分隔，可多个） */
+  const candIds=Array.from(row.querySelectorAll('[data-cand].on')).map(b=>b.dataset.cand);
+  const manualTerms=(row.querySelector('[data-inbox-term]')?.value||'').split(/[,，、;；]/).map(s=>s.trim()).filter(Boolean);
+  const targets=[];const seen=new Set();
+  candIds.forEach(cid=>{
+    const w=state.words.find(x=>x.id===cid);
+    if(w&&!seen.has(w.id)){seen.add(w.id);targets.push({w,created:false});}
+  });
+  manualTerms.forEach(term=>{
+    let w=state.words.find(x=>ocrNorm(x.term)===ocrNorm(term));
+    let created=false;
+    if(!w){w=upsertWord({term,definition:'',examples:[],collocations:[],tags:[],source:'shot',notes:[],mastered:false});created=true;}
+    if(!seen.has(w.id)){seen.add(w.id);targets.push({w,created});}
+  });
+  if(!targets.length){toast('先点候选词，或手动输入至少一个词','warn');return;}
+  /* 同一张图依次挂到所有目标词；某个词满了就跳过并记录 */
+  let ok=0;const failed=[],createdIds=[];
+  targets.forEach(t=>{
+    if(ocrAttachShot(t.w,item.dataUrl)){ok++;if(t.created)createdIds.push(t.w.id);}
+    else failed.push(t.w.term);
+  });
+  if(!ok){toast('这些词都没挂上（可能已满 4 张），截图保留在收件箱','warn');return;}
   const next=list.filter(x=>x.id!==id);if(!ocrInboxFlush(next)){toast('收件箱更新失败，当前项保留','warn');return;}
-  if(created)aPut(w.id,{stage:'pending'});save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();toast('已匹配「'+term+'」并保存截图','ok');
+  createdIds.forEach(cid=>aPut(cid,{stage:'pending'}));save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();
+  let msg='已挂到 '+ok+' 个词';if(failed.length)msg+='，「'+failed.join('、')+'」已满跳过';
+  toast(msg,'ok');
 }
 function ocrInboxDelete(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();toast('已删除这张截图','ok');}
 /* 识别专用图：放大2倍 + 灰度 + 提对比度，只喂给 Tesseract，彩色存档图不变 */

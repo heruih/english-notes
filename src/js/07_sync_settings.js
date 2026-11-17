@@ -1325,6 +1325,8 @@ function bindEvents(){
   });
   $('#ocrBatchList').addEventListener('click',e=>{
     const row=e.target.closest('[data-inbox-id]');if(!row)return;
+    const chip=e.target.closest('[data-cand]');
+    if(chip){ e.preventDefault(); chip.classList.toggle('on'); return; }
     const id=row.dataset.inboxId;
     if(e.target.closest('[data-inbox-confirm]'))ocrInboxConfirm(id);
     if(e.target.closest('[data-inbox-delete]'))ocrInboxDelete(id);
