@@ -901,6 +901,8 @@ renderToday=function(){
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
   const quote=todayDailyQuote(),encouragement=todayEncouragement(pending.length,due.length,weak.length);
   const batch=dialogueBatchState(),reviewed=batchReviewedWords(batch).length,batchEntry=(batchReady(batch)||batch.plan)?'<div class="a-batch-entry"><div><b>今日批量情景对话</b><small>已完成复习 '+reviewed+' 个表达 · 每组约 5 个</small></div><button class="btn primary" id="aBatchOpen">'+(batch.plan?'继续场景练习':'规划今日场景')+'</button></div>':'';
+  const inboxN=ocrInboxRead().length;
+  const inboxEntry='<button class="inbox-entry'+(inboxN?' has-pending':'')+'" id="aInboxEntry" type="button"><span class="inbox-entry-main"><b>截图收件箱</b><small>'+(inboxN?inboxN+' 张待匹配截图':'已清空，点这里查看')+'</small></span><span class="inbox-entry-count">'+inboxN+'</span></button>';
   box.innerHTML=
     '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
     '<div class="home-quick">'+
@@ -909,6 +911,7 @@ renderToday=function(){
       '<button class="home-quick-item" data-hq="flash" type="button"><span class="hq-t">英文闪卡</span><span class="hq-d">到期回想练习</span></button>'+
       '<button class="home-quick-item primary" data-hq="ai" type="button"><span class="hq-t">AI 对话</span><span class="hq-d">基于刚复习的词开口</span></button>'+
     '</div>'+
+    inboxEntry+
     '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+batchEntry+
     '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+'</div>'+
     '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayFavorites">收藏对话</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
@@ -923,6 +926,7 @@ renderToday=function(){
     else if(g==='flash'){ui.mode='flash';ui.flash=null;render();}
     else if(g==='ai')todayAiDialogue();
   });
+  $('#aInboxEntry').onclick=ocrInboxShow;
   const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}};
   $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
   $('#aTodayWords').onclick=()=>aOpenWords('all');$('#aTodayWrite').onclick=()=>openWriteModal();$('#aTodayFavorites').onclick=aiOpenFavorites;$('#aTodayNew').onclick=aNewWord;$('#aTodayBackup').onclick=aOpenBackup;

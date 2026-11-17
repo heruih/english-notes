@@ -1170,6 +1170,17 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .today-greet{font-size:12.5px;color:var(--text3);padding:10px 16px 12px;line-height:1.6}
 .today-actions{display:flex;flex-direction:column;gap:10px;padding:0 14px 20px}
 .daily-quote{margin:12px 14px 4px;padding:16px 16px 15px;border:1px solid var(--sep);border-left:3px solid var(--accent);border-radius:var(--radius-card);background:linear-gradient(135deg,var(--s1),var(--s2));box-shadow:var(--shadow-sm)}
+/* 首页截图收件箱入口 */
+.inbox-entry{display:flex;align-items:center;gap:10px;margin:10px 14px 2px;padding:13px 15px;
+  border:1px solid var(--sep);border-radius:var(--radius-card);background:var(--s2);box-shadow:var(--shadow-sm);text-align:left}
+.inbox-entry-main{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.inbox-entry-main b{font-size:15px;color:var(--text)}
+.inbox-entry-main small{font-size:12px;color:var(--text3)}
+.inbox-entry-count{flex:none;min-width:34px;height:34px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--chip-bg);color:var(--chip-text);font-weight:700;font-size:14px}
+.inbox-entry.has-pending{background:linear-gradient(145deg,var(--accent-soft),var(--s2));border-color:var(--accent)}
+.inbox-entry.has-pending .inbox-entry-count{background:var(--accent);color:var(--s1)}
+.inbox-entry:active{transform:scale(.99)}
 .home-quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 14px 6px}
 .home-quick-item{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:80px;
   padding:14px;border:1px solid var(--sep);border-radius:var(--radius-card);
