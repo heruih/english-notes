@@ -62,6 +62,26 @@ html[data-theme="lavender"]{
   --bar-bg:rgba(250,248,255,.96);--toast-bg:rgba(48,42,64,.94);
   --shadow-sm:0 4px 14px rgba(79,61,116,.09);--shadow-lg:0 12px 32px rgba(79,61,116,.13);
 }
+/* 暖纸书房：深暖墨褐底 + 米白纸张卡片 + 墨蓝 + 暖金 */
+html[data-theme="study"]{
+  color-scheme:light;
+  /* 深色背景与容器（保持深） */
+  --bg:#1e1a15;--sidebar:#191510;--sep:#3a322a;--line:#3a322a;
+  /* 纸色上的文字 */
+  --text:#2c3a55;--text-body:#33405c;--text2:#6f675b;--text3:#938a7c;--ph:#b6ab98;
+  /* 纸色梯度：s0 最浅 → s5 稍深 */
+  --s0:#f8f2e7;--s1:#f2e9db;--s2:#e9dfcd;--s3:#e0d4bf;--s4:#d4c5ab;--s5:#c2af94;
+  /* 悬浮 / 激活 */
+  --hover:#e3d7c2;--hover-soft:rgba(44,58,85,.07);--active-soft:rgba(44,58,85,.12);
+  /* 墨蓝主色（实心按钮用 accent，链接/图标用稍亮的 accent-fg，深浅底都可见） */
+  --accent:#3a4d70;--accent-fg:#5b729b;--accent-soft:rgba(91,114,155,.16);
+  --danger:#b5453a;--ok:#3f7d52;--ok-soft:#e7f0e9;--ok-line:#b9d2c0;--warn:#c08a2e;
+  --gold:#d2a24c;
+  --chip-bg:#e6dcc9;--chip-text:#5d5548;
+  --bar-bg:#221d17;--toast-bg:#2c2620;
+  --shadow-sm:0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 14px 36px rgba(0,0,0,.45);
+  --radius-card:18px;--radius-control:14px;
+}
 /* 字号档位 */
 html[data-fs="s"]{--fs-body:15.5px}
 html[data-fs="l"]{--fs-body:19.5px}
@@ -1256,3 +1276,111 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .ai-why,.ai-pitfall{margin-top:8px;font-size:13.5px;line-height:1.7;color:var(--text)}
 .ai-why-label{display:inline-block;font-weight:600;color:var(--text2);margin-right:6px}
 .ai-pitfall-item{display:block;color:var(--text2);font-size:13px;line-height:1.6}
+
+/* ============ 暖纸书房 study 主题专项覆盖（变量映射之外的微调，集中管理） ============ */
+/* a-callout 不再用深色半透明，改成纸色卡片，文字用深色，保证清晰 */
+html[data-theme="study"] .a-callout{
+  background:var(--s1);border:1px solid var(--s4);color:var(--text);
+}
+html[data-theme="study"] .a-callout h3{color:var(--text)}
+html[data-theme="study"] .a-callout p{color:var(--text2)}
+html[data-theme="study"] .a-callout .a-note{color:var(--text2)}
+/* 批量入口同样改为纸色 */
+html[data-theme="study"] .a-batch-entry{
+  background:var(--s1);border:1px solid var(--s4);
+}
+html[data-theme="study"] .a-batch-entry b{color:var(--text)}
+html[data-theme="study"] .a-batch-entry small{color:var(--text2)}
+
+/* ============ 手机端表达库：筛选收进底部抽屉（桌面端布局保持不变） ============ */
+.word-filter-trigger{display:none}
+.sheet-mask,.bottom-sheet{display:none}
+.sheet-mask.show{display:block}
+.bottom-sheet.show{display:flex}
+/* 遮罩 */
+.sheet-mask{position:fixed;inset:0;z-index:1800;background:rgba(0,0,0,.5);animation:sheetFade .2s ease}
+/* 底部抽屉 */
+.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:1810;max-height:86vh;flex-direction:column;
+  background:var(--s1);border-radius:20px 20px 0 0;box-shadow:var(--shadow-lg);animation:sheetUp .26s cubic-bezier(.2,.8,.2,1)}
+.sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--s4);margin:10px auto 2px;flex:none}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px;flex:none}
+.sheet-title{font-size:16px;font-weight:600;color:var(--text)}
+.sheet-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--s3);color:var(--text);font-size:20px;line-height:1}
+.sheet-body{overflow-y:auto;padding:0 16px 26px;display:flex;flex-direction:column;gap:10px}
+/* 抽屉内：筛选块恢复纵向、自动换行，去掉文档流里的外边距/分隔线 */
+.sheet-body .a-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0;padding:0}
+.sheet-body .word-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+.sheet-body .wb-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:none}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sheetFade{from{opacity:0}to{opacity:1}}
+
+@media(max-width:767px){
+  /* 表达库默认隐藏筛选区，由触发按钮打开抽屉 */
+  body.mode-words #noteList > .a-tools,
+  body.mode-words #noteList > .word-filter,
+  body.mode-words #noteList > .wb-bar{display:none}
+  /* 触发按钮 */
+  body.mode-words #wordFilterTrigger{display:flex;align-items:center;gap:8px;
+    width:calc(100% - 28px);margin:10px 14px 2px;min-height:46px;padding:0 16px;
+    background:var(--s1);border:1px solid var(--s4);border-radius:var(--radius-control);
+    color:var(--text);font-size:15px}
+  .wft-label{font-weight:600;flex:none}
+  .wft-summary{flex:1;text-align:left;color:var(--text2);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wft-caret{width:9px;height:9px;border-right:2px solid var(--text2);border-bottom:2px solid var(--text2);transform:rotate(45deg);margin-top:-3px;flex:none}
+  /* 复习流程中隐藏相机悬浮按钮，避免遮挡评分按钮 */
+  body.mode-flash #fabShot{display:none}
+}
+
+/* ============ 手机端首页：练习入口折叠（桌面端默认展开、不显示折叠头） ============ */
+.practice-fold-head{display:none}
+.practice-fold-body{display:block}
+@media(max-width:767px){
+  .practice-fold-head{display:flex;align-items:center;justify-content:space-between;
+    width:calc(100% - 28px);margin:14px 14px 2px;min-height:46px;padding:0 16px;
+    background:var(--s1);border:1px solid var(--s4);border-radius:var(--radius-control);
+    color:var(--text);font-size:15px;font-weight:600}
+  .pfh-label{text-align:left}
+  .pfh-caret{width:9px;height:9px;border-right:2px solid var(--text2);border-bottom:2px solid var(--text2);
+    transform:rotate(45deg);margin-top:-3px;transition:transform .2s ease;flex:none}
+  .practice-fold-head.open .pfh-caret{transform:rotate(-135deg);margin-top:3px}
+  .practice-fold-body{display:none}
+  .practice-fold-body.open{display:block}
+  .practice-fold-body .today-actions{margin-top:8px}
+  .practice-fold-body .a-callout{margin-top:12px}
+}
+
+/* ============ 设置：存储占用卡片 ============ */
+.storage-card{background:var(--s1);border:1px solid var(--s4);border-radius:var(--radius-control);padding:14px}
+.storage-meter{height:10px;border-radius:6px;background:var(--s3);overflow:hidden}
+.storage-meter-fill{height:100%;width:0;border-radius:6px;background:var(--accent);transition:width .3s ease}
+.storage-meter-fill.hot{background:var(--warn)}
+.storage-meta{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.storage-text{font-size:13.5px;color:var(--text);font-weight:600}
+.storage-warn{font-size:12.5px;color:var(--warn);line-height:1.5}
+.storage-breakdown{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.sb-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px}
+.sb-label{color:var(--text2);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-bytes{color:var(--text);flex:none;font-weight:600}
+
+/* ============ 按钮统一规范：主 / 次 / 小 / 危险（颜色全部走变量，不写死色值） ============ */
+/* 次按钮（默认 .btn）：纸色描边，统一圆角与触摸反馈 */
+.btn{background:var(--s2);border-color:var(--s5);color:var(--text);border-radius:var(--radius-control)}
+.btn:hover{background:var(--s3)}
+.btn:active{transform:scale(.97)}
+/* 主按钮：墨蓝实心，每页唯一主动作；hover/active 用亮度叠加，不写死颜色 */
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:var(--accent);filter:brightness(1.1)}
+.btn.primary:active{filter:brightness(.95)}
+/* 危险按钮：危险色描边，半透明色全部由变量派生 */
+.btn.danger{background:transparent;color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.btn.danger:hover{background:color-mix(in srgb,var(--danger) 14%,transparent)}
+/* 小按钮：胶囊、紧凑，统一底色 */
+.mini-btn{background:var(--s3);border-color:var(--s5);color:var(--text-body)}
+.mini-btn:hover{background:var(--s4)}
+/* 图标按钮：统一圆角 */
+.icon-btn{border-radius:12px}
+/* 复习评分按钮：描边颜色也走变量，不写死色值 */
+.grade-btn.again{border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.grade-btn.hard{border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+/* 禁用态压过 active 缩放，避免禁用按钮还能按动 */
+.btn:disabled,.mini-btn:disabled{transform:none;filter:none}

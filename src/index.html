@@ -80,6 +80,11 @@
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <button class="word-filter-trigger" id="wordFilterTrigger" type="button" hidden>
+      <span class="wft-label">筛选</span>
+      <span class="wft-summary" id="wordFilterSummary">全部</span>
+      <span class="wft-caret"></span>
+    </button>
     <div id="noteList"></div>
   </section>
 
@@ -449,6 +454,7 @@
         <label>主题与字号</label>
         <div class="st-inline">
           <div class="seg theme-seg" id="stTheme">
+            <button data-theme-val="study">暖纸书房</button>
             <button data-theme-val="midnight">午夜编辑</button>
             <button data-theme-val="paper">温暖纸张</button>
             <button data-theme-val="lavender">柔雾薰衣草</button>
@@ -465,6 +471,17 @@
       <section class="st-group" id="stgData">
         <button class="st-g-head" data-stg="stgData" type="button"><span class="st-g-t">数据备份</span><span class="st-g-s" id="stgSumData">还没有备份过</span><b class="st-chev">›</b></button>
         <div class="st-g-body">
+      <div class="st-field">
+        <label>存储占用</label>
+        <div class="storage-card">
+          <div class="storage-meter"><div class="storage-meter-fill" id="stStoreFill"></div></div>
+          <div class="storage-meta">
+            <span id="stStoreText" class="storage-text"></span>
+            <span id="stStoreWarn" class="storage-warn" hidden></span>
+          </div>
+          <div class="storage-breakdown" id="stStoreBreak"></div>
+        </div>
+      </div>
       <div class="st-field">
         <label>导出 / 导入 / Anki 卡片</label>
         <div style="display:flex;gap:8px">
@@ -549,6 +566,17 @@
       <button class="btn danger" id="cfOk">确定</button>
     </div>
   </div>
+</div>
+
+<!-- ============ 手机端表达库筛选抽屉（底部弹出） ============ -->
+<div class="sheet-mask" id="wordFilterMask" hidden></div>
+<div class="bottom-sheet" id="wordFilterSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <span class="sheet-title">筛选与排序</span>
+    <button class="sheet-close" id="wordFilterClose" type="button" aria-label="关闭筛选">×</button>
+  </div>
+  <div class="sheet-body" id="wordFilterBody"></div>
 </div>
 
 <!-- ============ 移动浮条（拿起 → 放下） ============ -->

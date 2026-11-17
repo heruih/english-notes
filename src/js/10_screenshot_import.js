@@ -55,20 +55,53 @@ function ocrInboxConfirm(id){
 function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();}
 async function ocrImportBatch(files){
   $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
-  const st=$('#ocrStatus');if(st)st.textContent='正在处理 '+files.length+' 张截图…';
+  const st=$('#ocrStatus');
+  /* 导入前预检：先算当前剩余空间并提示 */
+  const pre=storageQuote();
+  if(st)st.textContent='正在处理 '+files.length+' 张截图…当前剩余空间约 '+fmtBytes(pre.free)+'（每处理一张就保存，可随时关闭）';
   let list=ocrInboxRead();
-  try{await loadTesseract();}catch(e){if(st)st.textContent=e.message;ocrInboxRender();return;}
+  /* 识别组件加载失败也不阻断：先把图存下来，稍后在收件箱手动匹配 */
+  let ocrReady=true;
+  try{await loadTesseract();}catch(e){ocrReady=false;if(st)st.textContent='识别组件未加载，截图将先保存，稍后可手动匹配。';}
+  let saved=0, failed=0, estAvg=0;
   for(let i=0;i<files.length;i++){
-    let dataUrl='';
+    let dataUrl='',text='',candidates=[];
     try{
       dataUrl=await shotCompress(files[i]);
-      const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}}),data=(res&&res.data)||{},text=String(data.text||'').replace(/\s+/g,' ').trim();
-      list.push({id:uid(),dataUrl,text,candidates:ocrCandidates(text),at:Date.now(),status:'pending'});
-    }catch(_){list.push({id:uid(),dataUrl,text:'识别失败，请手动输入',candidates:[],at:Date.now(),status:'pending'});}
-    if(st)st.textContent='已处理 '+(i+1)+' / '+files.length+' 张截图';
+      if(ocrReady){
+        try{
+          const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}}),data=(res&&res.data)||{};
+          text=String(data.text||'').replace(/\s+/g,' ').trim();
+          candidates=ocrCandidates(text);
+        }catch(_){text='';candidates=[];}
+      }
+    }catch(_){failed++;continue;}
+    /* 写入前容量预检：本项增量按 dataUrl 字节 + 少量元数据/JSON 余量估算，
+       写入后会超配额就提前停止，不触发 setItem 异常 */
+    const itemBytes=byteLen(dataUrl)+128;
+    if(storageUsedBytes()+itemBytes>LS_QUOTA){
+      if(st)st.textContent='空间将满：已保存 '+saved+' 张，剩余 '+(files.length-i)+' 张未导入。请先在设置查看占用、整理或导出备份。';
+      toast('剩余空间不够再存一张，已停止导入','warn');
+      ocrInboxRender();
+      return;
+    }
+    list.push({id:uid(),dataUrl,text,candidates,at:Date.now(),status:'pending'});
+    /* 处理一张存一张：写入失败就回退这一条并停止，已保存的都保留 */
+    if(ocrInboxFlush(list)){
+      saved++;
+      estAvg=estAvg?Math.round((estAvg+itemBytes)/2):itemBytes;
+      const canMore=estAvg?Math.floor(storageQuote().free/estAvg):0;
+      if(st)st.textContent='已保存 '+(i+1)+' / '+files.length+' 张 · 预计还能存约 '+canMore+' 张（可随时关闭，已存的不会丢）';
+    }else{
+      list.pop();ocrInboxFlush(list);
+      if(st)st.textContent='存储已满：已保存 '+saved+' 张，剩余 '+(files.length-i-1)+' 张未导入。请先整理或导出备份。';
+      toast('收件箱空间不足，先处理已存截图','warn');
+      ocrInboxRender();
+      return;
+    }
   }
-  const saved=ocrInboxFlush(list);if(!saved&&st)st.textContent='本批次识别完成，但本机空间不足，未能完整保存收件箱。';
   ocrInboxRender();
+  if(!ocrReady&&st)st.textContent='识别组件未加载，'+saved+' 张截图已先保存，可稍后在收件箱手动匹配。';
 }
 function loadTesseract(){
   return new Promise((resolve,reject)=>{
@@ -197,6 +230,73 @@ function aStore(key,value){
   try{localStorage.setItem(key,value);return true;}
   catch(e){toast('没有保存成功：浏览器空间不足或存储被禁用。请先下载完整备份。','warn');return false;}
 }
+/* ============ 配额治理：容量统计、预检、占用显示 ============ */
+/* 按最保守的移动端限制估算：iPhone Safari 单 origin 约 5MB。
+   桌面 Chrome 实际约 10MB，用 5MB 估算只会更保守，不会让用户存爆。 */
+const LS_QUOTA=5*1024*1024;
+const LS_WARN_RATIO=0.8;
+const _utf8=new TextEncoder();
+function byteLen(s){return _utf8.encode(String(s==null?'':s)).length;}
+function fmtBytes(n){
+  if(n<1024)return n+' B';
+  if(n<1024*1024)return (n/1024).toFixed(1)+' KB';
+  return (n/1024/1024).toFixed(2)+' MB';
+}
+/* 同步统计 localStorage 全部已用字节（key 名 + 值，按 UTF-8 精确计算） */
+function storageUsedBytes(){
+  let bytes=0;
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    bytes+=byteLen(k)+byteLen(localStorage.getItem(k));
+  }
+  return bytes;
+}
+/* 逐个 key 统计占用，返回 [{key,bytes}] 从大到小 */
+function storageBreakdown(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    out.push({key:k,bytes:byteLen(k)+byteLen(localStorage.getItem(k))});
+  }
+  return out.sort((a,b)=>b.bytes-a.bytes);
+}
+/* 当前配额快照 */
+function storageQuote(){
+  const used=storageUsedBytes();
+  return {used,quota:LS_QUOTA,free:Math.max(0,LS_QUOTA-used),ratio:used/LS_QUOTA};
+}
+/* 把内部 key 名翻译成大白话标签，不认识的保留原名 */
+function storageKeyLabel(k){
+  const map={
+    'english-notes-app-v1':'词条 / 笔记 / 设置主数据',
+    'english-notes-shots-v1':'单词关联截图',
+    'en-shot-inbox-v1':'截图批量收件箱',
+    'english-notes-wmimg-v1':'单词 AI 配图缓存',
+    'english-notes-qmarks-v2':'例句标亮',
+    'english-notes-learning-a-v1':'学习记录',
+    'english-notes-ai-route-a-v1':'AI 路由偏好',
+    'english-notes-dialogue-batch-v1':'批量情景对话',
+    'english-notes-dialogue-preferences-v1':'对话偏好',
+    'english-notes-dialogue-history-v1':'对话历史'
+  };
+  return map[k]||k;
+}
+/* 渲染设置弹窗里的存储占用：进度条 + 文案 + 预警 + 明细 */
+function storageRender(){
+  const fill=$('#stStoreFill'),text=$('#stStoreText'),warn=$('#stStoreWarn'),br=$('#stStoreBreak');
+  if(!fill)return;
+  const q=storageQuote();
+  const pct=Math.min(100,Math.round(q.ratio*100));
+  fill.style.width=pct+'%';
+  fill.classList.toggle('hot',q.ratio>=LS_WARN_RATIO);
+  text.textContent='已用 '+fmtBytes(q.used)+' / 约 '+fmtBytes(q.quota)+'（'+pct+'%）· 剩余 '+fmtBytes(q.free);
+  if(q.ratio>=LS_WARN_RATIO){
+    warn.hidden=false;
+    warn.textContent='占用已超过 80%，建议先导出完整备份，再清理不需要的截图或配图缓存。';
+  }else{warn.hidden=true;}
+  const rows=storageBreakdown().slice(0,6);
+  br.innerHTML=rows.map(r=>'<div class="sb-row"><span class="sb-label">'+esc(storageKeyLabel(r.key))+'</span><span class="sb-bytes">'+fmtBytes(r.bytes)+'</span></div>').join('');
+}
 function aRead(key,fallback){try{return JSON.parse(localStorage.getItem(key))||fallback;}catch(_){return fallback;}}
 function aFlush(){if(!aStore(A_KEY,JSON.stringify(aData)))throw new Error('学习信息没有保存成功');}
 function aMeta(w){return aData.words[w.id]||{};}
@@ -284,9 +384,20 @@ function aMergeState(local,remote){
   if(!(local.words||[]).length&&!(local.notes||[]).length){if(!(local.settings&&local.settings.apiKey)&&remote.settings)out.settings=remote.settings;if(remote.meta)out.meta=remote.meta;}
   out.tagList=[...new Set([...(local.tagList||[]),...(remote.tagList||[])])];return out;
 }
+/* 标亮记录没有 id，不能走"按 id 去重"的通用路径；按它的自然键（词条+例句序号+原文+起止词）合并 */
+function qmMerge(localRaw,remoteRaw){
+  let l,r;
+  try{l=JSON.parse(localRaw);r=JSON.parse(remoteRaw);}catch(_){return localRaw;}
+  if(!Array.isArray(l)||!Array.isArray(r))return localRaw;
+  const keyOf=x=>[x.w,x.e,x.s,x.f,x.t].map(v=>String(v)).join('');
+  const seen=new Set(l.map(keyOf));
+  r.forEach(x=>{if(!x||typeof x!=='object')return;const k=keyOf(x);if(!seen.has(k)){l.push(x);seen.add(k);}});
+  return JSON.stringify(l);
+}
 function aMergeExtra(key,localRaw,remoteRaw){
   if(localRaw===null)return remoteRaw;
   if(key===A_PREF_KEY)return localRaw;
+  if(key===QM_KEY)return qmMerge(localRaw,remoteRaw);
   let l,r;try{l=JSON.parse(localRaw);r=JSON.parse(remoteRaw);}catch(_){return localRaw;}
   if(key===A_KEY){return JSON.stringify({words:Object.assign({},r.words||{},l.words||{}),attempts:aMergeArray(l.attempts||[],r.attempts||[])});}
   if(key===WM_IMG_KEY){
@@ -361,14 +472,101 @@ const aOriginalWordsPane=renderWordsPane;
 renderWordsPane=function(){
   aOriginalWordsPane();const box=$('#noteList');const tools=document.createElement('div');tools.className='a-tools';
   tools.innerHTML='<button class="btn" id="aPendingFilter">待整理 '+state.words.filter(aPending).length+'</button><label for="aWordDate">收集日期</label><input id="aWordDate" type="date" value="'+esc(ui.wordDate||'')+'"><button class="btn" id="aDateClear">全部日期</button><button class="btn" id="aDateSpeak">练这一批</button><button class="btn" id="aDateWrite">写这一批</button><button class="btn" id="aWordNew">＋ 手动表达</button>';
-  box.prepend(tools);$('#aPendingFilter').onclick=()=>aOpenWords('pending',ui.wordDate);
-  $('#aWordDate').onchange=e=>{ui.wordDate=e.target.value;ui.wordFilter='all';renderWordsPane();};
-  $('#aDateClear').onclick=()=>{ui.wordDate='';renderWordsPane();};
+  box.prepend(tools);$('#aPendingFilter').onclick=()=>{if(ui.wordFilterOpen)wfCloseSheet();aOpenWords('pending',ui.wordDate);};
+  $('#aWordDate').onchange=e=>{ui.wordDate=e.target.value;ui.wordFilter='all';if(ui.wordFilterOpen)wfCloseSheet();renderWordsPane();};
+  $('#aDateClear').onclick=()=>{ui.wordDate='';if(ui.wordFilterOpen)wfCloseSheet();renderWordsPane();};
   $('#aWordNew').onclick=aNewWord;
   $('#aDateSpeak').onclick=()=>{const words=aSelectedWords();if(!words.length){toast('先整理至少一个表达','warn');return;}openAiPackPractice(words.slice(0,3));};
   $('#aDateWrite').onclick=()=>{const words=aSelectedWords();if(!words.length){toast('先整理至少一个表达','warn');return;}aOpenWriteWith(words.slice(0,6));};
   if(ui.wordDate){const p=document.createElement('p');p.className='a-note';p.textContent='正在查看 '+ui.wordDate+' 收集的表达；练习优先使用多选项，未多选时使用当前筛选结果。';tools.after(p);}
+  wfSync();
 };
+/* ============ 手机端表达库：筛选收进底部抽屉（桌面端不触发） ============ */
+const WF_SELECTORS=['.a-tools','.word-filter','.wb-bar'];
+function wfNodes(){return WF_SELECTORS.map(s=>document.querySelector('#noteList '+s)).filter(Boolean);}
+function wfSummary(){
+  const fLabel={all:'全部',due:'待复习',today:'今日新增',todo:'未掌握',done:'已掌握',noex:'缺例句',pending:'待整理'};
+  const sLabel={created:'最近添加',alpha:'字母顺序',due:'到期时间'};
+  const parts=[fLabel[ui.wordFilter]||'全部'];
+  if(ui.wordTag)parts.push('#'+ui.wordTag);
+  if(ui.wordDate)parts.push(ui.wordDate);
+  if(ui.wordSort&&ui.wordSort!=='time')parts.push(sLabel[ui.wordSort]||ui.wordSort);
+  return parts.join(' · ');
+}
+function wfShow(){
+  const mask=$('#wordFilterMask'),sheet=$('#wordFilterSheet');
+  mask.hidden=false;sheet.hidden=false;
+  requestAnimationFrame(()=>{mask.classList.add('show');sheet.classList.add('show');});
+}
+function wfHide(){
+  const mask=$('#wordFilterMask'),sheet=$('#wordFilterSheet');
+  mask.classList.remove('show');sheet.classList.remove('show');
+  setTimeout(()=>{mask.hidden=true;sheet.hidden=true;},260);
+}
+function wfOpenSheet(){
+  const nodes=wfNodes();
+  if(!nodes.length)return;
+  const body=$('#wordFilterBody');
+  nodes.forEach(n=>body.appendChild(n));   // 移动 DOM，事件监听器保留
+  ui.wordFilterOpen=true;
+  wfShow();
+}
+function wfCloseSheet(){
+  ui.wordFilterOpen=false;
+  const body=$('#wordFilterBody');
+  const grid=document.querySelector('#noteList .words-grid')||document.querySelector('#noteList .empty-state');
+  const rank=n=>{const i=WF_SELECTORS.findIndex(s=>n.matches(s));return i<0?99:i;};
+  [...body.children].sort((a,b)=>rank(a)-rank(b)).forEach(n=>{
+    if(grid)grid.parentNode.insertBefore(n,grid);else $('#noteList').appendChild(n);
+  });
+  wfHide();
+}
+function wfSync(){
+  const trig=$('#wordFilterTrigger');
+  if(ui.mode!=='words'){
+    trig.hidden=true;
+    if(ui.wordFilterOpen){ui.wordFilterOpen=false;$('#wordFilterBody').innerHTML='';wfHide();}
+    return;
+  }
+  const nodes=wfNodes();
+  if(!nodes.length){trig.hidden=true;return;}   // 空表达库，无筛选可显示
+  trig.hidden=false;
+  $('#wordFilterSummary').textContent=wfSummary();
+  if(ui.wordFilterOpen){
+    const body=$('#wordFilterBody');body.innerHTML='';
+    nodes.forEach(n=>body.appendChild(n));
+    wfShow();
+  }
+}
+/* ============ 手机端首页：练习入口收进折叠区（桌面端默认展开、不显示折叠头） ============ */
+function pfWrap(){
+  const list=$('#noteList');
+  if(!list)return;
+  const targets=[];
+  const batch=list.querySelector('.a-batch-entry');
+  if(batch)targets.push(batch);
+  const actions=list.querySelector('.today-actions');
+  if(actions)targets.push(actions);
+  /* 每天一小轮卡片：含 #bAudioOpen 的 a-callout */
+  const smallRound=[...list.querySelectorAll('.a-callout')].find(c=>c.querySelector('#bAudioOpen'));
+  if(smallRound)targets.push(smallRound);
+  if(!targets.length)return;
+  const head=document.createElement('button');
+  head.type='button';head.className='practice-fold-head';head.id='practiceFoldHead';
+  head.setAttribute('aria-expanded','false');
+  head.innerHTML='<span class="pfh-label">练习</span><span class="pfh-caret"></span>';
+  const pbody=document.createElement('div');
+  pbody.className='practice-fold-body';pbody.id='practiceFoldBody';
+  const anchor=targets[0];
+  list.insertBefore(head,anchor);
+  list.insertBefore(pbody,anchor);
+  targets.forEach(el=>pbody.appendChild(el));   // 移动 DOM，事件监听器保留
+  head.onclick=()=>{
+    const open=pbody.classList.toggle('open');
+    head.classList.toggle('open',open);
+    head.setAttribute('aria-expanded',open?'true':'false');
+  };
+}
 function aSelectedWords(){return filteredWords().filter(w=>!aPending(w)&&(!ui.selMode||!ui.sel.length||ui.sel.includes(w.id)));}
 function aNewWord(){showConfirm({title:'添加完整表达',msg:'',okText:'继续整理',onOk(){const t=$('#aNewTerm').value.trim();if(!t)return;let w=state.words.find(x=>x.term.toLowerCase()===t.toLowerCase());if(!w){w=upsertWord({term:t,source:'manual'});aPut(w.id,{stage:'pending'});save();}openWordModal(w.term,null,null,w);}});$('#cfMsg').innerHTML='<label for="aNewTerm">输入单词或完整短语</label><input id="aNewTerm" class="wm-coll-input" placeholder="例如 I am not really into it" autocomplete="off">';$('#aNewTerm').focus();}
 const aOriginalCard=wordCardHTML;
@@ -843,6 +1041,10 @@ function aInit(){
   aData=aRead(A_KEY,{words:{},attempts:[]});if(!aData.words||typeof aData.words!=='object')aData.words={};if(!Array.isArray(aData.attempts))aData.attempts=[];
   const guideButton=document.createElement('button');guideButton.id='aGuideOpen';guideButton.className='btn a-guide-open';guideButton.type='button';guideButton.textContent='使用小手册';guideButton.onclick=()=>$('#aGuide').classList.add('show');const footer=$('.side-footer');if(footer&&!$('#aGuideOpen'))footer.insertBefore(guideButton,footer.firstChild);
   $('#aGuideClose').onclick=()=>$('#aGuide').classList.remove('show');$('#aGuide').addEventListener('click',e=>{if(e.target.id==='aGuide')$('#aGuide').classList.remove('show');});
+  /* 手机端表达库筛选抽屉：触发、遮罩、关闭 */
+  $('#wordFilterTrigger').onclick=wfOpenSheet;
+  $('#wordFilterClose').onclick=wfCloseSheet;
+  $('#wordFilterMask').onclick=wfCloseSheet;
   $('#aBridgeClose').onclick=()=>{const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');if(job)job.reject(new Error('已取消本次 ChatGPT 任务，内容没有改动'));};
   $('#aCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#aPrompt').value);toast('任务已复制，打开 ChatGPT 粘贴');}catch(_){$('#aPrompt').focus();$('#aPrompt').select();toast('请长按任务框复制','warn');}};
   $('#aApply').onclick=()=>{if(!aBridgeJob)return;try{const value=aValidateResult(aParseResult($('#aResult').value),aBridgeJob.prompt);const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');job.resolve(value);}catch(e){$('#aBridgeError').textContent='还不能使用：'+e.message;}};
@@ -951,7 +1153,7 @@ async function bSync(){
   finally{bRunning=false;if(bQueued){bQueued=false;bQueue();}}
 }
 const bToday=renderToday;
-renderToday=function(){bToday();const panel=document.createElement('div');panel.className='a-callout';panel.innerHTML='<b>每天一小轮</b><p>看视频 → 收集 3—5 个表达 → 自己整理 → 回想 → 情景输出。</p><div class="a-actions"><button class="btn" id="bAudioOpen">原音与跟读</button><button class="btn" id="bCopyLink">复制本应用链接</button><button class="btn" id="bWeekly">本周进度</button></div><p class="a-note">同一账号跨设备自动同步；接口密钥仅保存在各自设备。</p>';$('#noteList .today-actions').after(panel);$$('#noteList .a-note').forEach(el=>{if(el.textContent.includes('新地址不会自动读取'))el.textContent='ChatGPT 练习沿用你账号中的可用模型；学习内容已接入本应用的私有云保存。';});$('#bAudioOpen').onclick=()=>bOpenAudio();$('#bCopyLink').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin);toast('应用链接已复制，其他设备用同一账号打开即可');}catch(_){toast(location.origin);}};$('#bWeekly').onclick=bShowWeekly;};
+renderToday=function(){bToday();const panel=document.createElement('div');panel.className='a-callout';panel.innerHTML='<b>每天一小轮</b><p>看视频 → 收集 3—5 个表达 → 自己整理 → 回想 → 情景输出。</p><div class="a-actions"><button class="btn" id="bAudioOpen">原音与跟读</button><button class="btn" id="bCopyLink">复制本应用链接</button><button class="btn" id="bWeekly">本周进度</button></div><p class="a-note">同一账号跨设备自动同步；接口密钥仅保存在各自设备。</p>';$('#noteList .today-actions').after(panel);$$('#noteList .a-note').forEach(el=>{if(el.textContent.includes('新地址不会自动读取'))el.textContent='ChatGPT 练习沿用你账号中的可用模型；学习内容已接入本应用的私有云保存。';});$('#bAudioOpen').onclick=()=>bOpenAudio();$('#bCopyLink').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin);toast('应用链接已复制，其他设备用同一账号打开即可');}catch(_){toast(location.origin);}};$('#bWeekly').onclick=bShowWeekly;pfWrap();};
 function bShowWeekly(){const start=Date.now()-7*DAY,logs=aData.attempts.filter(x=>x.createdAt>=start);showConfirm({title:'最近 7 天',msg:'新增 '+state.words.filter(w=>w.createdAt>=start).length+' 个表达；实际练习 '+logs.length+' 次；独立用出 '+new Set(logs.filter(x=>x.result==='independent').map(x=>x.wordId)).size+' 个表达。记录代表练习经历，仍需换场景验证。',okText:'继续学习'});}
 function bOpenAudio(word){
   $('#bAudio').classList.add('show');const select=$('#bAudioWord');select.innerHTML=state.words.map(w=>'<option value="'+esc(w.id)+'">'+esc(w.term)+'</option>').join('');if(word)select.value=word.id;bLoadAudio();

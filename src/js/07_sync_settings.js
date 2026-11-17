@@ -325,8 +325,8 @@ function stGroupSummary(){
   const set=(id,txt)=>{ const el=$('#'+id); if(el) el.textContent=txt; };
   set('stgSumAi',st.apiKey?('已配置 · '+(st.model||'默认模型')):'未配置 Key');
   set('stgSumImg',st.pixabayKey?'已有 Pixabay Key':(st.pexelsKey?'已有 Pexels Key':'未配置 · 用记忆卡代替'));
-  const themeLabel={midnight:'午夜编辑',paper:'温暖纸张',lavender:'柔雾薰衣草',dark:'午夜编辑',light:'温暖纸张'};
-  set('stgSumLook',(themeLabel[st.theme]||'午夜编辑')+' · 字号'+(st.fs==='l'?'大':(st.fs==='s'?'小':'中')));
+  const themeLabel={study:'暖纸书房',midnight:'午夜编辑',paper:'温暖纸张',lavender:'柔雾薰衣草',dark:'午夜编辑',light:'温暖纸张'};
+  set('stgSumLook',(themeLabel[st.theme]||'暖纸书房')+' · 字号'+(st.fs==='l'?'大':(st.fs==='s'?'小':'中')));
   try{
     const cfg0=state.meta&&state.meta.sync;
     if(cfg0&&syncReady(cfg0)&&cfg0.lastAt) set('stgSumData','已开启云同步');
@@ -432,6 +432,7 @@ function openSettings(){
   $('#stTone').value=state.settings.tone||'friend';
   $$('#settingsModal .st-group').forEach(g=>g.classList.toggle('open',g.id==='stgAi'));
   syncSettingsUI();
+  try{storageRender();}catch(_){}
   $('#settingsModal').classList.add('show');
 }
 function saveSettings(){
@@ -831,7 +832,7 @@ function bindEvents(){
     if(ui.mode==='search'){ ui.mode=ui.prevMode||'list'; }
     render();
   });
-  $('#noteList').addEventListener('click',e=>{
+  document.addEventListener('click',e=>{
     const play=e.target.closest('[data-play]');
     if(play){
       const t=play.getAttribute('data-play'),lg=play.getAttribute('data-play-lang')||'en-US';
@@ -864,7 +865,7 @@ function bindEvents(){
       return;
     }
     const wf=e.target.closest('[data-wfilter]');
-    if(wf){ ui.wordFilter=wf.dataset.wfilter; render(); return; }
+    if(wf){ ui.wordFilter=wf.dataset.wfilter; if(ui.wordFilterOpen)wfCloseSheet();render(); return; }
     const ndel=e.target.closest('[data-ndel]');
     if(ndel){ e.stopPropagation(); deleteNote(ndel.dataset.ndel); return; }
     const wlink=e.target.closest('[data-wlink]');
@@ -919,10 +920,10 @@ function bindEvents(){
   $('#noteList').addEventListener('keydown',e=>{
     if(e.target&&e.target.id==='tagNameInput'&&e.key==='Enter'){ e.preventDefault(); addTagFromPane(); }
   });
-  $('#noteList').addEventListener('change',e=>{
+  document.addEventListener('change',e=>{
     const t=e.target;
-    if(t.id==='wbSort'){ ui.wordSort=t.value; renderPane(); return; }
-    if(t.id==='wbTag'){ ui.wordTag=t.value; renderPane(); return; }
+    if(t.id==='wbSort'){ ui.wordSort=t.value; if(ui.wordFilterOpen)wfCloseSheet();renderPane(); return; }
+    if(t.id==='wbTag'){ ui.wordTag=t.value; if(ui.wordFilterOpen)wfCloseSheet();renderPane(); return; }
   });
 
   /* 编辑器 */

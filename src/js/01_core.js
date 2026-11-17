@@ -99,7 +99,9 @@ function migrate(d){
   d.meta.sync=Object.assign({provider:'gist',ghToken:'',ghGistId:'',url:'',user:'',pass:'',auto:true,lastAt:0,lastBy:''},d.meta.sync||{});
   if(!d.meta.sync.provider) d.meta.sync.provider='gist';
   if(!d.meta.device) d.meta.device=uid();
-  d.settings=Object.assign({baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'midnight',fs:'m'},d.settings||{});
+  d.settings=Object.assign({baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'study',fs:'m'},d.settings||{});
+  /* 按要求用暖纸书房替换午夜主题：旧的默认 midnight 一次性转为 study（设置里仍可手动切回午夜） */
+  if(d.settings.theme==='midnight')d.settings.theme='study';
   if(!Array.isArray(d.folders)) d.folders=[];
   if(!Array.isArray(d.notes)) d.notes=[];
   if(!Array.isArray(d.words)) d.words=[];
@@ -122,11 +124,11 @@ function load(){
 /* 主题 / 字号 */
 function applyTheme(){
   const st=state&&state.settings||{};
-  const theme=st.theme==='dark'?'midnight':(st.theme==='light'?'paper':(['midnight','paper','lavender'].includes(st.theme)?st.theme:'midnight'));
+  const theme=st.theme==='dark'?'midnight':(st.theme==='light'?'paper':(['midnight','paper','lavender','study'].includes(st.theme)?st.theme:'study'));
   document.documentElement.setAttribute('data-theme',theme);
   document.documentElement.setAttribute('data-fs',st.fs||'m');
   const mt=document.querySelector('meta[name="theme-color"]');
-  if(mt) mt.setAttribute('content',theme==='paper'?'#f5efe7':(theme==='lavender'?'#f3f0fa':'#141416'));
+  if(mt) mt.setAttribute('content',theme==='paper'?'#f5efe7':(theme==='lavender'?'#f3f0fa':(theme==='study'?'#1e1a15':'#141416')));
 }
 function save(skipSync){
   if(!aStore(LS_KEY,JSON.stringify(state))) throw new Error('保存失败：请先导出完整备份并释放浏览器空间');

@@ -9,21 +9,33 @@ function shotsFlush(all){ return aStore(SHOTS_KEY,JSON.stringify(all)); }
 function shotsKeyOf(t){ return String(t||'').trim().toLowerCase(); }
 function shotsGet(t){ const all=shotsAll(); return all[shotsKeyOf(t)]||[]; }
 function shotsTotal(all){ return Object.keys(all).reduce((s,k)=>s+(Array.isArray(all[k])?all[k].length:0),0); }
-/* 选图 → 压成 640px 宽 JPEG → base64（控制 localStorage 体积） */
+/* 选图 → 压缩 JPEG → base64（控制 localStorage 体积）。
+   配额治理：默认 560px / 0.62；单张超过目标体积再降一档重压，保证单张体积有上限。 */
+const SHOT_COMPRESS_EDGE=560;
+const SHOT_COMPRESS_QUALITY=0.62;
+const SHOT_COMPRESS_EDGE_2=420;
+const SHOT_COMPRESS_QUALITY_2=0.5;
+const SHOT_TARGET_BYTES=120*1024;
+function shotDraw(img,maxEdge,quality){
+  const sc=Math.min(1,maxEdge/Math.max(img.width,img.height));
+  const w=Math.max(1,Math.round(img.width*sc));
+  const h=Math.max(1,Math.round(img.height*sc));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  cv.getContext('2d').drawImage(img,0,0,w,h);
+  return cv.toDataURL('image/jpeg',quality);
+}
 function shotCompress(file){
   return new Promise((resolve,reject)=>{
     const url=URL.createObjectURL(file);
     const img=new Image();
     img.onload=()=>{
       try{
-        const MAX=640;
-        const sc=Math.min(1,MAX/Math.max(img.width,img.height));
-        const w=Math.max(1,Math.round(img.width*sc));
-        const h=Math.max(1,Math.round(img.height*sc));
-        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-        const ctx=cv.getContext('2d');
-        ctx.drawImage(img,0,0,w,h);
-        resolve(cv.toDataURL('image/jpeg',0.7));
+        let dataUrl=shotDraw(img,SHOT_COMPRESS_EDGE,SHOT_COMPRESS_QUALITY);
+        if(dataUrl.length>SHOT_TARGET_BYTES){
+          const smaller=shotDraw(img,SHOT_COMPRESS_EDGE_2,SHOT_COMPRESS_QUALITY_2);
+          if(smaller.length<dataUrl.length)dataUrl=smaller;
+        }
+        resolve(dataUrl);
       }catch(e){ reject(e); }
       finally{ try{ URL.revokeObjectURL(url); }catch(_){ } }
     };
