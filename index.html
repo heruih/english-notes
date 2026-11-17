@@ -72,6 +72,26 @@ html[data-theme="lavender"]{
   --bar-bg:rgba(250,248,255,.96);--toast-bg:rgba(48,42,64,.94);
   --shadow-sm:0 4px 14px rgba(79,61,116,.09);--shadow-lg:0 12px 32px rgba(79,61,116,.13);
 }
+/* 暖纸书房：深暖墨褐底 + 米白纸张卡片 + 墨蓝 + 暖金 */
+html[data-theme="study"]{
+  color-scheme:light;
+  /* 深色背景与容器（保持深） */
+  --bg:#1e1a15;--sidebar:#191510;--sep:#3a322a;--line:#3a322a;
+  /* 纸色上的文字 */
+  --text:#2c3a55;--text-body:#33405c;--text2:#6f675b;--text3:#938a7c;--ph:#b6ab98;
+  /* 纸色梯度：s0 最浅 → s5 稍深 */
+  --s0:#f8f2e7;--s1:#f2e9db;--s2:#e9dfcd;--s3:#e0d4bf;--s4:#d4c5ab;--s5:#c2af94;
+  /* 悬浮 / 激活 */
+  --hover:#e3d7c2;--hover-soft:rgba(44,58,85,.07);--active-soft:rgba(44,58,85,.12);
+  /* 墨蓝主色（实心按钮用 accent，链接/图标用稍亮的 accent-fg，深浅底都可见） */
+  --accent:#3a4d70;--accent-fg:#5b729b;--accent-soft:rgba(91,114,155,.16);
+  --danger:#b5453a;--ok:#3f7d52;--ok-soft:#e7f0e9;--ok-line:#b9d2c0;--warn:#c08a2e;
+  --gold:#d2a24c;
+  --chip-bg:#e6dcc9;--chip-text:#5d5548;
+  --bar-bg:#221d17;--toast-bg:#2c2620;
+  --shadow-sm:0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 14px 36px rgba(0,0,0,.45);
+  --radius-card:18px;--radius-control:14px;
+}
 /* 字号档位 */
 html[data-fs="s"]{--fs-body:15.5px}
 html[data-fs="l"]{--fs-body:19.5px}
@@ -115,6 +135,10 @@ body.side-open #sidebar{transform:none}
 .nav-item:hover{background:var(--hover-soft)}
 .nav-item.active{background:var(--active-soft);color:var(--text);font-weight:600}
 .nav-item .count{margin-left:auto;font-size:12px;color:var(--text3);font-weight:400}
+/* 导航项：图标在左，右侧纵向放标题+一句大白话说明 */
+.nav-item .nav-copy{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.nav-item .nav-desc{font-size:11.5px;color:var(--text3);font-weight:400;line-height:1.35;white-space:normal}
+.nav-item .icon{flex:none}
 .nav-divider{font-size:12px;color:var(--text3);padding:16px 12px 6px;letter-spacing:.5px}
 /* 行尾「⋯」：重命名 / 排序 / 删除都收进这个菜单 */
 .folder-item .fd-more{
@@ -234,11 +258,17 @@ body.mode-edit #noteListPane{display:none}
 .note-organize-word:active{background:var(--accent-soft)}.note-organize-word span{font-size:15px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.note-organize-word small{margin-left:auto;max-width:48%;font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.note-organize-empty{padding:16px 12px;border:1px dashed var(--s5);border-radius:12px;font-size:13px;color:var(--text3);text-align:center}
 .note-organize-actions{display:flex;gap:8px;margin-top:16px}.note-organize-actions .btn{flex:1;min-height:44px}
 .ce.empty::before{content:attr(data-ph);color:var(--ph);pointer-events:none}
-.en-word{position:relative;color:inherit;cursor:help;border:none}
-.en-word::before{
-  content:'';display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:var(--text3);margin:0 6px 2px 0;vertical-align:middle;
+.en-word{
+  position:relative;color:var(--accent);background:var(--accent-soft);
+  font-weight:600;cursor:pointer;border:none;border-radius:6px;
+  padding:1px 5px 1px 4px;margin:0 1px;
+  border-bottom:1px solid color-mix(in srgb,var(--accent) 38%,transparent);
 }
+.en-word::before{
+  content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--accent);margin:0 4px 2px 0;vertical-align:middle;
+}
+.en-word:active{filter:brightness(.95)}
 @media (max-width:767px){
   body.mode-edit #editorWrap{padding:18px 16px 120px}
   .note-editor-label{padding-bottom:12px}
@@ -710,6 +740,8 @@ body.side-open #scrim{display:block}
 .mini-btn:hover{background:var(--s4)}
 .mini-btn:active{transform:scale(.96)}
 .mini-btn:disabled{opacity:.55}
+.mini-btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent);background:color-mix(in srgb,var(--danger) 10%,var(--s1))}
+.mini-btn.danger:hover{background:color-mix(in srgb,var(--danger) 18%,var(--s1))}
 .wm-label .mini-btn{border:none;background:none;min-height:36px;padding:8px 10px;margin-left:auto}
 .wm-label .mini-btn:hover{background:var(--accent-soft)}
 .wm-actions .btn.grow{flex:1}
@@ -717,7 +749,22 @@ body.side-open #scrim{display:block}
 .ex-card .ex-en-text .t{font-size:16px}
 .st-field .btn{white-space:nowrap}
 .wc-ex-more{font-size:11.5px;color:var(--text3);margin-top:3px}
-.ocr-inbox-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--sep)}.ocr-inbox-item img{width:82px;height:62px;object-fit:cover;border-radius:8px;background:var(--s3);flex:none}.ocr-inbox-main{min-width:0;flex:1}.ocr-inbox-text{font-size:13px;color:var(--text2);line-height:1.4;margin-bottom:6px;word-break:break-word}.ocr-inbox-main select,.ocr-inbox-main input{width:100%;min-height:34px;margin-bottom:6px}.ocr-inbox-actions{display:flex;gap:8px}.ocr-inbox-actions .mini-btn{padding:6px 11px}
+.ocr-inbox-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--sep)}.ocr-inbox-item img{width:82px;height:62px;object-fit:cover;border-radius:8px;background:var(--s3);flex:none}.ocr-inbox-main{min-width:0;flex:1}.ocr-inbox-text{width:100%;display:block;font-size:13px;color:var(--text);line-height:1.4;margin-bottom:6px;padding:7px 9px;border:1px solid var(--sep);border-radius:9px;background:var(--s1);resize:vertical;min-height:42px;font-family:inherit}.ocr-inbox-main select,.ocr-inbox-main input{width:100%;min-height:34px;margin-bottom:6px}.ocr-inbox-actions{display:flex;gap:8px}.ocr-inbox-actions .mini-btn{padding:6px 11px}
+.cand-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.cand-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--s5);background:var(--s2);color:var(--text2);font-size:12.5px;font-weight:600;min-height:34px;line-height:1}
+.cand-chip:active{transform:scale(.96)}
+.cand-chip.on{background:var(--accent);border-color:var(--accent);color:var(--s1)}
+.cand-empty{font-size:12px;color:var(--text3)}
+/* 收件箱按文件夹分组 */
+.inbox-group{margin-bottom:10px}
+.inbox-group-title{font-size:12px;font-weight:700;color:var(--text);background:var(--chip-bg);border-radius:10px;padding:7px 11px;margin-bottom:2px;position:sticky;top:0;z-index:2}
+/* 文件夹选择区块 */
+#ocrFolderPick select{width:100%;min-height:42px;margin-bottom:8px}
+.folder-new-row{display:flex;gap:8px;margin-bottom:12px}
+.folder-new-row input{flex:1;min-height:42px}
+.folder-new-row .mini-btn{flex:none}
+.ocr-folder-actions{display:flex;gap:10px}
+.ocr-folder-actions .btn{flex:1}
 
 /* 桌面端：表达库 / 标签 / 闪卡 占满内容区（原来被挤在 330px 里） */
 @media (min-width:768px){
@@ -799,6 +846,9 @@ body.side-open #scrim{display:block}
 .grade-btn.good{background:var(--accent);border-color:transparent;color:#fff}
 .grade-btn.good small{color:rgba(255,255,255,.75)}
 .review-pause-choice{width:min(94%,600px);margin-top:10px;padding:10px 12px;border:1px solid var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--accent-fg);font-size:12px;font-weight:700}.review-pause-choice>span{display:block;margin-bottom:8px}.review-pause-choice>div{display:flex;gap:8px}.review-pause-choice .btn{flex:1;min-height:40px}
+.flash-hint-row{font-size:12.5px;color:var(--text3);min-height:52px;display:flex;align-items:center}
+.review-exit-row{display:flex;justify-content:center;margin-top:10px}
+.review-exit-row .btn{min-height:44px;padding:0 22px;width:100%;max-width:420px}
 .flash-empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:56px 28px;text-align:center}
 .flash-empty .big{font-size:44px}
 .flash-empty b{font-size:17px}
@@ -1130,6 +1180,28 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .today-greet{font-size:12.5px;color:var(--text3);padding:10px 16px 12px;line-height:1.6}
 .today-actions{display:flex;flex-direction:column;gap:10px;padding:0 14px 20px}
 .daily-quote{margin:12px 14px 4px;padding:16px 16px 15px;border:1px solid var(--sep);border-left:3px solid var(--accent);border-radius:var(--radius-card);background:linear-gradient(135deg,var(--s1),var(--s2));box-shadow:var(--shadow-sm)}
+/* 首页截图收件箱入口 */
+.inbox-entry{display:flex;align-items:center;gap:10px;margin:10px 14px 2px;padding:13px 15px;
+  border:1px solid var(--sep);border-radius:var(--radius-card);background:var(--s2);box-shadow:var(--shadow-sm);text-align:left}
+.inbox-entry-main{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.inbox-entry-main b{font-size:15px;color:var(--text)}
+.inbox-entry-main small{font-size:12px;color:var(--text3)}
+.inbox-entry-count{flex:none;min-width:34px;height:34px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--chip-bg);color:var(--chip-text);font-weight:700;font-size:14px}
+.inbox-entry.has-pending{background:linear-gradient(145deg,var(--accent-soft),var(--s2));border-color:var(--accent)}
+.inbox-entry.has-pending .inbox-entry-count{background:var(--accent);color:var(--s1)}
+.inbox-entry:active{transform:scale(.99)}
+.home-quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 14px 6px}
+.home-quick-item{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:80px;
+  padding:14px;border:1px solid var(--sep);border-radius:var(--radius-card);
+  background:linear-gradient(145deg,var(--s1),var(--s2));box-shadow:var(--shadow-sm);
+  text-align:left;cursor:pointer;color:var(--text)}
+.home-quick-item .hq-t{font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-display)}
+.home-quick-item .hq-d{font-size:11.5px;color:var(--text3);line-height:1.4}
+.home-quick-item.primary{background:linear-gradient(145deg,var(--accent),var(--accent-fg));border-color:var(--accent)}
+.home-quick-item.primary .hq-t{color:#fff}
+.home-quick-item.primary .hq-d{color:rgba(255,255,255,.85)}
+.home-quick-item:active{transform:scale(.97)}
 .daily-quote-kicker{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--accent-fg);text-transform:uppercase}
 .daily-quote-en{font-family:var(--font-display);font-size:22px;line-height:1.25;color:var(--text);margin:8px 0 6px}
 .daily-quote-cn{font-size:13px;color:var(--text2);line-height:1.6;margin:0}
@@ -1243,6 +1315,13 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .a-callout h3{font-size:18px;margin:0 0 8px}.a-callout p{font-size:14px;line-height:1.6;margin:8px 0 14px}.a-actions{display:flex;flex-wrap:wrap;gap:8px}.a-stack{display:flex;flex-direction:column;gap:8px}.a-stack textarea{min-height:120px}.a-stack .a-prompt{min-height:150px;font-size:14px}
 #aBridge{z-index:1600}#aRecall{z-index:1450}#aBackup{z-index:1500}.a-stack pre{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text2);font:14px/1.7 inherit}
 #aGuide{z-index:1400}.a-guide-card{width:min(430px,calc(100vw - 28px));max-height:min(620px,calc(100vh - 48px));}.a-guide-body{gap:10px;padding:16px}.a-guide-step{display:flex;flex-direction:column;gap:4px;padding:11px 12px;border:1px solid var(--s4);border-radius:12px;background:var(--s2);line-height:1.55}.a-guide-step b{color:var(--text)}.a-guide-step span{font-size:13px;color:var(--text2)}.a-guide-tip{font-size:12px;color:var(--text3);line-height:1.6;padding:4px 2px 0}.a-guide-open{width:100%;justify-content:flex-start;gap:8px;padding:8px 10px;font-size:13px;color:var(--text2)}
+/* 侧边栏顶部醒目小手册入口（浅色块，在深色侧边栏里突出） */
+.a-guide-hero{display:flex;align-items:center;gap:10px;width:calc(100% - 16px);margin:2px 8px 8px;padding:10px 12px;border-radius:14px;border:1px solid var(--accent-soft);background:linear-gradient(135deg,var(--s2),var(--s3));color:var(--accent);text-align:left;min-height:44px}
+.a-guide-hero .icon{width:22px;height:22px;flex:none}
+.a-guide-hero .agh-copy{display:flex;flex-direction:column;gap:1px;min-width:0}
+.a-guide-hero b{font-size:14px;color:var(--text)}
+.a-guide-hero small{font-size:11.5px;color:var(--text2);line-height:1.3}
+.a-guide-hero:active{filter:brightness(.97)}
 #confirmModal{z-index:1750}[hidden]{display:none!important}
 .a-word-status{font-size:12px;color:var(--text2);padding:0 4px 8px}.a-date-pack{padding:12px;border:1px solid var(--s4);border-radius:12px}
 @media(max-width:480px){.a-tools{gap:6px}.a-tools .btn{padding:8px 10px;font-size:13px}.a-callout{padding:14px}}
@@ -1266,6 +1345,123 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
 .ai-why,.ai-pitfall{margin-top:8px;font-size:13.5px;line-height:1.7;color:var(--text)}
 .ai-why-label{display:inline-block;font-weight:600;color:var(--text2);margin-right:6px}
 .ai-pitfall-item{display:block;color:var(--text2);font-size:13px;line-height:1.6}
+
+/* ============ 暖纸书房 study 主题专项覆盖（变量映射之外的微调，集中管理） ============ */
+/* a-callout 不再用深色半透明，改成纸色卡片，文字用深色，保证清晰 */
+html[data-theme="study"] .a-callout{
+  background:var(--s1);border:1px solid var(--s4);color:var(--text);
+}
+html[data-theme="study"] .a-callout h3{color:var(--text)}
+html[data-theme="study"] .a-callout p{color:var(--text2)}
+html[data-theme="study"] .a-callout .a-note{color:var(--text2)}
+/* 批量入口同样改为纸色 */
+html[data-theme="study"] .a-batch-entry{
+  background:var(--s1);border:1px solid var(--s4);
+}
+html[data-theme="study"] .a-batch-entry b{color:var(--text)}
+html[data-theme="study"] .a-batch-entry small{color:var(--text2)}
+/* 编辑器正文是深底：单词用明亮浅蓝，保证对比清晰（浅纸底的复习卡不受影响，仍用 accent） */
+html[data-theme="study"] #noteBody .en-word{
+  color:#c2d3ec;
+  background:rgba(128,160,205,.22);
+  border-bottom-color:rgba(158,186,222,.5);
+}
+html[data-theme="study"] #noteBody .en-word::before{background:#c2d3ec}
+
+/* ============ 手机端表达库：筛选收进底部抽屉（桌面端布局保持不变） ============ */
+.word-filter-trigger{display:none}
+.sheet-mask,.bottom-sheet{display:none}
+.sheet-mask.show{display:block}
+.bottom-sheet.show{display:flex}
+/* 遮罩 */
+.sheet-mask{position:fixed;inset:0;z-index:1800;background:rgba(0,0,0,.5);animation:sheetFade .2s ease}
+/* 底部抽屉 */
+.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:1810;max-height:86vh;flex-direction:column;
+  background:var(--s1);border-radius:20px 20px 0 0;box-shadow:var(--shadow-lg);animation:sheetUp .26s cubic-bezier(.2,.8,.2,1)}
+.sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--s4);margin:10px auto 2px;flex:none}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px;flex:none}
+.sheet-title{font-size:16px;font-weight:600;color:var(--text)}
+.sheet-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--s3);color:var(--text);font-size:20px;line-height:1}
+.sheet-body{overflow-y:auto;padding:0 16px 26px;display:flex;flex-direction:column;gap:10px}
+/* 抽屉内：筛选块恢复纵向、自动换行，去掉文档流里的外边距/分隔线 */
+.sheet-body .a-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0;padding:0}
+.sheet-body .word-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+.sheet-body .wb-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:none}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sheetFade{from{opacity:0}to{opacity:1}}
+
+@media(max-width:767px){
+  /* 表达库默认隐藏筛选区，由触发按钮打开抽屉 */
+  body.mode-words #noteList > .a-tools,
+  body.mode-words #noteList > .word-filter,
+  body.mode-words #noteList > .wb-bar{display:none}
+  /* 触发按钮 */
+  body.mode-words #wordFilterTrigger{display:flex;align-items:center;gap:8px;
+    width:calc(100% - 28px);margin:10px 14px 2px;min-height:46px;padding:0 16px;
+    background:var(--s1);border:1px solid var(--s4);border-radius:var(--radius-control);
+    color:var(--text);font-size:15px}
+  .wft-label{font-weight:600;flex:none}
+  .wft-summary{flex:1;text-align:left;color:var(--text2);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wft-caret{width:9px;height:9px;border-right:2px solid var(--text2);border-bottom:2px solid var(--text2);transform:rotate(45deg);margin-top:-3px;flex:none}
+  /* 复习流程中隐藏相机悬浮按钮，避免遮挡评分按钮 */
+  body.mode-flash #fabShot{display:none}
+}
+
+/* ============ 手机端首页：练习入口折叠（桌面端默认展开、不显示折叠头） ============ */
+.practice-fold-head{display:none}
+.practice-fold-body{display:block}
+@media(max-width:767px){
+  .practice-fold-head{display:flex;align-items:center;justify-content:space-between;
+    width:calc(100% - 28px);margin:14px 14px 2px;min-height:46px;padding:0 16px;
+    background:var(--s1);border:1px solid var(--s4);border-radius:var(--radius-control);
+    color:var(--text);font-size:15px;font-weight:600}
+  .pfh-label{text-align:left}
+  .pfh-caret{width:9px;height:9px;border-right:2px solid var(--text2);border-bottom:2px solid var(--text2);
+    transform:rotate(45deg);margin-top:-3px;transition:transform .2s ease;flex:none}
+  .practice-fold-head.open .pfh-caret{transform:rotate(-135deg);margin-top:3px}
+  .practice-fold-body{display:none}
+  .practice-fold-body.open{display:block}
+  .practice-fold-body .today-actions{margin-top:8px}
+  .practice-fold-body .a-callout{margin-top:12px}
+}
+
+/* ============ 设置：存储占用卡片 ============ */
+.storage-card{background:var(--s1);border:1px solid var(--s4);border-radius:var(--radius-control);padding:14px}
+.storage-meter{height:10px;border-radius:6px;background:var(--s3);overflow:hidden}
+.storage-meter-fill{height:100%;width:0;border-radius:6px;background:var(--accent);transition:width .3s ease}
+.storage-meter-fill.hot{background:var(--warn)}
+.storage-meta{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.storage-text{font-size:13.5px;color:var(--text);font-weight:600}
+.storage-warn{font-size:12.5px;color:var(--warn);line-height:1.5}
+.storage-breakdown{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.storage-idb{margin-top:8px;padding-top:8px;border-top:1px dashed var(--sep)}
+.storage-idb .sb-label{font-weight:600;color:var(--text-body)}
+.sb-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px}
+.sb-label{color:var(--text2);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-bytes{color:var(--text);flex:none;font-weight:600}
+
+/* ============ 按钮统一规范：主 / 次 / 小 / 危险（颜色全部走变量，不写死色值） ============ */
+/* 次按钮（默认 .btn）：纸色描边，统一圆角与触摸反馈 */
+.btn{background:var(--s2);border-color:var(--s5);color:var(--text);border-radius:var(--radius-control)}
+.btn:hover{background:var(--s3)}
+.btn:active{transform:scale(.97)}
+/* 主按钮：墨蓝实心，每页唯一主动作；hover/active 用亮度叠加，不写死颜色 */
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:var(--accent);filter:brightness(1.1)}
+.btn.primary:active{filter:brightness(.95)}
+/* 危险按钮：危险色描边，半透明色全部由变量派生 */
+.btn.danger{background:transparent;color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.btn.danger:hover{background:color-mix(in srgb,var(--danger) 14%,transparent)}
+/* 小按钮：胶囊、紧凑，统一底色 */
+.mini-btn{background:var(--s3);border-color:var(--s5);color:var(--text-body)}
+.mini-btn:hover{background:var(--s4)}
+/* 图标按钮：统一圆角 */
+.icon-btn{border-radius:12px}
+/* 复习评分按钮：描边颜色也走变量，不写死色值 */
+.grade-btn.again{border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.grade-btn.hard{border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+/* 禁用态压过 active 缩放，避免禁用按钮还能按动 */
+.btn:disabled,.mini-btn:disabled{transform:none;filter:none}
 </style>
 </head>
 <body>
@@ -1286,27 +1482,27 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
     <nav id="sideNav">
       <button class="nav-item" data-nav="today">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <span>今日</span><span class="count" id="navTodayCount"></span>
+        <span class="nav-copy"><b class="nav-name">今日</b><small class="nav-desc">每天的起点：每日一句和快捷入口</small></span><span class="count" id="navTodayCount"></span>
       </button>
       <button class="nav-item" data-nav="all">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
-        <span>全部笔记</span><span class="count" id="navAllCount"></span>
+        <span class="nav-copy"><b class="nav-name">全部笔记</b><small class="nav-desc">你写的所有英文笔记都在这</small></span><span class="count" id="navAllCount"></span>
       </button>
       <button class="nav-item" data-nav="words">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
-        <span>表达库</span><span class="count" id="navWordCount"></span>
+        <span class="nav-copy"><b class="nav-name">表达库</b><small class="nav-desc">收集的所有生词，复习数据都在这</small></span><span class="count" id="navWordCount"></span>
       </button>
       <button class="nav-item" data-nav="tags">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
-        <span>标签聚合</span><span class="count" id="navTagCount"></span>
+        <span class="nav-copy"><b class="nav-name">标签聚合</b><small class="nav-desc">按标签分类看生词</small></span><span class="count" id="navTagCount"></span>
       </button>
       <button class="nav-item" data-nav="flash">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        <span>今日复习</span><span class="nav-dot hidden" id="navFlashDot"></span><span class="count" id="navFlashCount"></span>
+        <span class="nav-copy"><b class="nav-name">今日复习</b><small class="nav-desc">到期该回想的词，先回忆再看答案</small></span><span class="nav-dot hidden" id="navFlashDot"></span><span class="count" id="navFlashCount"></span>
       </button>
       <button class="nav-item" data-nav="speak">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L4 21l1.2-3.7A8.4 8.4 0 1 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>
-        <span>口语记录</span><span class="count" id="navSpeakCount"></span>
+        <span class="nav-copy"><b class="nav-name">口语记录</b><small class="nav-desc">练过的对话和口语都在这</small></span><span class="count" id="navSpeakCount"></span>
       </button>
       <div class="nav-divider">文件夹</div>
       <div id="folderList"></div>
@@ -1338,6 +1534,11 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <button class="word-filter-trigger" id="wordFilterTrigger" type="button" hidden>
+      <span class="wft-label">筛选</span>
+      <span class="wft-summary" id="wordFilterSummary">全部</span>
+      <span class="wft-caret"></span>
+    </button>
     <div id="noteList"></div>
   </section>
 
@@ -1520,7 +1721,8 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
         </div>
       </div>
       <div class="wm-section">
-        <div class="wm-label">释义 <button class="mini-btn" id="wmUseAiDef">用 AI 释义</button><span style="flex:1"></span><button class="mini-btn" id="wmShotsBtn" aria-label="查看该词截图">截图 <span id="wmShotsN">0</span></button></div>
+        <div class="wm-label">释义 <button class="mini-btn" id="wmUseAiDef">用 AI 释义</button><span style="flex:1"></span><button class="mini-btn" id="wmShotAdd" aria-label="给这个词添加截图">＋ 截图</button><button class="mini-btn" id="wmShotsBtn" aria-label="查看该词截图">截图 <span id="wmShotsN">0</span></button></div>
+        <input type="file" id="wmShotFile" accept="image/*" multiple style="display:none" aria-label="给这个词选择截图">
         <textarea id="wmDefinition" placeholder="写你自己的中文释义（可含词性）；或点右上角「用 AI 释义」"></textarea>
       </div>
       <div class="wm-section a-fields">
@@ -1707,6 +1909,7 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
         <label>主题与字号</label>
         <div class="st-inline">
           <div class="seg theme-seg" id="stTheme">
+            <button data-theme-val="study">暖纸书房</button>
             <button data-theme-val="midnight">午夜编辑</button>
             <button data-theme-val="paper">温暖纸张</button>
             <button data-theme-val="lavender">柔雾薰衣草</button>
@@ -1723,6 +1926,18 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
       <section class="st-group" id="stgData">
         <button class="st-g-head" data-stg="stgData" type="button"><span class="st-g-t">数据备份</span><span class="st-g-s" id="stgSumData">还没有备份过</span><b class="st-chev">›</b></button>
         <div class="st-g-body">
+      <div class="st-field">
+        <label>存储占用</label>
+        <div class="storage-card">
+          <div class="storage-meter"><div class="storage-meter-fill" id="stStoreFill"></div></div>
+          <div class="storage-meta">
+            <span id="stStoreText" class="storage-text"></span>
+            <span id="stStoreWarn" class="storage-warn" hidden></span>
+          </div>
+          <div class="storage-breakdown" id="stStoreBreak"></div>
+          <div class="storage-idb" id="stStoreIdb"></div>
+        </div>
+      </div>
       <div class="st-field">
         <label>导出 / 导入 / Anki 卡片</label>
         <div style="display:flex;gap:8px">
@@ -1809,6 +2024,17 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
   </div>
 </div>
 
+<!-- ============ 手机端表达库筛选抽屉（底部弹出） ============ -->
+<div class="sheet-mask" id="wordFilterMask" hidden></div>
+<div class="bottom-sheet" id="wordFilterSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <span class="sheet-title">筛选与排序</span>
+    <button class="sheet-close" id="wordFilterClose" type="button" aria-label="关闭筛选">×</button>
+  </div>
+  <div class="sheet-body" id="wordFilterBody"></div>
+</div>
+
 <!-- ============ 移动浮条（拿起 → 放下） ============ -->
 <div id="mvBar">
   <span id="mvTxt"></span>
@@ -1839,10 +2065,6 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
   <button class="tab-item" data-tab="list">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
     <span>笔记</span>
-  </button>
-  <button class="tab-item" data-tab="words">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
-    <span>表达库</span>
   </button>
   <button class="tab-item" data-tab="flash">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -1895,6 +2117,20 @@ body.mode-flash .global-search,body.mode-speak .global-search{display:none}
       <div id="ocrSelected" class="hidden">
         <div class="wm-label" style="margin-top:14px">已选 / 可自由编辑</div>
         <textarea id="ocrEdit" placeholder="点上面的词框添加，也可直接改或输入整个短语，如 emergency event" rows="2"></textarea>
+      </div>
+      <div id="ocrFolderPick" class="hidden">
+        <div class="wm-label" style="margin-top:14px">这批截图归到哪篇笔记？</div>
+        <select id="ocrNoteSelect"></select>
+        <div class="wm-label" style="margin-top:12px">或新建一篇笔记</div>
+        <select id="ocrNewNoteFolder"></select>
+        <div class="folder-new-row">
+          <input id="ocrNewNoteName" placeholder="输入笔记大标题">
+          <button class="mini-btn" id="ocrNoteNewBtn" type="button">新建</button>
+        </div>
+        <div class="ocr-folder-actions">
+          <button class="btn primary" id="ocrFolderStart" type="button">开始导入</button>
+          <button class="btn" id="ocrFolderCancel" type="button">取消</button>
+        </div>
       </div>
       <div id="ocrBatch" class="hidden">
         <div class="wm-label" style="margin-top:14px">待匹配截图</div>
@@ -2040,7 +2276,9 @@ function migrate(d){
   d.meta.sync=Object.assign({provider:'gist',ghToken:'',ghGistId:'',url:'',user:'',pass:'',auto:true,lastAt:0,lastBy:''},d.meta.sync||{});
   if(!d.meta.sync.provider) d.meta.sync.provider='gist';
   if(!d.meta.device) d.meta.device=uid();
-  d.settings=Object.assign({baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'midnight',fs:'m'},d.settings||{});
+  d.settings=Object.assign({baseUrl:'',apiKey:'',model:'',tone:'friend',theme:'study',fs:'m'},d.settings||{});
+  /* 按要求用暖纸书房替换午夜主题：旧的默认 midnight 一次性转为 study（设置里仍可手动切回午夜） */
+  if(d.settings.theme==='midnight')d.settings.theme='study';
   if(!Array.isArray(d.folders)) d.folders=[];
   if(!Array.isArray(d.notes)) d.notes=[];
   if(!Array.isArray(d.words)) d.words=[];
@@ -2063,11 +2301,11 @@ function load(){
 /* 主题 / 字号 */
 function applyTheme(){
   const st=state&&state.settings||{};
-  const theme=st.theme==='dark'?'midnight':(st.theme==='light'?'paper':(['midnight','paper','lavender'].includes(st.theme)?st.theme:'midnight'));
+  const theme=st.theme==='dark'?'midnight':(st.theme==='light'?'paper':(['midnight','paper','lavender','study'].includes(st.theme)?st.theme:'study'));
   document.documentElement.setAttribute('data-theme',theme);
   document.documentElement.setAttribute('data-fs',st.fs||'m');
   const mt=document.querySelector('meta[name="theme-color"]');
-  if(mt) mt.setAttribute('content',theme==='paper'?'#f5efe7':(theme==='lavender'?'#f3f0fa':'#141416'));
+  if(mt) mt.setAttribute('content',theme==='paper'?'#f5efe7':(theme==='lavender'?'#f3f0fa':(theme==='study'?'#1e1a15':'#141416')));
 }
 function save(skipSync){
   if(!aStore(LS_KEY,JSON.stringify(state))) throw new Error('保存失败：请先导出完整备份并释放浏览器空间');
@@ -2289,7 +2527,10 @@ function renderNoteList(){
   if(!notes.length){
     box.innerHTML='<div class="empty-state">'+
       '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
-      '<div><b>'+(ui.folder==='all'?'还没有笔记':'这个文件夹还没有笔记')+'</b><br>点右上角 ＋ 新建一篇笔记，开始积累你的英语表达。<br><span style="font-size:12px;color:var(--text3)">如果这是新候选文件，请从旧文件导出完整备份，再到设置中导入。</span></div></div>';
+      '<div><b>'+(ui.folder==='all'?'还没有笔记':'这个文件夹还没有笔记')+'</b><br>点下面按钮或右上角 ＋ 新建一篇笔记，开始积累你的英语表达。<br><span style="font-size:12px;color:var(--text3)">如果这是新候选文件，请从旧文件导出完整备份，再到设置中导入。</span></div>'+
+      '<button class="btn primary" id="emptyNewNote" type="button" style="margin-top:18px;min-height:48px;padding:0 28px">＋ 新建一篇笔记</button>'+
+    '</div>';
+    const en=$('#emptyNewNote'); if(en) en.addEventListener('click',newNote);
     return;
   }
   box.innerHTML=notes.map(n=>{
@@ -2355,7 +2596,7 @@ function renderTagsPane(){
   let wordsHtml='';
   if(ui.tag){
     const words=state.words.filter(w=>(w.tags||[]).includes(ui.tag)).sort((a,b)=>b.updatedAt-a.updatedAt);
-    wordsHtml=words.length?'<div class="words-grid">'+words.map(wordCardHTML).join('')+'</div>':'<div class="empty-state" style="padding:40px 24px">该标签下暂无单词</div>';
+    wordsHtml=words.length?'<div class="words-grid">'+words.map(wordCardHTML).join('')+'</div>':'<div class="empty-state" style="padding:40px 24px"><b>该标签下暂无单词</b><br>回笔记选中英文词点「empower」收集，再给它打上这个标签。</div>';
   }else if(names.length){
     wordsHtml='<div class="empty-state" style="padding:40px 24px">点击上方标签，查看该标签下的所有单词</div>';
   }else{
@@ -2497,7 +2738,7 @@ function renderWordsPane(){
     .map(([v,l])=>'<option value="'+v+'"'+(ui.wordSort===v?' selected':'')+'>'+l+'</option>').join('');
   let words=filteredWords();
   const grid=words.length?'<div class="words-grid">'+words.map(wordCardHTML).join('')+'</div>'
-    :'<div class="empty-state" style="padding:40px 24px">这里没有符合条件的单词</div>';
+    :'<div class="empty-state" style="padding:40px 24px"><b>没有符合条件的单词</b><br>换个筛选条件，或点上方「全部」看所有词。</div>';
   const batch=ui.selMode?'<div class="batch-bar">'+
       '<span class="batch-info">已选 <b>'+(ui.sel.length)+'</b> / '+words.length+'</span>'+
       '<button class="btn" data-batch="all">全选</button>'+
@@ -2736,11 +2977,13 @@ function renderFlash(){
         '<b>'+(f.graded?'本轮复习完成了':'现在没有到期的单词')+'</b>'+
         '<div style="font-size:13px;color:var(--text2);line-height:1.7">'+(f.graded?('本轮复习 '+f.graded+' 个单词，已按记忆强度安排下次时间。'):nxtTxt)+'</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">'+
-          '<button class="btn primary" id="rvFree">自由复习一轮（最多 10 个）</button>'+
+          '<button class="btn primary" id="rvHome">返回首页</button>'+
+          '<button class="btn" id="rvFree">自由复习一轮（最多 10 个）</button>'+
           '<button class="btn" id="rvReset">重来今日</button>'+
         '</div>'+
         '<div style="font-size:12px;color:var(--text3)">记忆曲线：1 → 3 → 7 → 15 → 30 天</div>'+
       '</div>';
+    const rh=$('#rvHome'); if(rh) rh.addEventListener('click',()=>{ ui.mode='today'; ui.sideOpen=false; render(); });
     const fb=$('#rvFree'); if(fb) fb.addEventListener('click',()=>{ buildReview('free'); renderFlash(); });
     const rb=$('#rvReset'); if(rb) rb.addEventListener('click',()=>{ buildReview('due'); renderFlash(); });
     return;
@@ -2792,7 +3035,8 @@ function renderFlash(){
           '<button class="grade-btn again" data-grade="0">忘了<small>10 分钟后再练</small></button>'+
           '<button class="grade-btn hard" data-grade="1">有点难<small>缩短间隔</small></button>'+
           '<button class="grade-btn good" data-grade="2">记住了<small>拉长间隔</small></button>'+
-        '</div>':'<div style="font-size:12.5px;color:var(--text3);height:52px;display:flex;align-items:center">先回想，再点卡片翻开</div>')+
+        '</div>':'<div class="flash-hint-row">先回想，再点卡片翻开</div>')+
+      '<div class="review-exit-row"><button class="btn" id="reviewExit" type="button">结束复习，返回首页</button></div>'+
       (dueMode&&recentCount>=recentThreshold?'<div class="review-pause-choice"><span>已完成 '+recentCount+' 个词，下一步？</span><div><button class="btn" id="reviewContinue">继续复习</button><button class="btn primary" id="reviewPause">AI 对话这组</button></div></div>':'')
         :'<div class="flash-actions">'+
           '<button class="btn" id="flashPrev"'+(f.idx===0?' disabled':'')+'>上一张</button>'+
@@ -2835,6 +3079,7 @@ function renderFlash(){
   $$('.grade-btn').forEach(b=>b.addEventListener('click',()=>gradeCurrent(Number(b.dataset.grade))));
   const pause=$('#reviewPause');if(pause)pause.addEventListener('click',()=>{if(typeof batchPauseRecent==='function')batchPauseRecent();});
   const cont=$('#reviewContinue');if(cont)cont.addEventListener('click',()=>{if(typeof batchContinueRecent==='function')batchContinueRecent();});
+  const rex=$('#reviewExit');if(rex)rex.addEventListener('click',()=>{ ui.mode='today'; ui.sideOpen=false; render(); });
   const pv=$('#flashPrev'), nx=$('#flashNext'), ex=$('#flashExit');
   if(pv) pv.addEventListener('click',()=>stepFlash(-1));
   if(nx) nx.addEventListener('click',()=>stepFlash(1));
@@ -6446,8 +6691,8 @@ function stGroupSummary(){
   const set=(id,txt)=>{ const el=$('#'+id); if(el) el.textContent=txt; };
   set('stgSumAi',st.apiKey?('已配置 · '+(st.model||'默认模型')):'未配置 Key');
   set('stgSumImg',st.pixabayKey?'已有 Pixabay Key':(st.pexelsKey?'已有 Pexels Key':'未配置 · 用记忆卡代替'));
-  const themeLabel={midnight:'午夜编辑',paper:'温暖纸张',lavender:'柔雾薰衣草',dark:'午夜编辑',light:'温暖纸张'};
-  set('stgSumLook',(themeLabel[st.theme]||'午夜编辑')+' · 字号'+(st.fs==='l'?'大':(st.fs==='s'?'小':'中')));
+  const themeLabel={study:'暖纸书房',midnight:'午夜编辑',paper:'温暖纸张',lavender:'柔雾薰衣草',dark:'午夜编辑',light:'温暖纸张'};
+  set('stgSumLook',(themeLabel[st.theme]||'暖纸书房')+' · 字号'+(st.fs==='l'?'大':(st.fs==='s'?'小':'中')));
   try{
     const cfg0=state.meta&&state.meta.sync;
     if(cfg0&&syncReady(cfg0)&&cfg0.lastAt) set('stgSumData','已开启云同步');
@@ -6553,6 +6798,7 @@ function openSettings(){
   $('#stTone').value=state.settings.tone||'friend';
   $$('#settingsModal .st-group').forEach(g=>g.classList.toggle('open',g.id==='stgAi'));
   syncSettingsUI();
+  try{storageRender();}catch(_){}
   $('#settingsModal').classList.add('show');
 }
 function saveSettings(){
@@ -6952,7 +7198,7 @@ function bindEvents(){
     if(ui.mode==='search'){ ui.mode=ui.prevMode||'list'; }
     render();
   });
-  $('#noteList').addEventListener('click',e=>{
+  document.addEventListener('click',e=>{
     const play=e.target.closest('[data-play]');
     if(play){
       const t=play.getAttribute('data-play'),lg=play.getAttribute('data-play-lang')||'en-US';
@@ -6985,7 +7231,7 @@ function bindEvents(){
       return;
     }
     const wf=e.target.closest('[data-wfilter]');
-    if(wf){ ui.wordFilter=wf.dataset.wfilter; render(); return; }
+    if(wf){ ui.wordFilter=wf.dataset.wfilter; if(ui.wordFilterOpen)wfCloseSheet();render(); return; }
     const ndel=e.target.closest('[data-ndel]');
     if(ndel){ e.stopPropagation(); deleteNote(ndel.dataset.ndel); return; }
     const wlink=e.target.closest('[data-wlink]');
@@ -7040,10 +7286,10 @@ function bindEvents(){
   $('#noteList').addEventListener('keydown',e=>{
     if(e.target&&e.target.id==='tagNameInput'&&e.key==='Enter'){ e.preventDefault(); addTagFromPane(); }
   });
-  $('#noteList').addEventListener('change',e=>{
+  document.addEventListener('change',e=>{
     const t=e.target;
-    if(t.id==='wbSort'){ ui.wordSort=t.value; renderPane(); return; }
-    if(t.id==='wbTag'){ ui.wordTag=t.value; renderPane(); return; }
+    if(t.id==='wbSort'){ ui.wordSort=t.value; if(ui.wordFilterOpen)wfCloseSheet();renderPane(); return; }
+    if(t.id==='wbTag'){ ui.wordTag=t.value; if(ui.wordFilterOpen)wfCloseSheet();renderPane(); return; }
   });
 
   /* 编辑器 */
@@ -7408,8 +7654,22 @@ function bindEvents(){
   $('#wmShotsBtn').addEventListener('click',()=>{
     const t=wmState&&wmState.term; if(!t) return;
     const list=shotsGet(t);
-    if(!list.length){ toast('还没有截图，点右下角「+」导入','warn'); return; }
+    if(!list.length){ toast('还没有截图，点旁边「＋ 截图」直接添加','warn'); return; }
     openShotViewerFor(t,0);
+  });
+  $('#wmShotAdd').addEventListener('click',()=>{ $('#wmShotFile').click(); });
+  $('#wmShotFile').addEventListener('change',async (e)=>{
+    const t=wmState&&wmState.term;
+    const files=Array.prototype.slice.call(e.target.files||[]);
+    if(!t||!files.length) return;
+    toast('正在处理图片…','info');
+    try{
+      const r=await wmShotsAdd(t,files);
+      wmShotsBtnUpdate();
+      if(r.added) toast('已添加 '+r.added+' 张截图'+(r.failed?'，'+r.failed+' 张因每词上限未加':''),'ok');
+      else toast('这个词已有 '+SHOT_MAX_PER_WORD+' 张，未添加','warn');
+    }catch(err){ toast('添加失败，请重试','warn'); }
+    e.target.value='';
   });
   $('#shotViewer').addEventListener('click',e=>{
     if(e.target.closest('#svPrev')||e.target.closest('#svNext')||e.target.closest('#svDel')) return;
@@ -7431,9 +7691,22 @@ function bindEvents(){
   });
   $('#ocrBatchList').addEventListener('click',e=>{
     const row=e.target.closest('[data-inbox-id]');if(!row)return;
+    const chip=e.target.closest('[data-cand]');
+    if(chip){ e.preventDefault(); chip.classList.toggle('on'); return; }
     const id=row.dataset.inboxId;
     if(e.target.closest('[data-inbox-confirm]'))ocrInboxConfirm(id);
-    if(e.target.closest('[data-inbox-skip]'))ocrInboxSkip(id);
+    if(e.target.closest('[data-inbox-delete]'))ocrInboxDelete(id);
+  });
+  /* 识别文本手动修改后：更新文本、重算候选词并保存，再刷新该行下拉 */
+  $('#ocrBatchList').addEventListener('change',e=>{
+    const ta=e.target.closest('[data-inbox-text]');if(!ta)return;
+    const row=e.target.closest('[data-inbox-id]');if(!row)return;
+    const id=row.dataset.inboxId;
+    const list=ocrInboxRead(),item=list.find(x=>x.id===id);if(!item)return;
+    item.text=ta.value;
+    item.candidates=ocrCandidates(item.text);
+    ocrInboxFlush(list);
+    ocrInboxRender();
   });
   $('#ocrBoxes').addEventListener('click',e=>{
     const b=e.target.closest('.ocr-box'); if(!b) return;
@@ -7823,31 +8096,116 @@ function removeWmColl(i){
 }
 
 /* ============ 我的截图：单词关联截图（独立 key，不碰 words 数据） ============ */
+/* ---- IndexedDB 大对象存储：把截图/收件箱从 localStorage 5MB 挪到 IDB ---- */
+const IDB_NAME='english-notes-blob-v1';
+const IDB_VERSION=1;
+const IDB_STORE_SHOTS='shots';
+const IDB_STORE_INBOX='inbox';
+let idbPromise=null;
+function idbOpen(){
+  if(idbPromise)return idbPromise;
+  idbPromise=new Promise((resolve,reject)=>{
+    if(typeof indexedDB==='undefined'){ reject(new Error('no-idb')); return; }
+    let req;
+    try{ req=indexedDB.open(IDB_NAME,IDB_VERSION); }catch(e){ reject(e); return; }
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE_SHOTS))db.createObjectStore(IDB_STORE_SHOTS);
+      if(!db.objectStoreNames.contains(IDB_STORE_INBOX))db.createObjectStore(IDB_STORE_INBOX);
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('idb-open-failed'));
+    req.onblocked=()=>reject(new Error('idb-blocked'));
+  });
+  return idbPromise;
+}
+function idbGet(store,key){
+  return idbOpen().then(db=>new Promise((resolve,reject)=>{
+    const rq=db.transaction(store,'readonly').objectStore(store).get(key);
+    rq.onsuccess=()=>resolve(rq.result);
+    rq.onerror=()=>reject(rq.error);
+  }));
+}
+function idbSet(store,key,val){
+  return idbOpen().then(db=>new Promise((resolve,reject)=>{
+    const rq=db.transaction(store,'readwrite').objectStore(store).put(val,key);
+    rq.onsuccess=()=>resolve(true);
+    rq.onerror=()=>reject(rq.error);
+  }));
+}
 const SHOTS_KEY='english-notes-shots-v1';
 const SHOT_MAX_PER_WORD=4;
-const SHOT_MAX_TOTAL=80;
-function shotsAll(){
+/* 总上限放宽：IDB 容量足够大，不再用 80 的硬限制，保留一个大值做兜底 */
+const SHOT_MAX_TOTAL=2000;
+function shotsReadLocal(){
   try{ const o=JSON.parse(localStorage.getItem(SHOTS_KEY)||'{}'); return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }catch(_){ return {}; }
 }
-function shotsFlush(all){ return aStore(SHOTS_KEY,JSON.stringify(all)); }
+let shotCache=null;
+let shotReady=false;
+let shotUseIdb=false;
+/* 启动时调用：可用 IDB 就用 IDB，并把 LS 旧数据一次性搬过去；不可用则回退 LS */
+async function shotsInit(){
+  if(shotReady)return;
+  try{
+    await idbOpen();
+    shotUseIdb=true;
+    let data=await idbGet(IDB_STORE_SHOTS,'all');
+    if(!data||typeof data!=='object'||Array.isArray(data)){
+      const legacy=shotsReadLocal();
+      data=shotsTotal(legacy)>0?legacy:{};
+      if(shotsTotal(data)>0)await idbSet(IDB_STORE_SHOTS,'all',data);
+    }
+    shotCache=data;
+    /* IDB 已确认接管且数据已在内存，清掉 LS 旧副本，不再白占 5MB 配额 */
+    try{ localStorage.removeItem(SHOTS_KEY); }catch(_){ }
+  }catch(e){
+    shotUseIdb=false;
+    shotCache=shotsReadLocal();
+  }
+  shotReady=true;
+}
+function shotsAll(){
+  if(shotReady)return shotCache;
+  return shotsReadLocal();
+}
+function shotsFlush(all){
+  if(shotUseIdb){
+    shotCache=all;
+    idbSet(IDB_STORE_SHOTS,'all',all).catch(()=>{ try{ aStore(SHOTS_KEY,JSON.stringify(all)); }catch(_){ } });
+    return true;
+  }
+  return aStore(SHOTS_KEY,JSON.stringify(all));
+}
 function shotsKeyOf(t){ return String(t||'').trim().toLowerCase(); }
 function shotsGet(t){ const all=shotsAll(); return all[shotsKeyOf(t)]||[]; }
 function shotsTotal(all){ return Object.keys(all).reduce((s,k)=>s+(Array.isArray(all[k])?all[k].length:0),0); }
-/* 选图 → 压成 640px 宽 JPEG → base64（控制 localStorage 体积） */
+/* 选图 → 压缩 JPEG → base64（控制 localStorage 体积）。
+   配额治理：默认 560px / 0.62；单张超过目标体积再降一档重压，保证单张体积有上限。 */
+const SHOT_COMPRESS_EDGE=560;
+const SHOT_COMPRESS_QUALITY=0.62;
+const SHOT_COMPRESS_EDGE_2=420;
+const SHOT_COMPRESS_QUALITY_2=0.5;
+const SHOT_TARGET_BYTES=120*1024;
+function shotDraw(img,maxEdge,quality){
+  const sc=Math.min(1,maxEdge/Math.max(img.width,img.height));
+  const w=Math.max(1,Math.round(img.width*sc));
+  const h=Math.max(1,Math.round(img.height*sc));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  cv.getContext('2d').drawImage(img,0,0,w,h);
+  return cv.toDataURL('image/jpeg',quality);
+}
 function shotCompress(file){
   return new Promise((resolve,reject)=>{
     const url=URL.createObjectURL(file);
     const img=new Image();
     img.onload=()=>{
       try{
-        const MAX=640;
-        const sc=Math.min(1,MAX/Math.max(img.width,img.height));
-        const w=Math.max(1,Math.round(img.width*sc));
-        const h=Math.max(1,Math.round(img.height*sc));
-        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-        const ctx=cv.getContext('2d');
-        ctx.drawImage(img,0,0,w,h);
-        resolve(cv.toDataURL('image/jpeg',0.7));
+        let dataUrl=shotDraw(img,SHOT_COMPRESS_EDGE,SHOT_COMPRESS_QUALITY);
+        if(dataUrl.length>SHOT_TARGET_BYTES){
+          const smaller=shotDraw(img,SHOT_COMPRESS_EDGE_2,SHOT_COMPRESS_QUALITY_2);
+          if(smaller.length<dataUrl.length)dataUrl=smaller;
+        }
+        resolve(dataUrl);
       }catch(e){ reject(e); }
       finally{ try{ URL.revokeObjectURL(url); }catch(_){ } }
     };
@@ -7860,6 +8218,22 @@ function wmShotsBtnUpdate(){
   const b=$('#wmShotsN'); if(!b) return;
   const t=wmState&&wmState.term;
   b.textContent=String(t?shotsGet(t).length:0);
+}
+/* 单词弹窗里直接选图：逐张压缩后挂到当前词，返回成功/失败数 */
+async function wmShotsAdd(term,files){
+  const all=shotsAll(),k=shotsKeyOf(term);
+  let list=Array.isArray(all[k])?all[k].slice():[];
+  let added=0,failed=0;
+  for(const file of files){
+    if(list.length>=SHOT_MAX_PER_WORD){ failed++; continue; }
+    try{
+      const dataUrl=await shotCompress(file);
+      list.push({id:uid(),dataUrl,at:Date.now()});
+      added++;
+    }catch(e){ failed++; }
+  }
+  if(added){ all[k]=list; shotsFlush(all); }
+  return {added,failed};
 }
 /* 大图查看器：多张可左右切换，点任意位置返回 */
 function openShotViewerFor(term,i){
@@ -7917,8 +8291,40 @@ let ocrDataUrl='';
 let tesseractReady=false;
 let ocrWords=[];
 const SHOT_INBOX_KEY='en-shot-inbox-v1';
-function ocrInboxRead(){try{const v=JSON.parse(localStorage.getItem(SHOT_INBOX_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
-function ocrInboxFlush(list){return aStore(SHOT_INBOX_KEY,JSON.stringify(list));}
+function inboxReadLocal(){try{const v=JSON.parse(localStorage.getItem(SHOT_INBOX_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
+let inboxCache=null,inboxReady=false,inboxUseIdb=false;
+async function inboxInit(){
+  if(inboxReady)return;
+  try{
+    await idbOpen();
+    inboxUseIdb=true;
+    let data=await idbGet(IDB_STORE_INBOX,'all');
+    if(!Array.isArray(data)){
+      const legacy=inboxReadLocal();
+      data=legacy;
+      if(legacy.length)await idbSet(IDB_STORE_INBOX,'all',data);
+    }
+    inboxCache=data;
+    /* IDB 已接管，清掉 LS 旧收件箱副本 */
+    try{ localStorage.removeItem(SHOT_INBOX_KEY); }catch(_){ }
+  }catch(e){
+    inboxUseIdb=false;
+    inboxCache=inboxReadLocal();
+  }
+  inboxReady=true;
+}
+function ocrInboxRead(){
+  if(inboxReady)return inboxCache;
+  return inboxReadLocal();
+}
+function ocrInboxFlush(list){
+  if(inboxUseIdb){
+    inboxCache=list;
+    idbSet(IDB_STORE_INBOX,'all',list).catch(()=>{ try{ aStore(SHOT_INBOX_KEY,JSON.stringify(list)); }catch(_){ } });
+    return true;
+  }
+  return aStore(SHOT_INBOX_KEY,JSON.stringify(list));
+}
 function ocrNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
 function ocrCandidates(text){
   const hay=ocrNorm(text);if(!hay)return [];
@@ -7938,14 +8344,64 @@ function ocrCandidates(text){
 function ocrInboxRender(){
   const box=$('#ocrBatchList');if(!box)return;
   const list=ocrInboxRead();
-  box.innerHTML=list.length?list.map(item=>{
-    const opts=(item.candidates||[]).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.term)+'（'+c.score+'%）</option>').join('');
-    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><div class="ocr-inbox-text">'+esc(item.text||'未识别到英文词')+'</div><select data-inbox-choice><option value="">选择匹配词条</option>'+opts+'</select><input data-inbox-term placeholder="没有候选时手动输入词或短语"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn" data-inbox-skip>跳过</button></div></div></div>';
-  }).join(''):'<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';
+  if(!list.length){box.innerHTML='<div class="ocr-tip">收件箱为空。一次从相册多选截图后，这里会按识别结果给出候选词。</div>';return;}
+  const itemHtml=item=>{
+    const cands=(item.candidates||[]);
+    const chipsHtml=cands.length?cands.map(c=>'<button type="button" class="cand-chip" data-cand="'+esc(c.id)+'">'+esc(c.term)+'</button>').join(''):'<span class="cand-empty">没有候选词，在下面手动输入</span>';
+    return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><div class="cand-chips">'+chipsHtml+'</div><input data-inbox-term placeholder="手动输入新词，多个用逗号分隔"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn danger" data-inbox-delete>删除</button></div></div></div>';
+  };
+  /* 按笔记（大标题）分组；noteId 为空或笔记已删的归到「未分到笔记」 */
+  const groups=[],gmap={};
+  list.forEach(item=>{
+    const n=item.noteId?state.notes.find(x=>x.id===item.noteId):null;
+    const key=n?n.id:'__none__';
+    if(!gmap[key]){const g={name:n?(n.title||'无标题'):'未分到笔记',items:[]};gmap[key]=g;groups.push(g);}
+    gmap[key].items.push(item);
+  });
+  box.innerHTML=groups.map(g=>'<div class="inbox-group"><div class="inbox-group-title">'+esc(g.name)+'（'+g.items.length+'）</div>'+g.items.map(itemHtml).join('')+'</div>').join('');
 }
 function ocrInboxShow(){
   $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
   const st=$('#ocrStatus');if(st)st.textContent='批量收件箱：确认候选词后，截图会挂到对应词条。';ocrInboxRender();
+}
+/* 导入多文件前选择归属文件夹：返回 folderId；用户取消则 resolve(null) */
+function pickNoteForImport(){
+  return new Promise(resolve=>{
+    $('#ocrSheet').classList.add('show');
+    const noteSel=$('#ocrNoteSelect'),folderSel=$('#ocrNewNoteFolder'),nameInput=$('#ocrNewNoteName');
+    const fill=()=>{
+      const groups=state.folders.map(f=>{
+        const notes=state.notes.filter(n=>n.folderId===f.id);
+        if(!notes.length)return '';
+        return '<optgroup label="'+esc(f.name)+'">'+notes.map(n=>'<option value="'+esc(n.id)+'">'+esc(n.title||'无标题')+'</option>').join('')+'</optgroup>';
+      }).join('');
+      const loose=state.notes.filter(n=>!state.folders.some(f=>f.id===n.folderId));
+      noteSel.innerHTML='<option value="">选择笔记…</option>'+groups+(loose.length?'<optgroup label="未分类">'+loose.map(n=>'<option value="'+esc(n.id)+'">'+esc(n.title||'无标题')+'</option>').join('')+'</optgroup>':'');
+      folderSel.innerHTML=state.folders.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.name)+'</option>').join('');
+      nameInput.value='';
+    };
+    fill();
+    $('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.add('hidden');
+    $('#ocrStatus').textContent='';
+    $('#ocrFolderPick').classList.remove('hidden');
+    const startBtn=$('#ocrFolderStart'),cancelBtn=$('#ocrFolderCancel'),newBtn=$('#ocrNoteNewBtn');
+    const cleanup=()=>{ $('#ocrFolderPick').classList.add('hidden'); startBtn.onclick=null;cancelBtn.onclick=null;newBtn.onclick=null; };
+    newBtn.onclick=()=>{
+      const nm=nameInput.value.trim();
+      if(!nm){toast('先输入笔记大标题','warn');return;}
+      let fid=folderSel.value;
+      if(!fid){fid=state.folders[0]?state.folders[0].id:createFolder('未分类');}
+      const n={id:uid(),folderId:fid,title:nm,content:'',createdAt:Date.now(),updatedAt:Date.now()};
+      state.notes.push(n);save();fill();noteSel.value=n.id;
+      toast('已新建笔记','ok');
+    };
+    startBtn.onclick=()=>{
+      const nid=noteSel.value;
+      if(!nid){toast('选一篇笔记，或在下面新建','warn');return;}
+      cleanup();resolve(nid);
+    };
+    cancelBtn.onclick=()=>{cleanup();resolve(null);};
+  });
 }
 function ocrAttachShot(w,dataUrl){
   const all=shotsAll(),k=shotsKeyOf(w.term),list=Array.isArray(all[k])?all[k]:[];
@@ -7955,33 +8411,133 @@ function ocrAttachShot(w,dataUrl){
 function ocrInboxConfirm(id){
   const list=ocrInboxRead(),item=list.find(x=>x.id===id);if(!item)return;
   const row=Array.from(document.querySelectorAll('[data-inbox-id]')).find(el=>el.dataset.inboxId===id);
-  const choice=row&&row.querySelector('[data-inbox-choice]')?.value||'';
-  const manual=row&&row.querySelector('[data-inbox-term]')?.value.trim()||'';
-  const picked=(item.candidates||[]).find(x=>x.id===choice);
-  const term=manual||(picked&&picked.term)||'';if(!term){toast('先选候选词，或输入一个词／短语','warn');return;}
-  let w=state.words.find(x=>x.id===choice)||state.words.find(x=>ocrNorm(x.term)===ocrNorm(term));
-  let created=false;if(!w){w=upsertWord({term,definition:'',examples:[],collocations:[],tags:[],source:'shot',notes:[],mastered:false});created=true;}
-  if(!ocrAttachShot(w,item.dataUrl)){toast('截图空间已满，当前项保留在收件箱','warn');return;}
+  if(!row)return;
+  /* 选中的候选词（可多个）+ 手动输入（逗号/顿号分隔，可多个） */
+  const candIds=Array.from(row.querySelectorAll('[data-cand].on')).map(b=>b.dataset.cand);
+  const manualTerms=(row.querySelector('[data-inbox-term]')?.value||'').split(/[,，、;；]/).map(s=>s.trim()).filter(Boolean);
+  const targets=[];const seen=new Set();
+  candIds.forEach(cid=>{
+    const w=state.words.find(x=>x.id===cid);
+    if(w&&!seen.has(w.id)){seen.add(w.id);targets.push({w,created:false});}
+  });
+  manualTerms.forEach(term=>{
+    let w=state.words.find(x=>ocrNorm(x.term)===ocrNorm(term));
+    let created=false;
+    if(!w){w=upsertWord({term,definition:'',examples:[],collocations:[],tags:[],source:'shot',notes:[],mastered:false});created=true;}
+    if(!seen.has(w.id)){seen.add(w.id);targets.push({w,created});}
+  });
+  if(!targets.length){toast('先点候选词，或手动输入至少一个词','warn');return;}
+  /* 同一张图依次挂到所有目标词；某个词满了就跳过并记录 */
+  let ok=0;const failed=[],createdIds=[];
+  targets.forEach(t=>{
+    if(ocrAttachShot(t.w,item.dataUrl)){ok++;if(t.created)createdIds.push(t.w.id);}
+    else failed.push(t.w.term);
+  });
+  if(!ok){toast('这些词都没挂上（可能已满 4 张），截图保留在收件箱','warn');return;}
   const next=list.filter(x=>x.id!==id);if(!ocrInboxFlush(next)){toast('收件箱更新失败，当前项保留','warn');return;}
-  if(created)aPut(w.id,{stage:'pending'});save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();toast('已匹配「'+term+'」并保存截图','ok');
+  createdIds.forEach(cid=>aPut(cid,{stage:'pending'}));save();if(ui.mode==='words')renderWordsPane();render();ocrInboxRender();
+  let msg='已挂到 '+ok+' 个词';if(failed.length)msg+='，「'+failed.join('、')+'」已满跳过';
+  toast(msg,'ok');
 }
-function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();}
-async function ocrImportBatch(files){
+function ocrInboxDelete(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInboxFlush(next);ocrInboxRender();toast('已删除这张截图','ok');}
+/* 识别专用图：放大2倍 + 灰度 + 提对比度，只喂给 Tesseract，彩色存档图不变 */
+function ocrLoadImage(dataUrl){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('预处理图读取失败'));
+    img.src=dataUrl;
+  });
+}
+async function ocrPreprocess(dataUrl){
+  const img=await ocrLoadImage(dataUrl);
+  let w=img.width*2,h=img.height*2;
+  const MAXE=2000; /* 限制最大边，避免 canvas 过大 */
+  if(Math.max(w,h)>MAXE){ const k=MAXE/Math.max(w,h); w=Math.round(w*k); h=Math.round(h*k); }
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(img,0,0,w,h);
+  let imgData;
+  try{ imgData=ctx.getImageData(0,0,w,h); }catch(e){ return cv.toDataURL('image/png'); }
+  const d=imgData.data,contrast=1.4,intercept=128*(1-contrast);
+  for(let i=0;i<d.length;i+=4){
+    let g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    g=g*contrast+intercept;
+    if(g<0)g=0;else if(g>255)g=255;
+    d[i]=d[i+1]=d[i+2]=g;
+  }
+  ctx.putImageData(imgData,0,0);
+  return cv.toDataURL('image/png');
+}
+async function ocrImportBatch(files,noteId){
+  const targetNote=state.notes.find(n=>n.id===noteId);
+  const folderId=targetNote?targetNote.folderId:'';
   $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
-  const st=$('#ocrStatus');if(st)st.textContent='正在处理 '+files.length+' 张截图…';
+  const st=$('#ocrStatus');
+  /* 导入前提示：IDB 模式按张数上限，LS 模式按剩余字节 */
+  if(inboxUseIdb){
+    const curN=shotsTotal(shotsAll())+(inboxCache?inboxCache.length:0);
+    if(st)st.textContent='正在处理 '+files.length+' 张截图…截图库共可存 '+SHOT_MAX_TOTAL+' 张，当前已有 '+curN+' 张（每处理一张就保存，可随时关闭）';
+  }else{
+    const pre=storageQuote();
+    if(st)st.textContent='正在处理 '+files.length+' 张截图…当前剩余空间约 '+fmtBytes(pre.free)+'（每处理一张就保存，可随时关闭）';
+  }
   let list=ocrInboxRead();
-  try{await loadTesseract();}catch(e){if(st)st.textContent=e.message;ocrInboxRender();return;}
+  /* 识别组件加载失败也不阻断：先把图存下来，稍后在收件箱手动匹配 */
+  let ocrReady=true;
+  try{await loadTesseract();}catch(e){ocrReady=false;if(st)st.textContent='识别组件未加载，截图将先保存，稍后可手动匹配。';}
+  let saved=0, failed=0, estAvg=0;
   for(let i=0;i<files.length;i++){
-    let dataUrl='';
+    let dataUrl='',text='',candidates=[];
     try{
       dataUrl=await shotCompress(files[i]);
-      const res=await Tesseract.recognize(dataUrl,'eng',{logger:()=>{}}),data=(res&&res.data)||{},text=String(data.text||'').replace(/\s+/g,' ').trim();
-      list.push({id:uid(),dataUrl,text,candidates:ocrCandidates(text),at:Date.now(),status:'pending'});
-    }catch(_){list.push({id:uid(),dataUrl,text:'识别失败，请手动输入',candidates:[],at:Date.now(),status:'pending'});}
-    if(st)st.textContent='已处理 '+(i+1)+' / '+files.length+' 张截图';
+      if(ocrReady){
+        try{
+          let recogSrc=dataUrl;
+          try{ recogSrc=await ocrPreprocess(dataUrl); }catch(__){ recogSrc=dataUrl; }
+          const res=await Tesseract.recognize(recogSrc,'eng',{logger:()=>{}}),data=(res&&res.data)||{};
+          text=String(data.text||'').replace(/\s+/g,' ').trim();
+          candidates=ocrCandidates(text);
+        }catch(_){text='';candidates=[];}
+      }
+    }catch(_){failed++;continue;}
+    /* 写入前容量预检：
+       IDB 模式不受 LS 5MB 限制，只按总张数上限 SHOT_MAX_TOTAL 控制；
+       LS 回退模式才按字节配额提前停止，不触发 setItem 异常。 */
+    const itemBytes=byteLen(dataUrl)+128;
+    if(inboxUseIdb){
+      if(shotsTotal(shotsAll())+list.length+1>SHOT_MAX_TOTAL){
+        if(st)st.textContent='已达截图库上限（'+SHOT_MAX_TOTAL+' 张）：已保存 '+saved+' 张，剩余 '+(files.length-i)+' 张未导入。';
+        toast('截图库已达上限','warn');
+        ocrInboxRender();
+        return;
+      }
+    }else if(storageUsedBytes()+itemBytes>LS_QUOTA){
+      if(st)st.textContent='空间将满：已保存 '+saved+' 张，剩余 '+(files.length-i)+' 张未导入。请先在设置查看占用、整理或导出备份。';
+      toast('剩余空间不够再存一张，已停止导入','warn');
+      ocrInboxRender();
+      return;
+    }
+    list.push({id:uid(),dataUrl,text,candidates,noteId:noteId||'',folderId:folderId||'',at:Date.now(),status:'pending'});
+    /* 处理一张存一张：写入失败就回退这一条并停止，已保存的都保留 */
+    if(ocrInboxFlush(list)){
+      saved++;
+      estAvg=estAvg?Math.round((estAvg+itemBytes)/2):itemBytes;
+      const canMore=inboxUseIdb
+        ? Math.max(0,SHOT_MAX_TOTAL-shotsTotal(shotsAll())-list.length)
+        : (estAvg?Math.floor(storageQuote().free/estAvg):0);
+      if(st)st.textContent='已保存 '+(i+1)+' / '+files.length+' 张 · 预计还能存约 '+canMore+' 张（可随时关闭，已存的不会丢）';
+    }else{
+      list.pop();ocrInboxFlush(list);
+      if(st)st.textContent='存储已满：已保存 '+saved+' 张，剩余 '+(files.length-i-1)+' 张未导入。请先整理或导出备份。';
+      toast('收件箱空间不足，先处理已存截图','warn');
+      ocrInboxRender();
+      return;
+    }
   }
-  const saved=ocrInboxFlush(list);if(!saved&&st)st.textContent='本批次识别完成，但本机空间不足，未能完整保存收件箱。';
   ocrInboxRender();
+  if(!ocrReady&&st)st.textContent='识别组件未加载，'+saved+' 张截图已先保存，可稍后在收件箱手动匹配。';
 }
 function loadTesseract(){
   return new Promise((resolve,reject)=>{
@@ -8009,7 +8565,12 @@ async function ocrImportImage(event){
   const files=Array.from(input.files||[]);
   input.value='';
   if(!files.length) return;
-  if(files.length>1){await ocrImportBatch(files);return;}
+  if(files.length>1){
+    const noteId=await pickNoteForImport();
+    if(!noteId)return;
+    await ocrImportBatch(files,noteId);
+    return;
+  }
   const f=files[0];
   ocrSel=[]; ocrDataUrl=''; ocrWords=[];
   $('#ocrBoxes').innerHTML='';
@@ -8110,6 +8671,87 @@ function aStore(key,value){
   try{localStorage.setItem(key,value);return true;}
   catch(e){toast('没有保存成功：浏览器空间不足或存储被禁用。请先下载完整备份。','warn');return false;}
 }
+/* ============ 配额治理：容量统计、预检、占用显示 ============ */
+/* 按最保守的移动端限制估算：iPhone Safari 单 origin 约 5MB。
+   桌面 Chrome 实际约 10MB，用 5MB 估算只会更保守，不会让用户存爆。 */
+const LS_QUOTA=5*1024*1024;
+const LS_WARN_RATIO=0.8;
+const _utf8=new TextEncoder();
+function byteLen(s){return _utf8.encode(String(s==null?'':s)).length;}
+function fmtBytes(n){
+  if(n<1024)return n+' B';
+  if(n<1024*1024)return (n/1024).toFixed(1)+' KB';
+  return (n/1024/1024).toFixed(2)+' MB';
+}
+/* 同步统计 localStorage 全部已用字节（key 名 + 值，按 UTF-8 精确计算） */
+function storageUsedBytes(){
+  let bytes=0;
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    bytes+=byteLen(k)+byteLen(localStorage.getItem(k));
+  }
+  return bytes;
+}
+/* IndexedDB 截图库占用：用内存数据估算（http 下 navigator.storage 不可用） */
+function idbUsedBytes(){
+  let b=0;
+  if(shotReady&&shotCache) b+=byteLen(JSON.stringify(shotCache));
+  if(inboxReady&&inboxCache) b+=byteLen(JSON.stringify(inboxCache));
+  return b;
+}
+/* 逐个 key 统计占用，返回 [{key,bytes}] 从大到小 */
+function storageBreakdown(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    out.push({key:k,bytes:byteLen(k)+byteLen(localStorage.getItem(k))});
+  }
+  return out.sort((a,b)=>b.bytes-a.bytes);
+}
+/* 当前配额快照 */
+function storageQuote(){
+  const used=storageUsedBytes();
+  return {used,quota:LS_QUOTA,free:Math.max(0,LS_QUOTA-used),ratio:used/LS_QUOTA};
+}
+/* 把内部 key 名翻译成大白话标签，不认识的保留原名 */
+function storageKeyLabel(k){
+  const map={
+    'english-notes-app-v1':'词条 / 笔记 / 设置主数据',
+    'english-notes-shots-v1':'单词关联截图',
+    'en-shot-inbox-v1':'截图批量收件箱',
+    'english-notes-wmimg-v1':'单词 AI 配图缓存',
+    'english-notes-qmarks-v2':'例句标亮',
+    'english-notes-learning-a-v1':'学习记录',
+    'english-notes-ai-route-a-v1':'AI 路由偏好',
+    'english-notes-dialogue-batch-v1':'批量情景对话',
+    'english-notes-dialogue-preferences-v1':'对话偏好',
+    'english-notes-dialogue-history-v1':'对话历史'
+  };
+  return map[k]||k;
+}
+/* 渲染设置弹窗里的存储占用：进度条 + 文案 + 预警 + 明细 */
+function storageRender(){
+  const fill=$('#stStoreFill'),text=$('#stStoreText'),warn=$('#stStoreWarn'),br=$('#stStoreBreak');
+  if(!fill)return;
+  const q=storageQuote();
+  const pct=Math.min(100,Math.round(q.ratio*100));
+  fill.style.width=pct+'%';
+  fill.classList.toggle('hot',q.ratio>=LS_WARN_RATIO);
+  text.textContent='已用 '+fmtBytes(q.used)+' / 约 '+fmtBytes(q.quota)+'（'+pct+'%）· 剩余 '+fmtBytes(q.free);
+  if(q.ratio>=LS_WARN_RATIO){
+    warn.hidden=false;
+    warn.textContent='占用已超过 80%，建议先导出完整备份，再清理不需要的截图或配图缓存。';
+  }else{warn.hidden=true;}
+  const rows=storageBreakdown().slice(0,6);
+  br.innerHTML=rows.map(r=>'<div class="sb-row"><span class="sb-label">'+esc(storageKeyLabel(r.key))+'</span><span class="sb-bytes">'+fmtBytes(r.bytes)+'</span></div>').join('');
+  const idbEl=$('#stStoreIdb');
+  if(idbEl){
+    const idbOn=shotUseIdb||inboxUseIdb;
+    const shotsN=(shotReady?shotsTotal(shotCache):0)+(inboxReady&&inboxCache?inboxCache.length:0);
+    if(idbOn) idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库（大容量）· '+shotsN+' 张（含收件箱）</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
+    else idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库未启用，仍占本地存储</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
+  }
+}
 function aRead(key,fallback){try{return JSON.parse(localStorage.getItem(key))||fallback;}catch(_){return fallback;}}
 function aFlush(){if(!aStore(A_KEY,JSON.stringify(aData)))throw new Error('学习信息没有保存成功');}
 function aMeta(w){return aData.words[w.id]||{};}
@@ -8179,7 +8821,14 @@ function aImageStatsFromStorage(storage){
   return aImageCacheStats(all,words);
 }
 function aBackupKeys(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('english-notes-'))out[k]=localStorage.getItem(k);}return out;}
-function aBackupObject(){const image=aImageCacheStats(wmImgAll(),state.words);return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:image.records,imageCacheWords:image.cachedWords,imageCacheConfirmed:image.confirmedWords,imageCacheMissing:image.missingWords},storage:aBackupKeys()};}
+function aBackupObject(){
+  const image=aImageCacheStats(wmImgAll(),state.words);
+  const storage=aBackupKeys();
+  /* 截图/收件箱已迁到 IDB，导出时用内存里的最新数据覆盖，避免漏掉新图 */
+  if(shotReady) storage[SHOTS_KEY]=JSON.stringify(shotCache);
+  if(inboxReady) storage[SHOT_INBOX_KEY]=JSON.stringify(inboxCache);
+  return {format:'english-notes-full',version:2,exportedAt:new Date().toISOString(),origin:location.origin,counts:{words:state.words.length,notes:state.notes.length,shots:shotsTotal(shotsAll()),writing:writeLogAll().length,imageCache:image.records,imageCacheWords:image.cachedWords,imageCacheConfirmed:image.confirmedWords,imageCacheMissing:image.missingWords},storage:storage};
+}
 function aDownloadBackup(){
   try{if(ui.mode==='edit')persistEditor();if(wmState&&!wmState.saved)wmDraftSave();writeDraftSave();const pack=aBackupObject();const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download='英语学习完整备份-'+aDate(Date.now())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);$('#aBackupStatus').textContent='已请求下载：'+pack.counts.words+' 个表达、'+pack.counts.shots+' 张截图、'+pack.counts.writing+' 篇写作。请在下载列表确认文件已保存。';}
   catch(e){toast('备份失败：'+e.message,'warn');}
@@ -8197,9 +8846,20 @@ function aMergeState(local,remote){
   if(!(local.words||[]).length&&!(local.notes||[]).length){if(!(local.settings&&local.settings.apiKey)&&remote.settings)out.settings=remote.settings;if(remote.meta)out.meta=remote.meta;}
   out.tagList=[...new Set([...(local.tagList||[]),...(remote.tagList||[])])];return out;
 }
+/* 标亮记录没有 id，不能走"按 id 去重"的通用路径；按它的自然键（词条+例句序号+原文+起止词）合并 */
+function qmMerge(localRaw,remoteRaw){
+  let l,r;
+  try{l=JSON.parse(localRaw);r=JSON.parse(remoteRaw);}catch(_){return localRaw;}
+  if(!Array.isArray(l)||!Array.isArray(r))return localRaw;
+  const keyOf=x=>[x.w,x.e,x.s,x.f,x.t].map(v=>String(v)).join('');
+  const seen=new Set(l.map(keyOf));
+  r.forEach(x=>{if(!x||typeof x!=='object')return;const k=keyOf(x);if(!seen.has(k)){l.push(x);seen.add(k);}});
+  return JSON.stringify(l);
+}
 function aMergeExtra(key,localRaw,remoteRaw){
   if(localRaw===null)return remoteRaw;
   if(key===A_PREF_KEY)return localRaw;
+  if(key===QM_KEY)return qmMerge(localRaw,remoteRaw);
   let l,r;try{l=JSON.parse(localRaw);r=JSON.parse(remoteRaw);}catch(_){return localRaw;}
   if(key===A_KEY){return JSON.stringify({words:Object.assign({},r.words||{},l.words||{}),attempts:aMergeArray(l.attempts||[],r.attempts||[])});}
   if(key===WM_IMG_KEY){
@@ -8230,6 +8890,8 @@ function aPrepareImport(pack){
   const incoming=JSON.parse(storage[LS_KEY]);
   const merged=aMergeState(base,incoming),plan={[LS_KEY]:JSON.stringify(merged)};
   Object.keys(storage).forEach(k=>{if(k===LS_KEY||!k.startsWith('english-notes-')||typeof storage[k]!=='string')return;plan[k]=aMergeExtra(k,localStorage.getItem(k),storage[k]);});
+  /* 收件箱 key 不以 english-notes- 开头，单独合并 */
+  if(typeof storage[SHOT_INBOX_KEY]==='string') plan[SHOT_INBOX_KEY]=aMergeExtra(SHOT_INBOX_KEY,localStorage.getItem(SHOT_INBOX_KEY),storage[SHOT_INBOX_KEY]);
   return {plan,merged,added:merged.words.length-(base.words||[]).length,imageStats:aImageStatsFromStorage(storage)};
 }
 function aCommitImport(prepared){
@@ -8237,8 +8899,23 @@ function aCommitImport(prepared){
   try{Object.keys(prepared.plan).forEach(k=>localStorage.setItem(k,prepared.plan[k]));}
   catch(e){Object.keys(before).forEach(k=>{if(before[k]===null)localStorage.removeItem(k);else localStorage.setItem(k,before[k]);});throw new Error('空间不足，导入已撤回，请先备份并释放空间');}
   state=migrate(prepared.merged);aData=aRead(A_KEY,{words:{},attempts:[]});ui.mode='today';ui.note=null;ui.wordDate='';applyTheme();render();
+  syncImportedBlobs(prepared);
   const image=aImageCacheStats(wmImgAll(),state.words);
   $('#aBackupStatus').textContent='已补充 '+prepared.added+' 个表达；备份带来 '+(prepared.imageStats?prepared.imageStats.records:0)+' 条配图记录。当前共 '+state.words.length+' 个表达、'+shotsTotal(shotsAll())+' 张截图、'+image.records+' 条配图记录，已确认 '+image.confirmedWords+' 条。';
+}
+/* 导入后把合并的截图/收件箱同步到 IDB，并刷新内存缓存（IDB 不可用时它们已在 localStorage） */
+async function syncImportedBlobs(prepared){
+  try{
+    await shotsInit(); await inboxInit();
+    if(typeof prepared.plan[SHOTS_KEY]==='string'){
+      const shots=JSON.parse(prepared.plan[SHOTS_KEY]);
+      if(shotUseIdb){ shotCache=shots; await idbSet(IDB_STORE_SHOTS,'all',shots); }
+    }
+    if(typeof prepared.plan[SHOT_INBOX_KEY]==='string'){
+      const inbox=JSON.parse(prepared.plan[SHOT_INBOX_KEY]);
+      if(inboxUseIdb){ inboxCache=inbox; await idbSet(IDB_STORE_INBOX,'all',inbox); }
+    }
+  }catch(e){ console.error('导入截图同步失败',e); }
 }
 function aImportFile(file){
   if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const p=aPrepareImport(JSON.parse(fr.result)),img=p.imageStats||{};showConfirm({title:'补充导入备份？',msg:'将补充 '+p.added+' 个表达，并带来 '+(img.records||0)+' 条配图记录，其中已确认 '+(img.confirmedWords||0)+' 条。同 ID／同表达的本机内容不覆盖。',okText:'补充导入',onOk(){try{aCommitImport(p);}catch(e){toast(e.message,'warn');}}});}catch(e){toast('导入失败：'+e.message,'warn');}};fr.readAsText(file);
@@ -8274,14 +8951,104 @@ const aOriginalWordsPane=renderWordsPane;
 renderWordsPane=function(){
   aOriginalWordsPane();const box=$('#noteList');const tools=document.createElement('div');tools.className='a-tools';
   tools.innerHTML='<button class="btn" id="aPendingFilter">待整理 '+state.words.filter(aPending).length+'</button><label for="aWordDate">收集日期</label><input id="aWordDate" type="date" value="'+esc(ui.wordDate||'')+'"><button class="btn" id="aDateClear">全部日期</button><button class="btn" id="aDateSpeak">练这一批</button><button class="btn" id="aDateWrite">写这一批</button><button class="btn" id="aWordNew">＋ 手动表达</button>';
-  box.prepend(tools);$('#aPendingFilter').onclick=()=>aOpenWords('pending',ui.wordDate);
-  $('#aWordDate').onchange=e=>{ui.wordDate=e.target.value;ui.wordFilter='all';renderWordsPane();};
-  $('#aDateClear').onclick=()=>{ui.wordDate='';renderWordsPane();};
+  box.prepend(tools);$('#aPendingFilter').onclick=()=>{if(ui.wordFilterOpen)wfCloseSheet();aOpenWords('pending',ui.wordDate);};
+  $('#aWordDate').onchange=e=>{ui.wordDate=e.target.value;ui.wordFilter='all';if(ui.wordFilterOpen)wfCloseSheet();renderWordsPane();};
+  $('#aDateClear').onclick=()=>{ui.wordDate='';if(ui.wordFilterOpen)wfCloseSheet();renderWordsPane();};
   $('#aWordNew').onclick=aNewWord;
   $('#aDateSpeak').onclick=()=>{const words=aSelectedWords();if(!words.length){toast('先整理至少一个表达','warn');return;}openAiPackPractice(words.slice(0,3));};
   $('#aDateWrite').onclick=()=>{const words=aSelectedWords();if(!words.length){toast('先整理至少一个表达','warn');return;}aOpenWriteWith(words.slice(0,6));};
   if(ui.wordDate){const p=document.createElement('p');p.className='a-note';p.textContent='正在查看 '+ui.wordDate+' 收集的表达；练习优先使用多选项，未多选时使用当前筛选结果。';tools.after(p);}
+  wfSync();
 };
+/* ============ 手机端表达库：筛选收进底部抽屉（桌面端不触发） ============ */
+const WF_SELECTORS=['.a-tools','.word-filter','.wb-bar'];
+function wfNodes(){return WF_SELECTORS.map(s=>document.querySelector('#noteList '+s)).filter(Boolean);}
+function wfSummary(){
+  const fLabel={all:'全部',due:'待复习',today:'今日新增',todo:'未掌握',done:'已掌握',noex:'缺例句',pending:'待整理'};
+  const sLabel={created:'最近添加',alpha:'字母顺序',due:'到期时间'};
+  const parts=[fLabel[ui.wordFilter]||'全部'];
+  if(ui.wordTag)parts.push('#'+ui.wordTag);
+  if(ui.wordDate)parts.push(ui.wordDate);
+  if(ui.wordSort&&ui.wordSort!=='time')parts.push(sLabel[ui.wordSort]||ui.wordSort);
+  return parts.join(' · ');
+}
+function wfShow(){
+  const mask=$('#wordFilterMask'),sheet=$('#wordFilterSheet');
+  mask.hidden=false;sheet.hidden=false;
+  requestAnimationFrame(()=>{mask.classList.add('show');sheet.classList.add('show');});
+}
+function wfHide(){
+  const mask=$('#wordFilterMask'),sheet=$('#wordFilterSheet');
+  mask.classList.remove('show');sheet.classList.remove('show');
+  setTimeout(()=>{mask.hidden=true;sheet.hidden=true;},260);
+}
+function wfOpenSheet(){
+  const nodes=wfNodes();
+  if(!nodes.length)return;
+  const body=$('#wordFilterBody');
+  nodes.forEach(n=>body.appendChild(n));   // 移动 DOM，事件监听器保留
+  ui.wordFilterOpen=true;
+  wfShow();
+}
+function wfCloseSheet(){
+  ui.wordFilterOpen=false;
+  const body=$('#wordFilterBody');
+  const grid=document.querySelector('#noteList .words-grid')||document.querySelector('#noteList .empty-state');
+  const rank=n=>{const i=WF_SELECTORS.findIndex(s=>n.matches(s));return i<0?99:i;};
+  [...body.children].sort((a,b)=>rank(a)-rank(b)).forEach(n=>{
+    if(grid)grid.parentNode.insertBefore(n,grid);else $('#noteList').appendChild(n);
+  });
+  wfHide();
+}
+function wfSync(){
+  const trig=$('#wordFilterTrigger');
+  if(ui.mode!=='words'){
+    trig.hidden=true;
+    if(ui.wordFilterOpen){ui.wordFilterOpen=false;$('#wordFilterBody').innerHTML='';wfHide();}
+    return;
+  }
+  const nodes=wfNodes();
+  if(!nodes.length){trig.hidden=true;return;}   // 空表达库，无筛选可显示
+  trig.hidden=false;
+  $('#wordFilterSummary').textContent=wfSummary();
+  if(ui.wordFilterOpen){
+    const body=$('#wordFilterBody');body.innerHTML='';
+    nodes.forEach(n=>body.appendChild(n));
+    wfShow();
+  }
+}
+/* ============ 手机端首页：练习入口收进折叠区（桌面端默认展开、不显示折叠头） ============ */
+function pfWrap(){
+  const list=$('#noteList');
+  if(!list)return;
+  const targets=[];
+  const batch=list.querySelector('.a-batch-entry');
+  if(batch)targets.push(batch);
+  const actions=list.querySelector('.today-actions');
+  if(actions)targets.push(actions);
+  /* 每天一小轮卡片：含 #bAudioOpen 的 a-callout */
+  const smallRound=[...list.querySelectorAll('.a-callout')].find(c=>c.querySelector('#bAudioOpen'));
+  if(smallRound)targets.push(smallRound);
+  /* 工具按钮组、说明文字也一并收进折叠区，保持首页干净 */
+  list.querySelectorAll('.a-tools').forEach(el=>targets.push(el));
+  list.querySelectorAll('.a-note').forEach(el=>targets.push(el));
+  if(!targets.length)return;
+  const head=document.createElement('button');
+  head.type='button';head.className='practice-fold-head';head.id='practiceFoldHead';
+  head.setAttribute('aria-expanded','false');
+  head.innerHTML='<span class="pfh-label">练习</span><span class="pfh-caret"></span>';
+  const pbody=document.createElement('div');
+  pbody.className='practice-fold-body';pbody.id='practiceFoldBody';
+  const anchor=targets[0];
+  list.insertBefore(head,anchor);
+  list.insertBefore(pbody,anchor);
+  targets.forEach(el=>pbody.appendChild(el));   // 移动 DOM，事件监听器保留
+  head.onclick=()=>{
+    const open=pbody.classList.toggle('open');
+    head.classList.toggle('open',open);
+    head.setAttribute('aria-expanded',open?'true':'false');
+  };
+}
 function aSelectedWords(){return filteredWords().filter(w=>!aPending(w)&&(!ui.selMode||!ui.sel.length||ui.sel.includes(w.id)));}
 function aNewWord(){showConfirm({title:'添加完整表达',msg:'',okText:'继续整理',onOk(){const t=$('#aNewTerm').value.trim();if(!t)return;let w=state.words.find(x=>x.term.toLowerCase()===t.toLowerCase());if(!w){w=upsertWord({term:t,source:'manual'});aPut(w.id,{stage:'pending'});save();}openWordModal(w.term,null,null,w);}});$('#cfMsg').innerHTML='<label for="aNewTerm">输入单词或完整短语</label><input id="aNewTerm" class="wm-coll-input" placeholder="例如 I am not really into it" autocomplete="off">';$('#aNewTerm').focus();}
 const aOriginalCard=wordCardHTML;
@@ -8419,23 +9186,48 @@ function batchAdvanceDialogueScene(){
   startScene(aiState.scenes[next]);
   return true;
 }
+/* 首页 AI 对话：优先用刚复习的词，不够就回退到期可练的词 */
+function todayAiDialogue(){
+  const d=dialogueBatchState();
+  const recent=(d.recentIds||[]).map(id=>state.words.find(w=>w.id===id)).filter(Boolean);
+  if(recent.length>=dialogueThreshold()){ batchPauseRecent(); return; }
+  const fb=packableWords();
+  if(fb&&fb.length){ openAiPackPractice(fb); }
+  else toast('还没有可练的词，先去攒几个表达','warn');
+}
 renderToday=function(){
   $('#paneTitle').textContent='今日';$('#btnNewNote').style.display='none';
   const pending=state.words.filter(aPending),due=dueList(),weak=aWeakWords(),box=$('#noteList');
-  const next=pending.length?'整理 '+pending.length+' 个待加工表达':due.length?'回想今天到期的表达':'用 2—3 个表达说一段';
   const quote=todayDailyQuote(),encouragement=todayEncouragement(pending.length,due.length,weak.length);
   const batch=dialogueBatchState(),reviewed=batchReviewedWords(batch).length,batchEntry=(batchReady(batch)||batch.plan)?'<div class="a-batch-entry"><div><b>今日批量情景对话</b><small>已完成复习 '+reviewed+' 个表达 · 每组约 5 个</small></div><button class="btn primary" id="aBatchOpen">'+(batch.plan?'继续场景练习':'规划今日场景')+'</button></div>':'';
-  box.innerHTML='<div class="a-callout"><h3>'+next+'</h3><p>一次做好一小步。先自己回想和表达，再查看答案或请 ChatGPT 帮忙。</p><button class="btn primary" id="aNext">开始这一步</button></div>'+
+  const inboxN=ocrInboxRead().length;
+  const inboxEntry='<button class="inbox-entry'+(inboxN?' has-pending':'')+'" id="aInboxEntry" type="button"><span class="inbox-entry-main"><b>截图收件箱</b><small>'+(inboxN?inboxN+' 张待匹配截图':'已清空，点这里查看')+'</small></span><span class="inbox-entry-count">'+inboxN+'</span></button>';
+  box.innerHTML=
     '<section class="daily-quote" aria-label="每日一句"><div class="daily-quote-kicker">每日一句</div><p class="daily-quote-en">'+esc(quote.en)+'</p><p class="daily-quote-cn">'+esc(quote.cn)+'</p><p class="daily-quote-foot">'+esc(encouragement)+'</p></section>'+
+    '<div class="home-quick">'+
+      '<button class="home-quick-item" data-hq="recall" type="button"><span class="hq-t">场景回想</span><span class="hq-d">看场景说英文 · 先回忆</span></button>'+
+      '<button class="home-quick-item" data-hq="note" type="button"><span class="hq-t">加入笔记</span><span class="hq-d">写英文 · 选中 empower</span></button>'+
+      '<button class="home-quick-item" data-hq="flash" type="button"><span class="hq-t">英文闪卡</span><span class="hq-d">到期回想练习</span></button>'+
+      '<button class="home-quick-item primary" data-hq="ai" type="button"><span class="hq-t">AI 对话</span><span class="hq-d">基于刚复习的词开口</span></button>'+
+    '</div>'+
+    inboxEntry+
     '<div class="rv-stats"><div class="rv-stat"><div class="n">'+pending.length+'</div><div class="l">待整理</div></div><div class="rv-stat hot"><div class="n">'+due.length+'</div><div class="l">到期回想</div></div><div class="rv-stat"><div class="n">'+weak.length+'</div><div class="l">待再次输出</div></div></div>'+batchEntry+
-    '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+todayCard('pack','情景口语','选 2—3 个表达，自己开口使用',Math.min(3,packableWords().length))+'</div>'+
+    '<div class="today-actions">'+todayCard('organize','整理表达','补上自己的理解与句子',pending.length)+todayCard('recall','场景回想','看场景说英文 · 每轮最多 10 个',due.length)+todayCard('flash','英文闪卡','保留原来的认识与回想练习',due.length)+'</div>'+
     '<div class="a-tools"><button class="btn" id="aTodayWords">按日期回看</button><button class="btn" id="aTodayWrite">每周写一段</button><button class="btn" id="aTodayFavorites">收藏对话</button><button class="btn" id="aTodayNew">手动添加</button><button class="btn" id="aTodayBackup">完整备份／迁移</button></div>'+
     '<p class="a-note">普通日参考：视频与模仿 20 分钟 → 整理 8 分钟 → 回想 5 分钟 → 输出 7 分钟。每周 2 次情景练习、1 次写作，可替换当天部分任务。无需清空全部队列。</p>'+
     '<p class="a-note">AI：'+(aRoute()==='chatgpt'?'ChatGPT 往返模式；套餐和模型由 ChatGPT 账号决定。':'OpenAI API 模式；独立计费。')+' 新地址不会自动读取手机旧地址的数据。</p>'+
     (aRead(A_TASK_KEY,null)?'<div class="a-tools"><button class="btn" id="aResumeGpt">继续未完成的 ChatGPT 练习</button></div>':'')+
     (!state.words.length?'<div class="a-callout"><h3>先迁入手机旧词条</h3><p>在手机同一个浏览器打开旧站 → 设置 → 导出备份；回到这里点“完整备份／迁移”导入。旧站内容保留。</p><a class="btn" href="https://english-notes-82796.app.workbuddy.host/?sharecode=EIO75LBUTA" target="_blank" rel="noopener">打开你的旧站</a></div>':'');
-  const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}if(g==='pack')openAiPackPractice(packableWords());};
-  $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#aNext').onclick=()=>go(pending.length?'organize':due.length?'recall':'pack');
+  box.querySelectorAll('[data-hq]').forEach(b=>b.onclick=()=>{
+    const g=b.dataset.hq;
+    if(g==='recall')aStartRecall();
+    else if(g==='note')newNote();
+    else if(g==='flash'){ui.mode='flash';ui.flash=null;render();}
+    else if(g==='ai')todayAiDialogue();
+  });
+  $('#aInboxEntry').onclick=ocrInboxShow;
+  const go=g=>{if(g==='organize')aOpenWords('pending');if(g==='recall')aStartRecall();if(g==='flash'){ui.mode='flash';ui.flash=null;render();}};
+  $$('#noteList [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
   $('#aTodayWords').onclick=()=>aOpenWords('all');$('#aTodayWrite').onclick=()=>openWriteModal();$('#aTodayFavorites').onclick=aiOpenFavorites;$('#aTodayNew').onclick=aNewWord;$('#aTodayBackup').onclick=aOpenBackup;
   if($('#aBatchOpen'))$('#aBatchOpen').onclick=batchOpen;
   if($('#aResumeGpt'))$('#aResumeGpt').onclick=()=>{const task=aRead(A_TASK_KEY,null);const words=state.words.filter(w=>task&&task.wordIds.includes(w.id));openAiPackPractice(words);};
@@ -8754,8 +9546,12 @@ exportData=aDownloadBackup;
 importData=aImportFile;
 function aInit(){
   aData=aRead(A_KEY,{words:{},attempts:[]});if(!aData.words||typeof aData.words!=='object')aData.words={};if(!Array.isArray(aData.attempts))aData.attempts=[];
-  const guideButton=document.createElement('button');guideButton.id='aGuideOpen';guideButton.className='btn a-guide-open';guideButton.type='button';guideButton.textContent='使用小手册';guideButton.onclick=()=>$('#aGuide').classList.add('show');const footer=$('.side-footer');if(footer&&!$('#aGuideOpen'))footer.insertBefore(guideButton,footer.firstChild);
+  const guideButton=document.createElement('button');guideButton.id='aGuideOpen';guideButton.type='button';guideButton.className='a-guide-hero';guideButton.innerHTML='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg><span class="agh-copy"><b>使用小手册</b><small>5 步上手，不知道点哪就看它</small></span>';guideButton.onclick=()=>$('#aGuide').classList.add('show');const sideNav=$('#sideNav');if(sideNav&&!$('#aGuideOpen'))sideNav.insertBefore(guideButton,sideNav.firstChild);
   $('#aGuideClose').onclick=()=>$('#aGuide').classList.remove('show');$('#aGuide').addEventListener('click',e=>{if(e.target.id==='aGuide')$('#aGuide').classList.remove('show');});
+  /* 手机端表达库筛选抽屉：触发、遮罩、关闭 */
+  $('#wordFilterTrigger').onclick=wfOpenSheet;
+  $('#wordFilterClose').onclick=wfCloseSheet;
+  $('#wordFilterMask').onclick=wfCloseSheet;
   $('#aBridgeClose').onclick=()=>{const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');if(job)job.reject(new Error('已取消本次 ChatGPT 任务，内容没有改动'));};
   $('#aCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#aPrompt').value);toast('任务已复制，打开 ChatGPT 粘贴');}catch(_){$('#aPrompt').focus();$('#aPrompt').select();toast('请长按任务框复制','warn');}};
   $('#aApply').onclick=()=>{if(!aBridgeJob)return;try{const value=aValidateResult(aParseResult($('#aResult').value),aBridgeJob.prompt);const job=aBridgeJob;aBridgeJob=null;$('#aBridge').classList.remove('show');job.resolve(value);}catch(e){$('#aBridgeError').textContent='还不能使用：'+e.message;}};
@@ -8864,7 +9660,7 @@ async function bSync(){
   finally{bRunning=false;if(bQueued){bQueued=false;bQueue();}}
 }
 const bToday=renderToday;
-renderToday=function(){bToday();const panel=document.createElement('div');panel.className='a-callout';panel.innerHTML='<b>每天一小轮</b><p>看视频 → 收集 3—5 个表达 → 自己整理 → 回想 → 情景输出。</p><div class="a-actions"><button class="btn" id="bAudioOpen">原音与跟读</button><button class="btn" id="bCopyLink">复制本应用链接</button><button class="btn" id="bWeekly">本周进度</button></div><p class="a-note">同一账号跨设备自动同步；接口密钥仅保存在各自设备。</p>';$('#noteList .today-actions').after(panel);$$('#noteList .a-note').forEach(el=>{if(el.textContent.includes('新地址不会自动读取'))el.textContent='ChatGPT 练习沿用你账号中的可用模型；学习内容已接入本应用的私有云保存。';});$('#bAudioOpen').onclick=()=>bOpenAudio();$('#bCopyLink').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin);toast('应用链接已复制，其他设备用同一账号打开即可');}catch(_){toast(location.origin);}};$('#bWeekly').onclick=bShowWeekly;};
+renderToday=function(){bToday();const panel=document.createElement('div');panel.className='a-callout';panel.innerHTML='<b>每天一小轮</b><p>看视频 → 收集 3—5 个表达 → 自己整理 → 回想 → 情景输出。</p><div class="a-actions"><button class="btn" id="bAudioOpen">原音与跟读</button><button class="btn" id="bCopyLink">复制本应用链接</button><button class="btn" id="bWeekly">本周进度</button></div><p class="a-note">同一账号跨设备自动同步；接口密钥仅保存在各自设备。</p>';$('#noteList .today-actions').after(panel);$$('#noteList .a-note').forEach(el=>{if(el.textContent.includes('新地址不会自动读取'))el.textContent='ChatGPT 练习沿用你账号中的可用模型；学习内容已接入本应用的私有云保存。';});$('#bAudioOpen').onclick=()=>bOpenAudio();$('#bCopyLink').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin);toast('应用链接已复制，其他设备用同一账号打开即可');}catch(_){toast(location.origin);}};$('#bWeekly').onclick=bShowWeekly;pfWrap();};
 function bShowWeekly(){const start=Date.now()-7*DAY,logs=aData.attempts.filter(x=>x.createdAt>=start);showConfirm({title:'最近 7 天',msg:'新增 '+state.words.filter(w=>w.createdAt>=start).length+' 个表达；实际练习 '+logs.length+' 次；独立用出 '+new Set(logs.filter(x=>x.result==='independent').map(x=>x.wordId)).size+' 个表达。记录代表练习经历，仍需换场景验证。',okText:'继续学习'});}
 function bOpenAudio(word){
   $('#bAudio').classList.add('show');const select=$('#bAudioWord');select.innerHTML=state.words.map(w=>'<option value="'+esc(w.id)+'">'+esc(w.term)+'</option>').join('');if(word)select.value=word.id;bLoadAudio();
@@ -8948,6 +9744,9 @@ state=migrate(load());
 try{aInit();}catch(e){console.error('学习模块初始化失败',e);}
 try{bInit();}catch(e){console.error('同步模块初始化失败',e);}
 try{aiDialogueHistoryMigrate();}catch(e){}
+/* 截图/收件箱迁移到 IndexedDB（异步加载，不阻塞首屏；未就绪时同步兜底读 localStorage） */
+try{ shotsInit(); }catch(e){}
+try{ inboxInit(); }catch(e){}
 applyTheme();
 // Preserve existing image cache on upgrade.
 /* 老标亮（标了词就到处亮）搬迁成「只亮当时那一处」 */
@@ -8956,6 +9755,9 @@ if(!localStorage.getItem(LS_KEY)) save();
 try{bindEvents();}catch(e){console.error('界面事件绑定失败',e);}
 try{bindSideSwipe();}catch(e){console.error('侧滑绑定失败',e);}
 try{render();}catch(e){console.error('页面渲染失败',e);const box=document.querySelector('#noteList');if(box)box.innerHTML='<div class="empty-state"><b>页面初始化没有完成</b><br>请刷新页面；如果仍为空，请从旧文件导出完整备份后导入。</div>';}
+Promise.all([shotsInit(),inboxInit()]).catch(()=>{}).then(()=>{
+  try{ if(['words','flash','list'].includes(ui.mode)) render(); }catch(_){}
+});
 syncKbUI();
 setTimeout(backupReminder,1600);
 syncOnBoot();
