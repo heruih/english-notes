@@ -63,12 +63,12 @@ function ocrInboxRender(){
     const chipsHtml=cands.length?cands.map(c=>'<button type="button" class="cand-chip" data-cand="'+esc(c.id)+'">'+esc(c.term)+'</button>').join(''):'<span class="cand-empty">没有候选词，在下面手动输入</span>';
     return '<div class="ocr-inbox-item" data-inbox-id="'+esc(item.id)+'"><img src="'+item.dataUrl+'" alt="待匹配截图"><div class="ocr-inbox-main"><textarea class="ocr-inbox-text" data-inbox-text rows="2" placeholder="识别文本，可手动修改">'+esc(item.text||'')+'</textarea><div class="cand-chips">'+chipsHtml+'</div><input data-inbox-term placeholder="手动输入新词，多个用逗号分隔"><div class="ocr-inbox-actions"><button class="mini-btn" data-inbox-confirm>确认匹配</button><button class="mini-btn danger" data-inbox-delete>删除</button></div></div></div>';
   };
-  /* 按文件夹分组；folderId 为空或文件夹已删的归到「未分类」 */
+  /* 按笔记（大标题）分组；noteId 为空或笔记已删的归到「未分到笔记」 */
   const groups=[],gmap={};
   list.forEach(item=>{
-    const f=item.folderId?state.folders.find(x=>x.id===item.folderId):null;
-    const key=f?f.id:'__none__';
-    if(!gmap[key]){const g={name:f?f.name:'未分类',items:[]};gmap[key]=g;groups.push(g);}
+    const n=item.noteId?state.notes.find(x=>x.id===item.noteId):null;
+    const key=n?n.id:'__none__';
+    if(!gmap[key]){const g={name:n?(n.title||'无标题'):'未分到笔记',items:[]};gmap[key]=g;groups.push(g);}
     gmap[key].items.push(item);
   });
   box.innerHTML=groups.map(g=>'<div class="inbox-group"><div class="inbox-group-title">'+esc(g.name)+'（'+g.items.length+'）</div>'+g.items.map(itemHtml).join('')+'</div>').join('');
@@ -78,30 +78,40 @@ function ocrInboxShow(){
   const st=$('#ocrStatus');if(st)st.textContent='批量收件箱：确认候选词后，截图会挂到对应词条。';ocrInboxRender();
 }
 /* 导入多文件前选择归属文件夹：返回 folderId；用户取消则 resolve(null) */
-function pickFolderForImport(){
+function pickNoteForImport(){
   return new Promise(resolve=>{
-    const sel=$('#ocrFolderSelect'),nameInput=$('#ocrFolderNewName');
+    $('#ocrSheet').classList.add('show');
+    const noteSel=$('#ocrNoteSelect'),folderSel=$('#ocrNewNoteFolder'),nameInput=$('#ocrNewNoteName');
     const fill=()=>{
-      sel.innerHTML='<option value="">选择已有文件夹…</option>'+state.folders.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.name)+'</option>').join('');
+      const groups=state.folders.map(f=>{
+        const notes=state.notes.filter(n=>n.folderId===f.id);
+        if(!notes.length)return '';
+        return '<optgroup label="'+esc(f.name)+'">'+notes.map(n=>'<option value="'+esc(n.id)+'">'+esc(n.title||'无标题')+'</option>').join('')+'</optgroup>';
+      }).join('');
+      const loose=state.notes.filter(n=>!state.folders.some(f=>f.id===n.folderId));
+      noteSel.innerHTML='<option value="">选择笔记…</option>'+groups+(loose.length?'<optgroup label="未分类">'+loose.map(n=>'<option value="'+esc(n.id)+'">'+esc(n.title||'无标题')+'</option>').join('')+'</optgroup>':'');
+      folderSel.innerHTML=state.folders.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.name)+'</option>').join('');
       nameInput.value='';
     };
     fill();
     $('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.add('hidden');
     $('#ocrStatus').textContent='';
     $('#ocrFolderPick').classList.remove('hidden');
-    const startBtn=$('#ocrFolderStart'),cancelBtn=$('#ocrFolderCancel'),newBtn=$('#ocrFolderNewBtn');
+    const startBtn=$('#ocrFolderStart'),cancelBtn=$('#ocrFolderCancel'),newBtn=$('#ocrNoteNewBtn');
     const cleanup=()=>{ $('#ocrFolderPick').classList.add('hidden'); startBtn.onclick=null;cancelBtn.onclick=null;newBtn.onclick=null; };
     newBtn.onclick=()=>{
       const nm=nameInput.value.trim();
-      if(!nm){toast('先输入新文件夹名','warn');return;}
-      const fid=createFolder(nm);fill();sel.value=fid;
-      toast('已新建文件夹','ok');
+      if(!nm){toast('先输入笔记大标题','warn');return;}
+      let fid=folderSel.value;
+      if(!fid){fid=state.folders[0]?state.folders[0].id:createFolder('未分类');}
+      const n={id:uid(),folderId:fid,title:nm,content:'',createdAt:Date.now(),updatedAt:Date.now()};
+      state.notes.push(n);save();fill();noteSel.value=n.id;
+      toast('已新建笔记','ok');
     };
     startBtn.onclick=()=>{
-      let fid=sel.value;const nm=nameInput.value.trim();
-      if(!fid&&nm){fid=createFolder(nm);}
-      if(!fid){toast('选一个文件夹，或输入新文件夹名','warn');return;}
-      cleanup();resolve(fid);
+      const nid=noteSel.value;
+      if(!nid){toast('选一篇笔记，或在下面新建','warn');return;}
+      cleanup();resolve(nid);
     };
     cancelBtn.onclick=()=>{cleanup();resolve(null);};
   });
@@ -173,7 +183,9 @@ async function ocrPreprocess(dataUrl){
   ctx.putImageData(imgData,0,0);
   return cv.toDataURL('image/png');
 }
-async function ocrImportBatch(files,folderId){
+async function ocrImportBatch(files,noteId){
+  const targetNote=state.notes.find(n=>n.id===noteId);
+  const folderId=targetNote?targetNote.folderId:'';
   $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
   const st=$('#ocrStatus');
   /* 导入前提示：IDB 模式按张数上限，LS 模式按剩余字节 */
@@ -220,7 +232,7 @@ async function ocrImportBatch(files,folderId){
       ocrInboxRender();
       return;
     }
-    list.push({id:uid(),dataUrl,text,candidates,folderId:folderId||'',at:Date.now(),status:'pending'});
+    list.push({id:uid(),dataUrl,text,candidates,noteId:noteId||'',folderId:folderId||'',at:Date.now(),status:'pending'});
     /* 处理一张存一张：写入失败就回退这一条并停止，已保存的都保留 */
     if(ocrInboxFlush(list)){
       saved++;
@@ -267,9 +279,9 @@ async function ocrImportImage(event){
   input.value='';
   if(!files.length) return;
   if(files.length>1){
-    const folderId=await pickFolderForImport();
-    if(!folderId)return;
-    await ocrImportBatch(files,folderId);
+    const noteId=await pickNoteForImport();
+    if(!noteId)return;
+    await ocrImportBatch(files,noteId);
     return;
   }
   const f=files[0];

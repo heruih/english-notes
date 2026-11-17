@@ -665,11 +665,13 @@
         <textarea id="ocrEdit" placeholder="点上面的词框添加，也可直接改或输入整个短语，如 emergency event" rows="2"></textarea>
       </div>
       <div id="ocrFolderPick" class="hidden">
-        <div class="wm-label" style="margin-top:14px">这批截图存到哪个文件夹？</div>
-        <select id="ocrFolderSelect"></select>
+        <div class="wm-label" style="margin-top:14px">这批截图归到哪篇笔记？</div>
+        <select id="ocrNoteSelect"></select>
+        <div class="wm-label" style="margin-top:12px">或新建一篇笔记</div>
+        <select id="ocrNewNoteFolder"></select>
         <div class="folder-new-row">
-          <input id="ocrFolderNewName" placeholder="或输入新文件夹名">
-          <button class="mini-btn" id="ocrFolderNewBtn" type="button">新建</button>
+          <input id="ocrNewNoteName" placeholder="输入笔记大标题">
+          <button class="mini-btn" id="ocrNoteNewBtn" type="button">新建</button>
         </div>
         <div class="ocr-folder-actions">
           <button class="btn primary" id="ocrFolderStart" type="button">开始导入</button>
