@@ -745,6 +745,16 @@ body.side-open #scrim{display:block}
 .cand-chip:active{transform:scale(.96)}
 .cand-chip.on{background:var(--accent);border-color:var(--accent);color:var(--s1)}
 .cand-empty{font-size:12px;color:var(--text3)}
+/* 收件箱按文件夹分组 */
+.inbox-group{margin-bottom:10px}
+.inbox-group-title{font-size:12px;font-weight:700;color:var(--text);background:var(--chip-bg);border-radius:10px;padding:7px 11px;margin-bottom:2px;position:sticky;top:0;z-index:2}
+/* 文件夹选择区块 */
+#ocrFolderPick select{width:100%;min-height:42px;margin-bottom:8px}
+.folder-new-row{display:flex;gap:8px;margin-bottom:12px}
+.folder-new-row input{flex:1;min-height:42px}
+.folder-new-row .mini-btn{flex:none}
+.ocr-folder-actions{display:flex;gap:10px}
+.ocr-folder-actions .btn{flex:1}
 
 /* 桌面端：表达库 / 标签 / 闪卡 占满内容区（原来被挤在 330px 里） */
 @media (min-width:768px){
