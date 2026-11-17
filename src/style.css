@@ -1311,6 +1311,13 @@ html[data-theme="study"] .a-batch-entry{
 }
 html[data-theme="study"] .a-batch-entry b{color:var(--text)}
 html[data-theme="study"] .a-batch-entry small{color:var(--text2)}
+/* 编辑器正文是深底：单词用明亮浅蓝，保证对比清晰（浅纸底的复习卡不受影响，仍用 accent） */
+html[data-theme="study"] #noteBody .en-word{
+  color:#c2d3ec;
+  background:rgba(128,160,205,.22);
+  border-bottom-color:rgba(158,186,222,.5);
+}
+html[data-theme="study"] #noteBody .en-word::before{background:#c2d3ec}
 
 /* ============ 手机端表达库：筛选收进底部抽屉（桌面端布局保持不变） ============ */
 .word-filter-trigger{display:none}

@@ -59,6 +59,8 @@ async function shotsInit(){
       if(shotsTotal(data)>0)await idbSet(IDB_STORE_SHOTS,'all',data);
     }
     shotCache=data;
+    /* IDB 已确认接管且数据已在内存，清掉 LS 旧副本，不再白占 5MB 配额 */
+    try{ localStorage.removeItem(SHOTS_KEY); }catch(_){ }
   }catch(e){
     shotUseIdb=false;
     shotCache=shotsReadLocal();

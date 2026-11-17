@@ -18,6 +18,8 @@ async function inboxInit(){
       if(legacy.length)await idbSet(IDB_STORE_INBOX,'all',data);
     }
     inboxCache=data;
+    /* IDB 已接管，清掉 LS 旧收件箱副本 */
+    try{ localStorage.removeItem(SHOT_INBOX_KEY); }catch(_){ }
   }catch(e){
     inboxUseIdb=false;
     inboxCache=inboxReadLocal();
@@ -86,9 +88,14 @@ function ocrInboxSkip(id){const next=ocrInboxRead().filter(x=>x.id!==id);ocrInbo
 async function ocrImportBatch(files){
   $('#ocrSheet').classList.add('show');$('#ocrImgWrap').classList.add('hidden');$('#ocrSelected').classList.add('hidden');$('#ocrBatch').classList.remove('hidden');
   const st=$('#ocrStatus');
-  /* 导入前预检：先算当前剩余空间并提示 */
-  const pre=storageQuote();
-  if(st)st.textContent='正在处理 '+files.length+' 张截图…当前剩余空间约 '+fmtBytes(pre.free)+'（每处理一张就保存，可随时关闭）';
+  /* 导入前提示：IDB 模式按张数上限，LS 模式按剩余字节 */
+  if(inboxUseIdb){
+    const curN=shotsTotal(shotsAll())+(inboxCache?inboxCache.length:0);
+    if(st)st.textContent='正在处理 '+files.length+' 张截图…截图库共可存 '+SHOT_MAX_TOTAL+' 张，当前已有 '+curN+' 张（每处理一张就保存，可随时关闭）';
+  }else{
+    const pre=storageQuote();
+    if(st)st.textContent='正在处理 '+files.length+' 张截图…当前剩余空间约 '+fmtBytes(pre.free)+'（每处理一张就保存，可随时关闭）';
+  }
   let list=ocrInboxRead();
   /* 识别组件加载失败也不阻断：先把图存下来，稍后在收件箱手动匹配 */
   let ocrReady=true;
@@ -106,10 +113,18 @@ async function ocrImportBatch(files){
         }catch(_){text='';candidates=[];}
       }
     }catch(_){failed++;continue;}
-    /* 写入前容量预检：本项增量按 dataUrl 字节 + 少量元数据/JSON 余量估算，
-       写入后会超配额就提前停止，不触发 setItem 异常 */
+    /* 写入前容量预检：
+       IDB 模式不受 LS 5MB 限制，只按总张数上限 SHOT_MAX_TOTAL 控制；
+       LS 回退模式才按字节配额提前停止，不触发 setItem 异常。 */
     const itemBytes=byteLen(dataUrl)+128;
-    if(storageUsedBytes()+itemBytes>LS_QUOTA){
+    if(inboxUseIdb){
+      if(shotsTotal(shotsAll())+list.length+1>SHOT_MAX_TOTAL){
+        if(st)st.textContent='已达截图库上限（'+SHOT_MAX_TOTAL+' 张）：已保存 '+saved+' 张，剩余 '+(files.length-i)+' 张未导入。';
+        toast('截图库已达上限','warn');
+        ocrInboxRender();
+        return;
+      }
+    }else if(storageUsedBytes()+itemBytes>LS_QUOTA){
       if(st)st.textContent='空间将满：已保存 '+saved+' 张，剩余 '+(files.length-i)+' 张未导入。请先在设置查看占用、整理或导出备份。';
       toast('剩余空间不够再存一张，已停止导入','warn');
       ocrInboxRender();
@@ -120,7 +135,9 @@ async function ocrImportBatch(files){
     if(ocrInboxFlush(list)){
       saved++;
       estAvg=estAvg?Math.round((estAvg+itemBytes)/2):itemBytes;
-      const canMore=estAvg?Math.floor(storageQuote().free/estAvg):0;
+      const canMore=inboxUseIdb
+        ? Math.max(0,SHOT_MAX_TOTAL-shotsTotal(shotsAll())-list.length)
+        : (estAvg?Math.floor(storageQuote().free/estAvg):0);
       if(st)st.textContent='已保存 '+(i+1)+' / '+files.length+' 张 · 预计还能存约 '+canMore+' 张（可随时关闭，已存的不会丢）';
     }else{
       list.pop();ocrInboxFlush(list);
@@ -336,8 +353,8 @@ function storageRender(){
   const idbEl=$('#stStoreIdb');
   if(idbEl){
     const idbOn=shotUseIdb||inboxUseIdb;
-    const shotsN=shotReady?shotsTotal(shotCache):0;
-    if(idbOn) idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库（大容量）· '+shotsN+' 张</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
+    const shotsN=(shotReady?shotsTotal(shotCache):0)+(inboxReady&&inboxCache?inboxCache.length:0);
+    if(idbOn) idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库（大容量）· '+shotsN+' 张（含收件箱）</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
     else idbEl.innerHTML='<div class="sb-row"><span class="sb-label">截图库未启用，仍占本地存储</span><span class="sb-bytes">'+fmtBytes(idbUsedBytes())+'</span></div>';
   }
 }
